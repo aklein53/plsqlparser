@@ -84,3 +84,18 @@ print correctly); non-query statements throw `NotSupportedException`.
 
 Limits: output is Oracle SQL only (T-SQL needs ScriptDom); the generated SQL is verified by re-parsing, not by running it
 against a database; the user's top-level `ORDER BY` is moved outside the wrapper only when expressible on output columns.
+
+## Integration tests
+
+`tests/OracleSqlParser.IntegrationTests` runs against a real Oracle database (the free `gvenzl/oracle-free:23-slim-faststart`
+image, started with Testcontainers; **Docker is required**):
+
+```
+dotnet test tests/OracleSqlParser.IntegrationTests
+```
+
+One container is started per test run (first run pulls the image; allow a few minutes). They check that (a) the SQL printed
+by `SqlWriter` is accepted by Oracle and returns the same columns and rows as the original query, (b) `QueryGuard.RestrictToIds`
+output executes and only returns permitted ids for both `AccessJoinStyle` values, and (c) every statement of the smoke
+corpus passes Oracle's own syntax check inside a scratch schema. If Docker is not available the tests are skipped, not failed.
+The default unit tests (`dotnet test tests/OracleSqlParser.Tests`) do not need Docker.

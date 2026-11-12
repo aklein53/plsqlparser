@@ -4,6 +4,7 @@
     <Project Path="src/OracleSqlParser/OracleSqlParser.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/OracleSqlParser.IntegrationTests/OracleSqlParser.IntegrationTests.csproj" />
     <Project Path="tests/OracleSqlParser.Tests/OracleSqlParser.Tests.csproj" />
   </Folder>
 </Solution>
