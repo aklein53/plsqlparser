@@ -1,0 +1,595 @@
+namespace OracleSqlParser;
+
+public sealed partial class SqlParser
+{
+    // ---- helpers ----
+
+    /// <summary>End of a statement-level clause list: EOF, ';' or an unbalanced ')' (closing an enclosing group).</summary>
+    private bool AtStatementEnd() => Cur.Type == TokenType.EOF || IsOp(";") || IsOp(")");
+
+    private List<ColumnReference> ParseColumnRefList(bool parenthesized)
+    {
+        var list = new List<ColumnReference>();
+        if (parenthesized && AcceptOp("("))
+        {
+            do list.Add(ParseColumnReferenceOnly()); while (AcceptOp(","));
+            ExpectOp(")");
+        }
+        else list.Add(ParseColumnReferenceOnly());
+        return list;
+    }
+
+    // ---- SEARCH / CYCLE ----
+
+    private SearchClause ParseSearchClause()
+    {
+        var s = Next(); // SEARCH
+        var sc = new SearchClause { DepthFirst = Next().Value == "DEPTH" };
+        ExpectKw("FIRST"); ExpectKw("BY");
+        sc.By = ParseOrderByList();
+        ExpectKw("SET");
+        sc.SetColumn = ParseIdentifier();
+        return Fin(sc, s);
+    }
+
+    private CycleClause ParseCycleClause()
+    {
+        var s = Next(); // CYCLE
+        var cc = new CycleClause { Columns = ParseIdentifierList() };
+        ExpectKw("SET");
+        cc.SetColumn = ParseIdentifier();
+        if (AcceptKw("TO")) cc.CycleValue = ParseExpr();
+        if (AcceptKw("DEFAULT")) cc.DefaultValue = ParseExpr();
+        return Fin(cc, s);
+    }
+
+    // ---- table modifiers: sample, flashback, pivot, match_recognize ----
+
+    private TableReference ParseTableModifiers(TableReference t, Token start)
+    {
+        while (true)
+        {
+            if (t is NamedTable nt)
+            {
+                if (IsKw("SAMPLE") && nt.Sample == null) { nt.Sample = ParseSample(); continue; }
+                if (nt.Flashback == null && ((IsKw("VERSIONS") && IsKwAt(1, "BETWEEN")) || (IsKw("AS") && IsKwAt(1, "OF"))))
+                {
+                    nt.Flashback = ParseFlashback();
+                    continue;
+                }
+            }
+            if (t.Alias == null)
+            {
+                var a = ParseOptionalAlias();
+                if (a != null) { t.Alias = a; continue; }
+            }
+            if (IsKw("PIVOT") && (IsOpAt(1, "(") || IsKwAt(1, "XML"))) { t = ParsePivot(t, start); continue; }
+            if (IsKw("UNPIVOT") && (IsOpAt(1, "(") || IsKwAt(1, "INCLUDE") || IsKwAt(1, "EXCLUDE"))) { t = ParseUnpivot(t, start); continue; }
+            if (IsKw("MATCH_RECOGNIZE") && IsOpAt(1, "(")) { t = ParseMatchRecognize(t, start); continue; }
+            break;
+        }
+        return Fin(t, start);
+    }
+
+    private SampleClause ParseSample()
+    {
+        var s = Next(); // SAMPLE
+        var sc = new SampleClause { Block = AcceptKw("BLOCK") };
+        ExpectOp("(");
+        sc.Percent = ParseAdditive();
+        ExpectOp(")");
+        if (AcceptKw("SEED")) { ExpectOp("("); sc.Seed = ParseAdditive(); ExpectOp(")"); }
+        return Fin(sc, s);
+    }
+
+    private FlashbackClause ParseFlashback()
+    {
+        var s = Cur;
+        var fb = new FlashbackClause();
+        if (IsKw("VERSIONS")) { Next(); Next(); fb.Mode = FlashbackMode.VersionsBetween; }
+        else { Next(); Next(); fb.Mode = FlashbackMode.AsOf; }
+        if (IsKw("PERIOD")) { Next(); ExpectKw("FOR"); fb.Unit = FlashbackUnit.Period; fb.Period = ParseIdentifier(); }
+        else if (AcceptKw("SCN")) fb.Unit = FlashbackUnit.Scn;
+        else if (AcceptKw("TIMESTAMP")) fb.Unit = FlashbackUnit.Timestamp;
+        else throw Fail($"Expected SCN or TIMESTAMP but found {Describe(Cur)}");
+        fb.Value = ParseAdditive();
+        if (fb.Mode == FlashbackMode.VersionsBetween) { ExpectKw("AND"); fb.ToValue = ParseAdditive(); }
+        return Fin(fb, s);
+    }
+
+    private TableReference ParsePivot(TableReference source, Token start)
+    {
+        Next(); // PIVOT
+        var pt = new PivotTable { Source = source, Xml = AcceptKw("XML") };
+        ExpectOp("(");
+        do
+        {
+            var s = Cur;
+            var agg = new PivotAggregate { Function = ParseExpr() };
+            agg.Alias = ParseOptionalAlias();
+            pt.Aggregates.Add(Fin(agg, s));
+        } while (AcceptOp(","));
+        ExpectKw("FOR");
+        pt.ForColumns = ParseColumnRefList(true);
+        ExpectKw("IN");
+        ExpectOp("(");
+        if (IsKw("ANY"))
+        {
+            pt.InAny = true;
+            Next();
+            while (AcceptOp(",")) ExpectKw("ANY");
+        }
+        else if (LooksLikeQuery()) pt.InSubquery = ParseSelectStatement();
+        else
+        {
+            do
+            {
+                var s = Cur;
+                var item = new PivotInItem { Value = ParseExpr() };
+                item.Alias = ParseOptionalAlias();
+                pt.InItems.Add(Fin(item, s));
+            } while (AcceptOp(","));
+        }
+        ExpectOp(")");
+        ExpectOp(")");
+        return Fin(pt, start);
+    }
+
+    private TableReference ParseUnpivot(TableReference source, Token start)
+    {
+        Next(); // UNPIVOT
+        var ut = new UnpivotTable { Source = source };
+        if (IsKw("INCLUDE") || IsKw("EXCLUDE"))
+        {
+            ut.IncludeNulls = Next().Value == "INCLUDE";
+            ExpectKw("NULLS");
+        }
+        ExpectOp("(");
+        ut.ValueColumns = ParseColumnRefList(true);
+        ExpectKw("FOR");
+        ut.ForColumns = ParseColumnRefList(true);
+        ExpectKw("IN");
+        ExpectOp("(");
+        do
+        {
+            var s = Cur;
+            var item = new UnpivotInItem { Columns = ParseColumnRefList(true) };
+            if (AcceptKw("AS") || Cur.Type is TokenType.String or TokenType.Number) item.AliasValue = ParsePrimary();
+            ut.InItems.Add(Fin(item, s));
+        } while (AcceptOp(","));
+        ExpectOp(")");
+        ExpectOp(")");
+        return Fin(ut, start);
+    }
+
+    // ---- MATCH_RECOGNIZE ----
+
+    private TableReference ParseMatchRecognize(TableReference source, Token start)
+    {
+        Next(); Next(); // MATCH_RECOGNIZE (
+        var mr = new MatchRecognizeTable { Source = source };
+        if (IsKw("PARTITION")) { Next(); ExpectKw("BY"); do mr.PartitionBy.Add(ParseExpr()); while (AcceptOp(",")); }
+        if (IsKw("ORDER")) { Next(); ExpectKw("BY"); mr.OrderBy = ParseOrderByList(); }
+        if (AcceptKw("MEASURES")) do mr.Measures.Add((ExpressionSelectItem)ParseSelectItem()); while (AcceptOp(","));
+        if (AcceptKw("ONE")) { ExpectKw("ROW"); ExpectKw("PER"); ExpectKw("MATCH"); mr.RowsPerMatch = RowsPerMatch.OneRow; }
+        else if (IsKw("ALL") && IsKwAt(1, "ROWS"))
+        {
+            Next(); Next(); ExpectKw("PER"); ExpectKw("MATCH");
+            mr.RowsPerMatch = RowsPerMatch.AllRows;
+            if (AcceptKw("SHOW")) { ExpectKw("EMPTY"); ExpectKw("MATCHES"); mr.AllRowsMode = AllRowsMode.ShowEmptyMatches; }
+            else if (AcceptKw("OMIT")) { ExpectKw("EMPTY"); ExpectKw("MATCHES"); mr.AllRowsMode = AllRowsMode.OmitEmptyMatches; }
+            else if (IsKw("WITH") && IsKwAt(1, "UNMATCHED")) { Next(); Next(); ExpectKw("ROWS"); mr.AllRowsMode = AllRowsMode.WithUnmatchedRows; }
+        }
+        if (AcceptKw("AFTER"))
+        {
+            ExpectKw("MATCH"); ExpectKw("SKIP");
+            if (AcceptKw("PAST")) { ExpectKw("LAST"); ExpectKw("ROW"); mr.Skip = SkipKind.PastLastRow; }
+            else
+            {
+                ExpectKw("TO");
+                if (AcceptKw("NEXT")) { ExpectKw("ROW"); mr.Skip = SkipKind.ToNextRow; }
+                else
+                {
+                    mr.Skip = AcceptKw("LAST") ? SkipKind.ToLast : (AcceptKw("FIRST") ? SkipKind.ToFirst : SkipKind.ToFirst);
+                    mr.SkipVariable = ParseIdentifier();
+                }
+            }
+        }
+        if (AcceptKw("SEEK")) mr.Seek = true; else AcceptKw("INITIAL");
+        ExpectKw("PATTERN");
+        ExpectOp("(");
+        mr.Pattern = ParsePatternAlternation();
+        ExpectOp(")");
+        if (AcceptKw("SUBSET"))
+        {
+            do
+            {
+                var s = Cur;
+                var ps = new PatternSubset { Name = ParseIdentifier() };
+                ExpectOp("=");
+                ExpectOp("(");
+                ps.Members = ParseIdentifierList();
+                ExpectOp(")");
+                mr.Subsets.Add(Fin(ps, s));
+            } while (AcceptOp(","));
+        }
+        ExpectKw("DEFINE");
+        do
+        {
+            var s = Cur;
+            var pd = new PatternDefine { Variable = ParseIdentifier() };
+            ExpectKw("AS");
+            pd.Condition = ParseExpr();
+            mr.Define.Add(Fin(pd, s));
+        } while (AcceptOp(","));
+        ExpectOp(")");
+        return Fin(mr, start);
+    }
+
+    private PatternNode ParsePatternAlternation()
+    {
+        var start = Cur;
+        var first = ParsePatternConcat();
+        if (!IsOp("|")) return first;
+        var alt = new PatternAlternation { Items = [first] };
+        while (AcceptOp("|")) alt.Items.Add(ParsePatternConcat());
+        return Fin(alt, start);
+    }
+
+    private PatternNode ParsePatternConcat()
+    {
+        var start = Cur;
+        var items = new List<PatternNode>();
+        while (!IsOp("|") && !IsOp(")") && !(IsOp("-") && IsOpAt(1, "}")) && Cur.Type != TokenType.EOF)
+            items.Add(ParsePatternQuantified());
+        if (items.Count == 0) throw Fail("Expected pattern element");
+        return items.Count == 1 ? items[0] : Fin(new PatternConcat { Items = items }, start);
+    }
+
+    private PatternNode ParsePatternQuantified()
+    {
+        var start = Cur;
+        var p = ParsePatternPrimary();
+        int min; int? max;
+        if (IsOp("*")) { Next(); min = 0; max = null; }
+        else if (IsOp("+")) { Next(); min = 1; max = null; }
+        else if (IsOp("?")) { Next(); min = 0; max = 1; }
+        else if (IsOp("{") && !IsOpAt(1, "-"))
+        {
+            Next();
+            min = 0; max = null;
+            bool hasMin = Cur.Type == TokenType.Number;
+            if (hasMin) min = int.Parse(Next().Text);
+            if (AcceptOp(","))
+            {
+                if (Cur.Type == TokenType.Number) max = int.Parse(Next().Text);
+            }
+            else max = min;
+            ExpectOp("}");
+        }
+        else return p;
+        var q = new PatternQuantified { Inner = p, Min = min, Max = max };
+        if (IsOp("?")) { Next(); q.Reluctant = true; }
+        return Fin(q, start);
+    }
+
+    private PatternNode ParsePatternPrimary()
+    {
+        var s = Cur;
+        if (AcceptOp("^")) return Fin(new PatternAnchor { Start = true }, s);
+        if (AcceptOp("$")) return Fin(new PatternAnchor(), s);
+        if (AcceptOp("("))
+        {
+            var inner = ParsePatternAlternation();
+            ExpectOp(")");
+            return Fin(new PatternGroup { Inner = inner }, s);
+        }
+        if (IsKw("PERMUTE") && IsOpAt(1, "("))
+        {
+            Next(); Next();
+            var pp = new PatternPermute();
+            do pp.Items.Add(ParsePatternAlternation()); while (AcceptOp(","));
+            ExpectOp(")");
+            return Fin(pp, s);
+        }
+        if (IsOp("{") && IsOpAt(1, "-"))
+        {
+            Next(); Next();
+            var inner = ParsePatternAlternation();
+            ExpectOp("-"); ExpectOp("}");
+            return Fin(new PatternExclusion { Inner = inner }, s);
+        }
+        return Fin(new PatternVariable { Name = ParseIdentifier() }, s);
+    }
+
+    // ---- XMLTABLE / JSON_TABLE / GRAPH_TABLE ----
+
+    private TableReference ParseXmlTable()
+    {
+        var start = Cur;
+        Next(); Next();
+        var xt = new XmlTable();
+        if (IsKw("XMLNAMESPACES"))
+        {
+            Next(); ExpectOp("(");
+            do
+            {
+                var s = Cur;
+                var ns = new XmlNamespace();
+                if (AcceptKw("DEFAULT")) { ns.IsDefault = true; ns.Uri = ParsePrimary(); }
+                else
+                {
+                    ns.Uri = ParsePrimary();
+                    ExpectKw("AS");
+                    ns.Alias = ParseIdentifier();
+                }
+                xt.Namespaces.Add(Fin(ns, s));
+            } while (AcceptOp(","));
+            ExpectOp(")");
+            ExpectOp(",");
+        }
+        xt.XQuery = ParseExpr();
+        if (IsKw("PASSING")) xt.Passing = (PassingClause)ParseFunctionClause();
+        if (AcceptKw("COLUMNS"))
+            do xt.Columns.Add(ParsePathColumn()); while (AcceptOp(","));
+        ExpectOp(")");
+        return Fin(xt, start);
+    }
+
+    private TableReference ParseJsonTable()
+    {
+        var start = Cur;
+        Next(); Next();
+        var jt = new JsonTable { Input = ParseExpr() };
+        if (IsKw("FORMAT")) jt.InputFormat = (FormatClause)ParseFunctionClause();
+        ExpectOp(",");
+        jt.Path = ParseExpr();
+        while (!IsKw("COLUMNS") && Cur.Type != TokenType.EOF) jt.Clauses.Add(ParseFunctionClause());
+        ExpectKw("COLUMNS");
+        ExpectOp("(");
+        do jt.Columns.Add(ParsePathColumn()); while (AcceptOp(","));
+        ExpectOp(")");
+        ExpectOp(")");
+        return Fin(jt, start);
+    }
+
+    private TableReference ParseGraphTable()
+    {
+        var start = Cur;
+        Next(); Next();
+        var gt = new GraphTable { Graph = ParseDottedName() };
+        gt.Body = ParseSyntaxItems(() => false);
+        ExpectOp(")");
+        return Fin(gt, start);
+    }
+
+    private bool AtPathColumnClause() =>
+        AtBehaviorClause() ||
+        (Cur.Type == TokenType.Identifier && Cur.Value is "FORMAT" or "TRUNCATE" or "WITH" or "WITHOUT" or "KEEP" or "OMIT" or "ASCII" or "PRETTY" or "STRICT");
+
+    private PathColumn ParsePathColumn()
+    {
+        var s = Cur;
+        var pc = new PathColumn();
+        if (IsKw("NESTED"))
+        {
+            Next();
+            AcceptKw("PATH");
+            pc.Nested = true;
+            pc.Path = ParseExpr();
+            ExpectKw("COLUMNS");
+            ExpectOp("(");
+            do pc.Columns.Add(ParsePathColumn()); while (AcceptOp(","));
+            ExpectOp(")");
+            return Fin(pc, s);
+        }
+        pc.Name = ParseIdentifier();
+        if (IsKw("FOR") && IsKwAt(1, "ORDINALITY")) { Next(); Next(); pc.ForOrdinality = true; return Fin(pc, s); }
+        if (Cur.Type == TokenType.Identifier && !IsKw("PATH") && !IsKw("EXISTS") && !AtPathColumnClause())
+            pc.Type = ParseDataType();
+        while (!IsOp(",") && !IsOp(")") && Cur.Type != TokenType.EOF)
+        {
+            if (IsKw("EXISTS")) { Next(); pc.Exists = true; }
+            else if (IsKw("PATH")) { Next(); pc.Path = ParseExpr(); }
+            else if (IsKw("DEFAULT"))
+            {
+                int save = _p;
+                Next();
+                var e = ParseExpr();
+                if (IsKw("ON")) { _p = save; pc.Clauses.Add(ParseBehaviorClause()); }
+                else pc.Default = e;
+            }
+            else pc.Clauses.Add(ParseFunctionClause());
+        }
+        return Fin(pc, s);
+    }
+
+    // ---- MODEL ----
+
+    private void ParseCellOptions(ref NavMode? nav, ref ModelUniqueness? uniq)
+    {
+        while (true)
+        {
+            if (IsKw("IGNORE") && IsKwAt(1, "NAV")) { Next(); Next(); nav = NavMode.IgnoreNav; }
+            else if (IsKw("KEEP") && IsKwAt(1, "NAV")) { Next(); Next(); nav = NavMode.KeepNav; }
+            else if (IsKw("UNIQUE") && IsKwAt(1, "DIMENSION")) { Next(); Next(); uniq = ModelUniqueness.UniqueDimension; }
+            else if (IsKw("UNIQUE") && IsKwAt(1, "SINGLE")) { Next(); Next(); ExpectKw("REFERENCE"); uniq = ModelUniqueness.UniqueSingleReference; }
+            else break;
+        }
+    }
+
+    private ModelClause ParseModelClause()
+    {
+        var s = Next(); // MODEL
+        var mc = new ModelClause();
+        NavMode? nav = null; ModelUniqueness? uniq = null;
+        ParseCellOptions(ref nav, ref uniq);
+        mc.Nav = nav; mc.Uniqueness = uniq;
+        if (AcceptKw("RETURN"))
+        {
+            mc.Return = AcceptKw("UPDATED") ? ModelReturn.UpdatedRows : (AcceptKw("ALL") ? ModelReturn.AllRows : throw Fail("Expected UPDATED or ALL"));
+            ExpectKw("ROWS");
+        }
+        while (IsKw("REFERENCE"))
+        {
+            var rs = Next();
+            var rm = new ReferenceModel { Name = ParseIdentifier() };
+            ExpectKw("ON"); ExpectOp("(");
+            rm.Query = ParseSelectStatement();
+            ExpectOp(")");
+            ExpectKw("DIMENSION"); ExpectKw("BY");
+            rm.DimensionBy = ParseModelItems();
+            ExpectKw("MEASURES");
+            rm.Measures = ParseModelItems();
+            NavMode? rn = null; ModelUniqueness? ru = null;
+            ParseCellOptions(ref rn, ref ru);
+            rm.Nav = rn; rm.Uniqueness = ru;
+            mc.References.Add(Fin(rm, rs));
+        }
+        if (AcceptKw("MAIN")) mc.MainName = ParseIdentifier();
+        if (AcceptKw("PARTITION")) { ExpectKw("BY"); mc.PartitionBy = ParseModelItems(); }
+        ExpectKw("DIMENSION"); ExpectKw("BY");
+        mc.DimensionBy = ParseModelItems();
+        ExpectKw("MEASURES");
+        mc.Measures = ParseModelItems();
+        NavMode? mn = null; ModelUniqueness? mu = null;
+        ParseCellOptions(ref mn, ref mu);
+        mc.MainNav = mn; mc.MainUniqueness = mu;
+        ExpectKw("RULES");
+        if (AcceptKw("UPDATE")) mc.RulesMode = RulesMode.Update;
+        else if (AcceptKw("UPSERT")) mc.RulesMode = AcceptKw("ALL") ? RulesMode.UpsertAll : RulesMode.Upsert;
+        if (AcceptKw("AUTOMATIC")) { ExpectKw("ORDER"); mc.RulesOrder = RulesOrder.Automatic; }
+        else if (AcceptKw("SEQUENTIAL")) { ExpectKw("ORDER"); mc.RulesOrder = RulesOrder.Sequential; }
+        if (AcceptKw("ITERATE"))
+        {
+            ExpectOp("("); mc.Iterate = ParseExpr(); ExpectOp(")");
+            if (AcceptKw("UNTIL")) { ExpectOp("("); mc.IterateUntil = ParseExpr(); ExpectOp(")"); }
+        }
+        ExpectOp("(");
+        do mc.Rules.Add(ParseModelRule()); while (AcceptOp(","));
+        ExpectOp(")");
+        return Fin(mc, s);
+    }
+
+    private List<ExpressionSelectItem> ParseModelItems()
+    {
+        var list = new List<ExpressionSelectItem>();
+        ExpectOp("(");
+        do list.Add((ExpressionSelectItem)ParseSelectItem()); while (AcceptOp(","));
+        ExpectOp(")");
+        return list;
+    }
+
+    private ModelRule ParseModelRule()
+    {
+        var s = Cur;
+        var r = new ModelRule();
+        if (IsKw("UPDATE")) { Next(); r.Mode = RulesMode.Update; }
+        else if (IsKw("UPSERT")) { Next(); r.Mode = AcceptKw("ALL") ? RulesMode.UpsertAll : RulesMode.Upsert; }
+        r.Target = ParsePostfix();
+        if (IsKw("ORDER") && IsKwAt(1, "BY"))
+        {
+            Next(); Next();
+            do
+            {
+                var os = Cur;
+                var item = new OrderByItem { Expression = ParseAdditive() };
+                if (AcceptKw("DESC")) item.Descending = true; else AcceptKw("ASC");
+                if (AcceptKw("NULLS")) { if (AcceptKw("FIRST")) item.Nulls = NullsOrdering.First; else { ExpectKw("LAST"); item.Nulls = NullsOrdering.Last; } }
+                r.OrderBy.Add(Fin(item, os));
+            } while (AcceptOp(","));
+        }
+        ExpectOp("=");
+        r.Value = ParseExpr();
+        return Fin(r, s);
+    }
+
+    private Expression ParseSubscripts(Expression target, Token start)
+    {
+        ExpectOp("[");
+        var cr = new CellReference { Base = target };
+        do
+        {
+            if (IsKw("FOR")) cr.Subscripts.Add(ParseForIteration());
+            else cr.Subscripts.Add(ParseExpr());
+        } while (AcceptOp(","));
+        ExpectOp("]");
+        return Fin(cr, start);
+    }
+
+    private Expression ParseForIteration()
+    {
+        var s = Next(); // FOR
+        var fi = new ForIterationSubscript();
+        if (AcceptOp("(")) { fi.Dimensions = ParseIdentifierList(); ExpectOp(")"); }
+        else fi.Dimensions.Add(ParseIdentifier());
+        if (AcceptKw("IN"))
+        {
+            ExpectOp("(");
+            if (LooksLikeQuery()) fi.InQuery = ParseSelectStatement();
+            else do fi.InList.Add(ParseExpr()); while (AcceptOp(","));
+            ExpectOp(")");
+        }
+        else
+        {
+            if (AcceptKw("LIKE")) fi.LikePattern = ParseAdditive();
+            ExpectKw("FROM"); fi.From = ParseAdditive();
+            ExpectKw("TO"); fi.To = ParseAdditive();
+            if (AcceptKw("DECREMENT")) { fi.Decrement = true; fi.Step = ParseAdditive(); }
+            else if (AcceptKw("INCREMENT")) fi.Step = ParseAdditive();
+        }
+        return Fin(fi, s);
+    }
+
+    // ---- multitable INSERT ----
+
+    private Statement ParseMultiTableInsert(HintClause? hint, Token start)
+    {
+        var st = new MultiTableInsertStatement { Hint = hint };
+        if (!AcceptKw("ALL") && AcceptKw("FIRST")) st.First = true;
+        if (IsKw("WHEN"))
+        {
+            st.Conditional = true;
+            while (IsKw("WHEN"))
+            {
+                var bs = Next();
+                var branch = new MultiInsertBranch { When = ParseExpr() };
+                ExpectKw("THEN");
+                branch.Targets = ParseInsertIntos();
+                st.Branches.Add(Fin(branch, bs));
+            }
+            if (IsKw("ELSE"))
+            {
+                var es = Next();
+                st.Else = Fin(new MultiInsertBranch { Targets = ParseInsertIntos() }, es);
+            }
+        }
+        else
+        {
+            var bs = Cur;
+            st.Branches.Add(Fin(new MultiInsertBranch { Targets = ParseInsertIntos() }, bs));
+        }
+        st.Query = ParseSelectStatement();
+        return Fin(st, start);
+    }
+
+    private List<InsertIntoClause> ParseInsertIntos()
+    {
+        var list = new List<InsertIntoClause>();
+        if (!IsKw("INTO")) throw Fail($"Expected INTO but found {Describe(Cur)}");
+        while (IsKw("INTO"))
+        {
+            var s = Next();
+            var ic = new InsertIntoClause { Table = ParseTablePrimary() };
+            if (IsOp("(")) { Next(); ic.Columns = ParseIdentifierList(); ExpectOp(")"); }
+            if (AcceptKw("VALUES"))
+            {
+                ExpectOp("(");
+                do ic.Values.Add(ParseExpr()); while (AcceptOp(","));
+                ExpectOp(")");
+            }
+            list.Add(Fin(ic, s));
+        }
+        return list;
+    }
+}
