@@ -599,8 +599,8 @@ public sealed class WindowSpec : SqlNode
 public sealed class WindowFrame : SqlNode
 {
     public FrameUnit Unit { get; set; }
-    public new FrameBound Start { get; set; } = null!;
-    public new FrameBound? End { get; set; }
+    public FrameBound StartBound { get; set; } = null!;
+    public FrameBound? EndBound { get; set; }
 }
 
 public enum FrameUnit { Rows, Range, Groups }

@@ -139,7 +139,7 @@ public class QueryShapeTests
             "pattern=(PatternConcat items=[(PatternVariable name=STRT) (PatternQuantified inner=(PatternVariable name=DOWN) min=1) " +
             "(PatternQuantified inner=(PatternVariable name=UP) min=2 max=3 reluctant) " +
             "(PatternQuantified inner=(PatternGroup inner=(PatternAlternation items=[(PatternVariable name=A) (PatternVariable name=B)])) min=0) " +
-            "(PatternAnchor start) (PatternAnchor)]) " +
+            "(PatternAnchor isStart) (PatternAnchor)]) " +
             "subsets=[(PatternSubset name=U members=[STRT UP])] " +
             "define=[(PatternDefine variable=DOWN condition=(< PRICE (FunctionCall name=[PREV] arguments=[(Argument value=PRICE)]))) (PatternDefine variable=UP condition=(> PRICE (FunctionCall name=[PREV] arguments=[(Argument value=PRICE)])))] alias=M)",
             Shape.Of<MatchRecognizeTable>(sql));

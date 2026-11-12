@@ -731,11 +731,11 @@ public sealed partial class SqlParser
             var frame = new WindowFrame { Unit = Next().Value switch { "ROWS" => FrameUnit.Rows, "RANGE" => FrameUnit.Range, _ => FrameUnit.Groups } };
             if (AcceptKw("BETWEEN"))
             {
-                frame.Start = ParseFrameBound();
+                frame.StartBound = ParseFrameBound();
                 ExpectKw("AND");
-                frame.End = ParseFrameBound();
+                frame.EndBound = ParseFrameBound();
             }
-            else frame.Start = ParseFrameBound();
+            else frame.StartBound = ParseFrameBound();
             ws.Frame = Fin(frame, fs);
         }
         ExpectOp(")");

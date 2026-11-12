@@ -406,8 +406,8 @@ public static class SqlWriter
             {
                 if (any) Add(" ");
                 Add(w.Frame.Unit.ToString().ToUpperInvariant() + " ");
-                if (w.Frame.End != null) { Add("BETWEEN "); Bound(w.Frame.Start); Add(" AND "); Bound(w.Frame.End); }
-                else Bound(w.Frame.Start);
+                if (w.Frame.EndBound != null) { Add("BETWEEN "); Bound(w.Frame.StartBound); Add(" AND "); Bound(w.Frame.EndBound); }
+                else Bound(w.Frame.StartBound);
             }
             Add(")");
         }
@@ -730,7 +730,7 @@ public static class SqlWriter
             switch (p)
             {
                 case PatternVariable v: Id(v.Name); break;
-                case PatternAnchor a: Add(a.Start ? "^" : "$"); break;
+                case PatternAnchor a: Add(a.IsStart ? "^" : "$"); break;
                 case PatternConcat c: Sep(c.Items, Pattern, " "); break;
                 case PatternAlternation al: Sep(al.Items, Pattern, "|"); break;
                 case PatternGroup g: Add("("); Pattern(g.Inner); Add(")"); break;

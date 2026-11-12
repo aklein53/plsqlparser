@@ -276,7 +276,7 @@ public sealed partial class SqlParser
     private PatternNode ParsePatternPrimary()
     {
         var s = Cur;
-        if (AcceptOp("^")) return Fin(new PatternAnchor { Start = true }, s);
+        if (AcceptOp("^")) return Fin(new PatternAnchor { IsStart = true }, s);
         if (AcceptOp("$")) return Fin(new PatternAnchor(), s);
         if (AcceptOp("("))
         {
