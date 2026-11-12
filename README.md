@@ -82,7 +82,7 @@ user's query, so `OR`, `UNION` and `GROUP BY` inside it cannot bypass it. `Query
 `SqlWriter.ToSql(node)` prints any SELECT AST back to Oracle SQL (precedence-aware parentheses, so trees you edit
 print correctly); non-query statements throw `NotSupportedException`.
 
-Limits: output is Oracle SQL only (T-SQL needs ScriptDom); the generated SQL is verified by re-parsing, not by running it
+Limits: output is Oracle SQL only (T-SQL needs ScriptDom); the generated SQL is verified by re-parsing and, in the integration tests, by running it against a live Oracle 23 Free
 against a database; the user's top-level `ORDER BY` is moved outside the wrapper only when expressible on output columns.
 
 ## Integration tests
@@ -97,5 +97,5 @@ dotnet test tests/OracleSqlParser.IntegrationTests
 One container is started per test run (first run pulls the image; allow a few minutes). They check that (a) the SQL printed
 by `SqlWriter` is accepted by Oracle and returns the same columns and rows as the original query, (b) `QueryGuard.RestrictToIds`
 output executes and only returns permitted ids for both `AccessJoinStyle` values, and (c) every statement of the smoke
-corpus passes Oracle's own syntax check inside a scratch schema. If Docker is not available the tests are skipped, not failed.
+corpus passes Oracle's own syntax check inside a scratch schema (PL/SQL-only forms such as `SELECT ... INTO` are asserted to be rejected). Container startup is capped at 8 minutes (override with `ORACLE_TEST_STARTUP_TIMEOUT_SECONDS`); on timeout the tests are skipped with a clear message. If Docker is not available the tests are skipped, not failed.
 The default unit tests (`dotnet test tests/OracleSqlParser.Tests`) do not need Docker.

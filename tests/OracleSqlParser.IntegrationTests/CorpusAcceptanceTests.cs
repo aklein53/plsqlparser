@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Oracle.ManagedDataAccess.Client;
 using OracleSqlParser.Tests;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace OracleSqlParser.IntegrationTests;
 
@@ -13,7 +14,7 @@ namespace OracleSqlParser.IntegrationTests;
 /// is part of the outcome). Only errors from Oracle's syntax analysis fail the test.
 /// </summary>
 [Collection(OracleCollection.Name)]
-public class CorpusAcceptanceTests(OracleFixture db)
+public class CorpusAcceptanceTests(OracleFixture db, ITestOutputHelper output)
 {
     public static IEnumerable<string> Corpus()
     {
@@ -38,6 +39,19 @@ public class CorpusAcceptanceTests(OracleFixture db)
             "Oracle SQL has no ** operator (ORA-00936); exponentiation is POWER() in SQL, ** exists only in PL/SQL",
     };
 
+    /// <summary>
+    /// PL/SQL-only forms. Against a missing table Oracle reports ORA-00942 first (name resolution precedes the INTO / CURRENT OF
+    /// checks), which would look like "syntax accepted". So these run with a pre-created table T(id, a, b, col_a) in the scratch
+    /// schema, where Oracle reports the real error (ORA-00905 / ORA-03001 / ORA-00925). The test asserts the rejection.
+    /// </summary>
+    public static readonly Dictionary<string, string> PlsqlOnlyForms = new()
+    {
+        ["SELECT col_a INTO v_a FROM t WHERE id = 1"] = "PL/SQL-only form: SELECT INTO is not SQL (ORA-00905)",
+        ["SELECT col_a BULK COLLECT INTO v_tab FROM t"] = "PL/SQL-only form: BULK COLLECT INTO (ORA-03001)",
+        ["UPDATE t SET a = 1 WHERE CURRENT OF c1"] = "PL/SQL-only form: WHERE CURRENT OF cursor (ORA-03001)",
+        ["DELETE FROM t WHERE id = 1 RETURNING id BULK COLLECT INTO v"] = "PL/SQL-only form: RETURNING ... BULK COLLECT INTO (ORA-00925)",
+    };
+
     /// <summary>Multi-statement scripts cannot be sent as one command.</summary>
     private static readonly Dictionary<string, string> NotExecutable = new()
     {
@@ -47,23 +61,52 @@ public class CorpusAcceptanceTests(OracleFixture db)
     // Errors raised after Oracle has parsed the statement (missing objects / privileges / state): syntax was accepted.
     private static readonly HashSet<int> SemanticOra =
     [
-        942,   // table or view does not exist
-        904,   // invalid identifier
+        942,   // table or view does not exist (name resolution; runs before most clause-level checks, hence PlsqlOnlyForms uses a real table)
+        904,   // invalid identifier (column not found; resolved after the statement parsed)
         1031,  // insufficient privileges
-        955,   // name already used
+        955,   // name already used by an existing object
         2289,  // sequence does not exist
-        1008,  // not all variables bound
-        1086,  // savepoint never established
+        1008,  // not all variables bound (execution-time bind check)
+        1086,  // savepoint never established (runtime state)
         4043,  // object does not exist
-        2443, 2292, 2264, 2270, 2298, 2303, 1418, 1432, 1434, 1435, 4042, 4080, 12154, 1400, 1722, 957, 959,
+        2443,  // cannot drop constraint - nonexistent constraint
+        2292,  // integrity constraint violated - child record found
+        2264,  // name already used by an existing constraint
+        2270,  // no matching unique or primary key for this column list
+        2298,  // cannot validate - parent keys not found
+        2303,  // cannot drop or replace a type with type or table dependents
+        1418,  // specified index does not exist
+        1432,  // public synonym to be dropped does not exist
+        1434,  // private synonym to be dropped does not exist
+        1435,  // user does not exist
+        4042,  // procedure/function/package does not exist
+        4080,  // trigger does not exist
+        12154, // TNS could not resolve the connect identifier (database link target, looked up at execution)
+        1400,  // cannot insert NULL (constraint check on data)
+        1722,  // invalid number (data conversion at execution)
+        957,   // duplicate column name (semantic check of an already parsed definition)
+        959,   // tablespace does not exist
         1917, 1918, // user/role does not exist
-        1765, 1950, 12012, 12083, 12081, 14501, 14400, 1452, 1451, 1017,
-        1426, 1547, 1536, 12899, 1741,
+        1765,  // specifying owner's name in the object name is not allowed
+        1950,  // no privileges on tablespace
+        12012, // error on auto execute of job
+        12083, // must use ALTER MATERIALIZED VIEW to alter this object
+        12081, // update operation not allowed on table
+        14501, // object is not partitioned
+        14400, // inserted partition key does not map to any partition
+        1452,  // cannot create unique index; duplicate keys found
+        1451,  // column cannot be modified to NULL (already NULL)
+        1017,  // invalid username/password (e.g. CONNECT inside the corpus)
+        1426,  // numeric overflow
+        1547,  // failed to allocate extent (storage)
+        1536,  // space quota exceeded for tablespace
+        12899, // value too large for column
         12003, // materialized view does not exist
-        38305, // not in recycle bin
+        38305, // object not in recycle bin
         46401, // traditional AUDIT desupported (policy check after parsing)
         14100, // partition-extended name on remote object (semantic)
         6576,  // not a valid function or procedure name (CALL of a missing routine)
+        // NOT listed on purpose: 1741 (illegal zero-length identifier) is a lexical error; 905/923/925/933/3001 are syntax-level.
     ];
 
     private static bool IsPlsql(string sql) =>
@@ -89,9 +132,16 @@ public class CorpusAcceptanceTests(OracleFixture db)
         db.SkipIfUnavailable();
         Skip.If(NotExecutable.TryGetValue(sql, out var why), why);
 
-        var (outcome, detail) = await RunInScratchSchema(index, Prepare(sql));
+        var plsqlOnly = PlsqlOnlyForms.TryGetValue(sql, out var plsqlReason);
+        var (outcome, detail) = await RunInScratchSchema(index, Prepare(sql), plsqlOnly);
         lock (Report) Report.Add($"{outcome}\t{detail}\t{sql}");
+        output.WriteLine($"OUTCOME={outcome} DETAIL={detail} SQL={sql}");
 
+        if (plsqlOnly)
+        {
+            Assert.True(outcome == Outcome.Rejected, $"expected Oracle to reject this ({plsqlReason}) but outcome was {outcome}: {detail}");
+            return;
+        }
         if (KnownOracleRejects.TryGetValue(sql, out var reason))
         {
             Assert.True(outcome == Outcome.Rejected, $"expected Oracle to reject this ({reason}) but outcome was {outcome}: {detail}");
@@ -100,7 +150,7 @@ public class CorpusAcceptanceTests(OracleFixture db)
         Assert.True(outcome != Outcome.Rejected, $"Oracle rejected corpus statement:\n{sql}\n{detail}");
     }
 
-    private async Task<(Outcome, string)> RunInScratchSchema(int index, string sql)
+    private async Task<(Outcome, string)> RunInScratchSchema(int index, string sql, bool withTableT)
     {
         var user = $"SCR{index}";
         const string pw = "scratch_pw_1";
@@ -112,6 +162,7 @@ public class CorpusAcceptanceTests(OracleFixture db)
         try
         {
             await using var c = await db.OpenAsync(user, pw);
+            if (withTableT) await OracleFixture.ExecAsync(c, "CREATE TABLE t (id NUMBER, a NUMBER, b NUMBER, col_a NUMBER)");
             try
             {
                 await OracleFixture.ExecAsync(c, sql);
@@ -144,6 +195,8 @@ public class CorpusAcceptanceTests(OracleFixture db)
         string first = message.Split('\n')[0];
         if (ora == 6550 || message.Contains("PLS-")) return ClassifyPlsql(message.Replace('\n', ' '));
         // ORA-00942-class failures happen during semantic analysis, which runs after the whole statement parsed.
+        // ORA-20000..20999 are user-defined exceptions (RAISE_APPLICATION_ERROR): the PL/SQL block parsed and ran.
+        if (ora is >= 20000 and <= 20999) return (Outcome.SyntaxAcceptedSemanticError, first);
         return SemanticOra.Contains(ora) ? (Outcome.SyntaxAcceptedSemanticError, first) : (Outcome.Rejected, first);
     }
 

@@ -7,3 +7,4 @@ TestResults/
 *.nupkg
 *.snupkg
 artifacts/
+.claude/

@@ -22,29 +22,40 @@ public sealed class OracleFixture : IAsyncLifetime
     private OracleContainer? _container;
     private string _hostPort = "";
 
+    public const string TimeoutEnvVar = "ORACLE_TEST_STARTUP_TIMEOUT_SECONDS";
+
+    private static TimeSpan StartupTimeout() =>
+        int.TryParse(Environment.GetEnvironmentVariable(TimeoutEnvVar), out var secs) && secs > 0
+            ? TimeSpan.FromSeconds(secs)
+            : TimeSpan.FromMinutes(8);
+
     public string? SkipReason { get; private set; }
     public TimeSpan StartupTime { get; private set; }
 
     public async Task InitializeAsync()
     {
         var sw = Stopwatch.StartNew();
+        var timeout = StartupTimeout();
+        using var cts = new CancellationTokenSource(timeout);
         try
         {
             _container = new OracleBuilder(Image).WithPassword(SysPassword).Build();
-            await _container.StartAsync();
+            await _container.StartAsync(cts.Token).WaitAsync(cts.Token);
             _hostPort = $"{_container.Hostname}:{_container.GetMappedPublicPort(1521)}";
-            await using (var sys = await OpenAsync("SYSTEM", SysPassword))
+            await using (var sys = await OpenAsync("SYSTEM", SysPassword, cts.Token))
             {
-                await ExecAsync(sys, "CREATE USER app IDENTIFIED BY " + AppPassword + " QUOTA UNLIMITED ON USERS");
-                await ExecAsync(sys, "GRANT CREATE SESSION, CREATE TABLE, CREATE VIEW, CREATE SEQUENCE TO app");
+                await ExecAsync(sys, "CREATE USER app IDENTIFIED BY " + AppPassword + " QUOTA UNLIMITED ON USERS", cts.Token);
+                await ExecAsync(sys, "GRANT CREATE SESSION, CREATE TABLE, CREATE VIEW, CREATE SEQUENCE TO app", cts.Token);
             }
-            await using var app = await OpenAppAsync();
-            foreach (var stmt in Schema.Statements) await ExecAsync(app, stmt);
+            await using var app = await OpenAsync("APP", AppPassword, cts.Token);
+            foreach (var stmt in Schema.Statements) await ExecAsync(app, stmt, cts.Token);
         }
         catch (Exception e)
         {
-            SkipReason = $"Oracle container ({Image}) could not be started; is Docker running? {e.GetType().Name}: {e.Message}";
-            try { if (_container != null) await _container.DisposeAsync(); } catch { }
+            SkipReason = cts.IsCancellationRequested
+                ? $"Oracle container ({Image}) did not become ready within {timeout.TotalSeconds:F0}s (override with {TimeoutEnvVar}); tests skipped."
+                : $"Oracle container ({Image}) could not be started; is Docker running? {e.GetType().Name}: {e.Message}";
+            try { if (_container != null) await _container.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(60)); } catch { }
             _container = null;
         }
         StartupTime = sw.Elapsed;
@@ -57,21 +68,21 @@ public sealed class OracleFixture : IAsyncLifetime
 
     private string ConnectionString(string user, string pw) => $"User Id={user};Password={pw};Data Source={_hostPort}/FREEPDB1;Connection Timeout=60;Pooling=false";
 
-    public async Task<OracleConnection> OpenAsync(string user, string pw)
+    public async Task<OracleConnection> OpenAsync(string user, string pw, CancellationToken ct = default)
     {
         var c = new OracleConnection(ConnectionString(user, pw));
-        await c.OpenAsync();
+        await c.OpenAsync(ct);
         return c;
     }
 
     public Task<OracleConnection> OpenAppAsync() => OpenAsync("APP", AppPassword);
     public Task<OracleConnection> OpenSystemAsync() => OpenAsync("SYSTEM", SysPassword);
 
-    public static async Task ExecAsync(OracleConnection c, string sql)
+    public static async Task ExecAsync(OracleConnection c, string sql, CancellationToken ct = default)
     {
         await using var cmd = c.CreateCommand();
         cmd.CommandText = sql;
-        await cmd.ExecuteNonQueryAsync();
+        await cmd.ExecuteNonQueryAsync(ct);
     }
 
     /// <summary>Runs a query and returns column names plus every row rendered as strings (NULL as "&lt;null&gt;").</summary>
@@ -91,6 +102,13 @@ public sealed class OracleFixture : IAsyncLifetime
             for (int i = 0; i < r.FieldCount; i++)
             {
                 if (await r.IsDBNullAsync(i)) { row.Add("<null>"); continue; }
+                // NUMBER can exceed System.Decimal's range/precision (e.g. MONTHS_BETWEEN); compare the exact Oracle decimal text.
+                if (r.GetFieldType(i) == typeof(decimal))
+                {
+                    var od = ((OracleDataReader)r).GetOracleDecimal(i);
+                    row.Add(od.ToString());
+                    continue;
+                }
                 row.Add(r.GetValue(i) switch
                 {
                     DateTime d => d.ToString("yyyy-MM-dd HH:mm:ss.fffffff", CultureInfo.InvariantCulture),
