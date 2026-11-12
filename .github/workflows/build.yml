@@ -1,0 +1,71 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - name: Restore
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      # Unit tests only. Integration tests (if any) need Docker and are run separately.
+      - name: Test
+        run: dotnet test tests/OracleSqlParser.Tests --configuration Release --no-build
+      - name: Pack
+        run: dotnet pack src/OracleSqlParser --configuration Release --no-build --output ./artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Validate tag matches csproj version
+        run: |
+          csproj_version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/OracleSqlParser/OracleSqlParser.csproj | head -n1)
+          tag_version="${GITHUB_REF_NAME#v}"
+          if [ -z "$csproj_version" ]; then
+            echo "::error::Could not find <Version> in src/OracleSqlParser/OracleSqlParser.csproj"
+            exit 1
+          fi
+          if [ "$csproj_version" != "$tag_version" ]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' (version '$tag_version') does not match csproj <Version> '$csproj_version'. Bump the csproj or retag."
+            exit 1
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: ./artifacts
+      - name: NuGet login (Trusted Publishing)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: aklein53
+      - name: Push to nuget.org
+        run: dotnet nuget push "artifacts/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate

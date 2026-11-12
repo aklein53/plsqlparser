@@ -6,20 +6,25 @@ A hand-written lexer and recursive-descent parser for Oracle SQL that builds an 
 ## Installing
 
 ```
-dotnet add package OracleSqlParser --prerelease
+dotnet add package PlsqlParser --prerelease
 ```
+
+The NuGet package is `PlsqlParser`, while the C# namespace (and assembly) is `OracleSqlParser`.
 
 Targets `net8.0` and `net10.0`. Versions are published as pre-releases (`0.1.0-preview.N`) until the API stabilises.
 
 ## Releasing
 
-1. Bump `<Version>` in `src/OracleSqlParser/OracleSqlParser.csproj` (e.g. `0.1.0-preview.2`).
-2. Commit, then tag the commit with the matching `v`-prefixed version: `git tag v0.1.0-preview.2`.
-3. Push the tag: `git push origin v0.1.0-preview.2`.
+Publishing uses nuget.org Trusted Publishing (GitHub OIDC) bound to `.github/workflows/build.yml`; no API key
+secret is required.
 
-The `Release` workflow checks that the tag matches the csproj `<Version>`, builds, tests, packs, and pushes the
-package to nuget.org. It requires a repository secret named `NUGET_API_KEY` (a nuget.org API key with push rights
-for the package).
+1. Bump `<Version>` in `src/OracleSqlParser/OracleSqlParser.csproj` (e.g. `0.1.0-preview.2`) and commit.
+2. Tag the commit with the matching `v`-prefixed version: `git tag vX.Y.Z-preview.N` (e.g. `v0.1.0-preview.2`).
+3. Push the tag: `git push origin vX.Y.Z-preview.N`.
+
+The `Build` workflow runs on every push and pull request; its `publish` job runs only on `v*` tags. It checks that
+the tag matches the csproj `<Version>`, then exchanges the GitHub OIDC token for a short-lived key and pushes the
+package built by the `build` job to nuget.org.
 
 ## Library
 
