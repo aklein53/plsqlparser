@@ -131,7 +131,7 @@ public sealed class MatchRecognizeTable : TableReference
 
 public abstract class PatternNode : SqlNode { }
 public sealed class PatternVariable : PatternNode { public Identifier Name { get; set; } = null!; }
-public sealed class PatternAnchor : PatternNode { public bool Start { get; set; } }
+public sealed class PatternAnchor : PatternNode { public new bool Start { get; set; } }
 public sealed class PatternConcat : PatternNode { public List<PatternNode> Items { get; set; } = []; }
 public sealed class PatternAlternation : PatternNode { public List<PatternNode> Items { get; set; } = []; }
 public sealed class PatternGroup : PatternNode { public PatternNode Inner { get; set; } = null!; }

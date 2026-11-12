@@ -3,6 +3,24 @@
 A hand-written lexer and recursive-descent parser for Oracle SQL that builds an abstract syntax tree
 (similar in spirit to Microsoft's `TSqlParser`/ScriptDom). .NET 10, no dependencies.
 
+## Installing
+
+```
+dotnet add package OracleSqlParser --prerelease
+```
+
+Targets `net8.0` and `net10.0`. Versions are published as pre-releases (`0.1.0-preview.N`) until the API stabilises.
+
+## Releasing
+
+1. Bump `<Version>` in `src/OracleSqlParser/OracleSqlParser.csproj` (e.g. `0.1.0-preview.2`).
+2. Commit, then tag the commit with the matching `v`-prefixed version: `git tag v0.1.0-preview.2`.
+3. Push the tag: `git push origin v0.1.0-preview.2`.
+
+The `Release` workflow checks that the tag matches the csproj `<Version>`, builds, tests, packs, and pushes the
+package to nuget.org. It requires a repository secret named `NUGET_API_KEY` (a nuget.org API key with push rights
+for the package).
+
 ## Library
 
 ```csharp
