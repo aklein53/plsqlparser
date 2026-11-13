@@ -183,7 +183,7 @@ Console.WriteLine(r.Tokens[stmt.LastTokenIndex].Text);            // t
 
 - `ParseResult.Tokens` is the complete lexer output. Optimizer hints the parser does not use are still listed there, though they are absent from the parser's own view of the stream.
 - `Token.LeadingTrivia` lists the whitespace and comments (`TriviaKind.Whitespace`, `LineComment`, `BlockComment`) between the previous token and this one. Each `Trivia` has its `Text` and source `Start`/`End`.
-- `SqlNode.FirstTokenIndex` and `LastTokenIndex` are indexes into `ParseResult.Tokens`. `Tokens[node.FirstTokenIndex].Start == node.Start` and `Tokens[node.LastTokenIndex].End == node.End` for every parsed node. Nodes built in code, and nodes from `ParseStatement`/`ParseExpression`, have -1.
+- `SqlNode.FirstTokenIndex` and `LastTokenIndex` are indexes into `ParseResult.Tokens`. `Tokens[node.FirstTokenIndex].Start == node.Start` and `Tokens[node.LastTokenIndex].End == node.End` for every parsed node. -1 means the node has no position in `ParseResult.Tokens`: this covers nodes built in code, nodes from `ParseStatement`/`ParseExpression`, and the argument nodes inside a `/*+ ... */` hint (the hint's own `HintClause`/`HintItem` do get indexes).
 - Reconstruction invariant: for every token in order, append its leading trivia text, then `source[token.Start..token.End]`. The result is the original input exactly, so no text between tokens is lost.
 
 ## Roadmap
