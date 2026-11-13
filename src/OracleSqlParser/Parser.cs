@@ -36,7 +36,7 @@ public sealed partial class SqlParser
     public static ParseResult Parse(string sql, ParseOptions? options)
     {
         var errors = new List<ParseError>();
-        var tokens = TokenizeLenient(sql, errors);
+        var tokens = TokenizeLenient(sql, errors, options?.SubstitutionEnabled ?? true);
         var parser = new SqlParser(tokens, sql, options);
         parser._lexErrors = errors.ToList();
         var script = parser.ParseScript(errors);
@@ -49,7 +49,7 @@ public sealed partial class SqlParser
     /// <summary>Parses a single expression with explicit options; throws ParseException on error.</summary>
     public static Expression ParseExpression(string sql, ParseOptions? options)
     {
-        var p = new SqlParser(Lexer.Tokenize(sql), sql, options);
+        var p = new SqlParser(Lexer.Tokenize(sql, options?.SubstitutionEnabled ?? true), sql, options);
         var e = p.ParseExpr();
         if (p.Cur.Type != TokenType.EOF) throw p.Fail($"Unexpected '{p.Cur.Text}' after expression");
         return e;
@@ -61,16 +61,16 @@ public sealed partial class SqlParser
     /// <summary>Parses a single statement with explicit options; throws ParseException on error.</summary>
     public static Statement ParseStatement(string sql, ParseOptions? options)
     {
-        var p = new SqlParser(Lexer.Tokenize(sql), sql, options);
+        var p = new SqlParser(Lexer.Tokenize(sql, options?.SubstitutionEnabled ?? true), sql, options);
         var s = p.ParseStatementCore();
         while (p.AcceptOp(";") || p.AcceptOp("/")) { }
         if (p.Cur.Type != TokenType.EOF) throw p.Fail($"Unexpected '{p.Cur.Text}' after statement");
         return s;
     }
 
-    private static List<Token> TokenizeLenient(string sql, List<ParseError> errors)
+    private static List<Token> TokenizeLenient(string sql, List<ParseError> errors, bool substitutionEnabled)
     {
-        var lx = new Lexer(sql);
+        var lx = new Lexer(sql, substitutionEnabled);
         var list = new List<Token>();
         while (true)
         {

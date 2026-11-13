@@ -52,7 +52,7 @@ fuzz) and were re-verified by hand where cited.
 - [x] Every node gets `FirstTokenIndex` / `LastTokenIndex` (ScriptDom's model) in addition to character spans.
 - [x] Format-preserving rewrite: `SourceEditor` applies edits by span so untouched user text, comments and layout
   survive; generator used only for new/replaced nodes.
-- [ ] Honour `SET DEFINE OFF` for `&` handling in scripts.
+- [x] Honour `SET DEFINE OFF` for `&` handling in scripts.
 
 ## Epic 4 — Syntax coverage (all rejections today; none are mis-parses) · S/M each
 

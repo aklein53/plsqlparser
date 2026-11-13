@@ -56,16 +56,26 @@ public sealed class Lexer
     private readonly List<string> _words = [];
     private bool _pendingSemi;
     private readonly List<Trivia> _trivia = [];
+    // Substitution variables: '&' (or the character set by SQL*Plus "SET DEFINE <char>") starts one while _define is on.
+    private bool _define;
+    private char _prefix = '&';
+    private int _setState; // SQL*Plus SET DEFINE detection: 1 = saw SET at line start, 2 = saw SET DEFINE
 
     /// <summary>Lexical errors recorded so far (the lexer recovers and keeps going).</summary>
     public List<ParseError> Errors { get; } = [];
 
-    public Lexer(string sql) => _s = sql;
+    /// <param name="sql">The text to tokenise.</param>
+    /// <param name="substitutionEnabled">False when substitution variables are off from the start (<see cref="ParseOptions.SubstitutionEnabled"/>).</param>
+    public Lexer(string sql, bool substitutionEnabled = true)
+    {
+        _s = sql;
+        _define = substitutionEnabled;
+    }
 
     /// <summary>Tokenises the whole input; throws <see cref="ParseException"/> for the first lexical error.</summary>
-    public static List<Token> Tokenize(string sql)
+    public static List<Token> Tokenize(string sql, bool substitutionEnabled = true)
     {
-        var lx = new Lexer(sql);
+        var lx = new Lexer(sql, substitutionEnabled);
         var list = new List<Token>();
         while (true)
         {
@@ -97,6 +107,7 @@ public sealed class Lexer
     public Token Next()
     {
         var t = NextCore();
+        ObserveSetDefine(t);
         if (_trivia.Count > 0)
         {
             t = t with { LeadingTrivia = _trivia.ToArray() };
@@ -198,10 +209,10 @@ public sealed class Lexer
         string[] two = ["||", "**", "<>", "!=", "^=", "~=", "<=", ">=", "=>", "..", "->", "<<", ">>"];
         foreach (var op in two)
             if (c == op[0] && Peek() == op[1]) { Advance(); Advance(); return Make(TokenType.Operator, start, line, col); }
-        if (c == '&' && (char.IsLetterOrDigit(Peek()) || Peek() == '&' || Peek() == '_'))
+        if (_define && c == _prefix && (char.IsLetterOrDigit(Peek()) || Peek() == _prefix || Peek() == '_'))
         {
             Advance();
-            bool persistent = Cur == '&';
+            bool persistent = Cur == _prefix;
             if (persistent) Advance();
             int ns = _i;
             while (char.IsLetterOrDigit(Cur) || Cur is '_' or '$' or '#') Advance();
@@ -217,6 +228,42 @@ public sealed class Lexer
         }
         Advance();
         return Make(TokenType.Operator, start, line, col); // unknown character: let the parser decide (SQL*Plus lines may contain any text)
+    }
+
+    /// <summary>
+    /// Recognises a SQL*Plus <c>SET DEFINE ON | OFF | &lt;char&gt;</c> (also <c>DEF</c>) that is the first thing on its
+    /// line and is followed only by the end of the line or ';'. Later tokens are lexed with the new setting.
+    /// </summary>
+    private void ObserveSetDefine(Token t)
+    {
+        switch (_setState)
+        {
+            case 1 when t.Type == TokenType.Identifier && t.Value is "DEFINE" or "DEF":
+                _setState = 2;
+                return;
+            case 2:
+                _setState = 0;
+                if (!IsRestOfLineBlank(t.End)) return;
+                if (t.Type == TokenType.Identifier && t.Value == "OFF") _define = false;
+                else if (t.Type == TokenType.Identifier && t.Value == "ON") { _define = true; _prefix = '&'; }
+                else if (t.Type == TokenType.Operator && t.Text.Length == 1 && t.Text != ";") { _define = true; _prefix = t.Text[0]; }
+                return;
+        }
+        _setState = t.Type == TokenType.Identifier && t.Value == "SET" && IsAtLineStart(t.Start) ? 1 : 0;
+    }
+
+    private bool IsAtLineStart(int start)
+    {
+        int i = start;
+        while (i > 0 && _s[i - 1] is ' ' or '\t') i--;
+        return i == 0 || _s[i - 1] == '\n';
+    }
+
+    private bool IsRestOfLineBlank(int end)
+    {
+        int i = end;
+        while (i < _s.Length && _s[i] is ' ' or '\t' or '\r') i++;
+        return i >= _s.Length || _s[i] is '\n' or ';' || (_s[i] == '-' && i + 1 < _s.Length && _s[i + 1] == '-');
     }
 
     private void AddTrivia(TriviaKind kind, int start) =>
