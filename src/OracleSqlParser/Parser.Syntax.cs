@@ -9,7 +9,7 @@ public sealed partial class SqlParser
     {
         var list = new List<SyntaxItem>();
         int prog12 = -1;
-        while (Cur.Type != TokenType.EOF && !IsOp(")") && !stop() && Progress(ref prog12)) list.Add(ParseSyntaxItem());
+        while (Cur.Type != TokenType.EOF && !IsOp(")") && !IsOp(";") && !stop() && Progress(ref prog12)) list.Add(ParseSyntaxItem());
         return list;
     }
 

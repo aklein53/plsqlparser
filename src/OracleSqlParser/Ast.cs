@@ -3,6 +3,10 @@ using System.Reflection;
 
 namespace OracleSqlParser;
 
+/// <summary>Marks a property that records source spelling only (not meaning); <see cref="AstPrinter"/> leaves it out so shapes compare semantically.</summary>
+[AttributeUsage(AttributeTargets.Property)]
+internal sealed class SpellingOnlyAttribute : Attribute { }
+
 /// <summary>
 /// Base class of every AST node. Start/End are character offsets into the source text.
 /// Parsing (<see cref="SqlParser"/>) is thread-safe: every call uses its own state. Trees are mutable and
@@ -322,7 +326,7 @@ public sealed class Identifier : SqlNode
     public string Value { get; set; } = "";
     public bool Quoted { get; set; }
     /// <summary>The name exactly as typed (without quotes); null for synthesized identifiers. Used by <see cref="SqlScriptGenerator"/> to preserve case.</summary>
-    public string? Text { get; set; }
+    [SpellingOnly] public string? Text { get; set; }
     public override string ToString() => Value;
 }
 

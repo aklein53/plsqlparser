@@ -14,7 +14,7 @@ public sealed class WordItem : SyntaxItem
     public string Value { get; set; } = "";
     public bool Quoted { get; set; }
     /// <summary>The word as typed (without quotes); null for synthesized items.</summary>
-    public string? Text { get; set; }
+    [SpellingOnly] public string? Text { get; set; }
 }
 
 public sealed class LiteralItem : SyntaxItem

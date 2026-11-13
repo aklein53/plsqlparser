@@ -104,6 +104,7 @@ public static class AstPrinter
         for (int pi = skip; pi < props.Length; pi++)
         {
             var p = props[pi];
+            if (p.IsDefined(typeof(SpellingOnlyAttribute), false)) continue;
             var v = p.GetValue(n);
             if (v == null) continue;
             if (v is bool bv)
