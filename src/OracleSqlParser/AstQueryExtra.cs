@@ -2,7 +2,7 @@ namespace OracleSqlParser;
 
 // ---------- Table reference modifiers ----------
 
-public sealed class SampleClause : SqlNode
+public sealed partial class SampleClause : SqlNode
 {
     public bool Block { get; set; }
     public Expression Percent { get; set; } = null!;
@@ -13,7 +13,7 @@ public enum FlashbackMode { AsOf, VersionsBetween }
 public enum FlashbackUnit { Scn, Timestamp, Period }
 
 /// <summary>AS OF SCN|TIMESTAMP|PERIOD FOR p expr, or VERSIONS BETWEEN SCN|TIMESTAMP a AND b.</summary>
-public sealed class FlashbackClause : SqlNode
+public sealed partial class FlashbackClause : SqlNode
 {
     public FlashbackMode Mode { get; set; }
     public FlashbackUnit Unit { get; set; }
@@ -23,7 +23,7 @@ public sealed class FlashbackClause : SqlNode
     public Expression? ToValue { get; set; }
 }
 
-public sealed class PivotTable : TableReference
+public sealed partial class PivotTable : TableReference
 {
     public TableReference Source { get; set; } = null!;
     public bool Xml { get; set; }
@@ -34,19 +34,19 @@ public sealed class PivotTable : TableReference
     public SelectStatement? InSubquery { get; set; }
 }
 
-public sealed class PivotAggregate : SqlNode
+public sealed partial class PivotAggregate : SqlNode
 {
     public Expression Function { get; set; } = null!;
     public Identifier? Alias { get; set; }
 }
 
-public sealed class PivotInItem : SqlNode
+public sealed partial class PivotInItem : SqlNode
 {
     public Expression Value { get; set; } = null!;
     public Identifier? Alias { get; set; }
 }
 
-public sealed class UnpivotTable : TableReference
+public sealed partial class UnpivotTable : TableReference
 {
     public TableReference Source { get; set; } = null!;
     public bool IncludeNulls { get; set; }
@@ -55,13 +55,13 @@ public sealed class UnpivotTable : TableReference
     public List<UnpivotInItem> InItems { get; set; } = [];
 }
 
-public sealed class UnpivotInItem : SqlNode
+public sealed partial class UnpivotInItem : SqlNode
 {
     public List<ColumnReference> Columns { get; set; } = [];
     public Expression? AliasValue { get; set; }
 }
 
-public sealed class XmlNamespace : SqlNode
+public sealed partial class XmlNamespace : SqlNode
 {
     public Expression Uri { get; set; } = null!;
     public Identifier? Alias { get; set; }
@@ -70,7 +70,7 @@ public sealed class XmlNamespace : SqlNode
 }
 
 /// <summary>XMLTABLE(...) in a FROM clause.</summary>
-public sealed class XmlTable : TableReference
+public sealed partial class XmlTable : TableReference
 {
     public List<XmlNamespace> Namespaces { get; set; } = [];
     public Expression XQuery { get; set; } = null!;
@@ -79,7 +79,7 @@ public sealed class XmlTable : TableReference
 }
 
 /// <summary>JSON_TABLE(...) in a FROM clause.</summary>
-public sealed class JsonTable : TableReference
+public sealed partial class JsonTable : TableReference
 {
     public Expression Input { get; set; } = null!;
     public FormatClause? InputFormat { get; set; }
@@ -90,7 +90,7 @@ public sealed class JsonTable : TableReference
 }
 
 /// <summary>Column definition inside XMLTABLE/JSON_TABLE COLUMNS (...).</summary>
-public sealed class PathColumn : SqlNode
+public sealed partial class PathColumn : SqlNode
 {
     public Identifier? Name { get; set; }
     public bool ForOrdinality { get; set; }
@@ -112,7 +112,7 @@ public enum RowsPerMatch { OneRow, AllRows }
 public enum AllRowsMode { ShowEmptyMatches, OmitEmptyMatches, WithUnmatchedRows }
 public enum SkipKind { PastLastRow, ToNextRow, ToFirst, ToLast }
 
-public sealed class MatchRecognizeTable : TableReference
+public sealed partial class MatchRecognizeTable : TableReference
 {
     public TableReference Source { get; set; } = null!;
     public List<Expression> PartitionBy { get; set; } = [];
@@ -129,16 +129,16 @@ public sealed class MatchRecognizeTable : TableReference
     public List<PatternDefine> Define { get; set; } = [];
 }
 
-public abstract class PatternNode : SqlNode { }
-public sealed class PatternVariable : PatternNode { public Identifier Name { get; set; } = null!; }
-public sealed class PatternAnchor : PatternNode { public bool IsStart { get; set; } }
-public sealed class PatternConcat : PatternNode { public List<PatternNode> Items { get; set; } = []; }
-public sealed class PatternAlternation : PatternNode { public List<PatternNode> Items { get; set; } = []; }
-public sealed class PatternGroup : PatternNode { public PatternNode Inner { get; set; } = null!; }
-public sealed class PatternPermute : PatternNode { public List<PatternNode> Items { get; set; } = []; }
-public sealed class PatternExclusion : PatternNode { public PatternNode Inner { get; set; } = null!; }
+public abstract partial class PatternNode : SqlNode { }
+public sealed partial class PatternVariable : PatternNode { public Identifier Name { get; set; } = null!; }
+public sealed partial class PatternAnchor : PatternNode { public bool IsStart { get; set; } }
+public sealed partial class PatternConcat : PatternNode { public List<PatternNode> Items { get; set; } = []; }
+public sealed partial class PatternAlternation : PatternNode { public List<PatternNode> Items { get; set; } = []; }
+public sealed partial class PatternGroup : PatternNode { public PatternNode Inner { get; set; } = null!; }
+public sealed partial class PatternPermute : PatternNode { public List<PatternNode> Items { get; set; } = []; }
+public sealed partial class PatternExclusion : PatternNode { public PatternNode Inner { get; set; } = null!; }
 
-public sealed class PatternQuantified : PatternNode
+public sealed partial class PatternQuantified : PatternNode
 {
     public PatternNode Inner { get; set; } = null!;
     public int Min { get; set; }
@@ -147,20 +147,20 @@ public sealed class PatternQuantified : PatternNode
     public bool Reluctant { get; set; }
 }
 
-public sealed class PatternSubset : SqlNode
+public sealed partial class PatternSubset : SqlNode
 {
     public Identifier Name { get; set; } = null!;
     public List<Identifier> Members { get; set; } = [];
 }
 
-public sealed class PatternDefine : SqlNode
+public sealed partial class PatternDefine : SqlNode
 {
     public Identifier Variable { get; set; } = null!;
     public Expression Condition { get; set; } = null!;
 }
 
 /// <summary>GRAPH_TABLE(graph MATCH ... COLUMNS (...)): body kept as a token tree (see COVERAGE.md).</summary>
-public sealed class GraphTable : TableReference
+public sealed partial class GraphTable : TableReference
 {
     public List<Identifier> Graph { get; set; } = [];
     public List<SyntaxItem> Body { get; set; } = [];
@@ -174,7 +174,7 @@ public enum ModelReturn { UpdatedRows, AllRows }
 public enum RulesMode { Update, Upsert, UpsertAll }
 public enum RulesOrder { Automatic, Sequential }
 
-public sealed class ModelClause : SqlNode
+public sealed partial class ModelClause : SqlNode
 {
     public NavMode? Nav { get; set; }
     public ModelUniqueness? Uniqueness { get; set; }
@@ -193,7 +193,7 @@ public sealed class ModelClause : SqlNode
     public List<ModelRule> Rules { get; set; } = [];
 }
 
-public sealed class ReferenceModel : SqlNode
+public sealed partial class ReferenceModel : SqlNode
 {
     public Identifier Name { get; set; } = null!;
     public SelectStatement Query { get; set; } = null!;
@@ -203,7 +203,7 @@ public sealed class ReferenceModel : SqlNode
     public ModelUniqueness? Uniqueness { get; set; }
 }
 
-public sealed class ModelRule : SqlNode
+public sealed partial class ModelRule : SqlNode
 {
     public RulesMode? Mode { get; set; }
     public Expression Target { get; set; } = null!;
@@ -212,14 +212,14 @@ public sealed class ModelRule : SqlNode
 }
 
 /// <summary>Measure[subscripts], e.g. sales['x', 2000]; subscripts may be ForIterationSubscript.</summary>
-public sealed class CellReference : Expression
+public sealed partial class CellReference : Expression
 {
     public Expression Base { get; set; } = null!;
     public List<Expression> Subscripts { get; set; } = [];
 }
 
 /// <summary>(VALUES (..), (..)) table value constructor, optionally followed by an alias column list.</summary>
-public sealed class ValuesTable : TableReference
+public sealed partial class ValuesTable : TableReference
 {
     public List<List<Expression>> Rows { get; set; } = [];
     public List<Identifier> ColumnAliases { get; set; } = [];
@@ -227,33 +227,33 @@ public sealed class ValuesTable : TableReference
 
 // ---------- Misc expressions ----------
 
-public sealed class MemberAccess : Expression
+public sealed partial class MemberAccess : Expression
 {
     public Expression Target { get; set; } = null!;
     public Identifier Member { get; set; } = null!;
 }
 
 /// <summary>Method call on an expression: <c>target.name(args)</c>, e.g. <c>UTL_HTTP.REQUEST(url).foo()</c>.</summary>
-public sealed class MethodCall : Expression
+public sealed partial class MethodCall : Expression
 {
     public Expression Target { get; set; } = null!;
     public Identifier Name { get; set; } = null!;
     public List<Argument> Arguments { get; set; } = [];
 }
 
-public sealed class CursorExpression : Expression
+public sealed partial class CursorExpression : Expression
 {
     public SelectStatement Query { get; set; } = null!;
 }
 
-public sealed class CurrentOfExpression : Expression
+public sealed partial class CurrentOfExpression : Expression
 {
     public Identifier Cursor { get; set; } = null!;
 }
 
 // ---------- Multitable INSERT ----------
 
-public sealed class MultiTableInsertStatement : DmlStatement
+public sealed partial class MultiTableInsertStatement : DmlStatement
 {
     public bool First { get; set; }
     public bool Conditional { get; set; }
@@ -262,13 +262,13 @@ public sealed class MultiTableInsertStatement : DmlStatement
     public SelectStatement Query { get; set; } = null!;
 }
 
-public sealed class MultiInsertBranch : SqlNode
+public sealed partial class MultiInsertBranch : SqlNode
 {
     public Expression? When { get; set; }
     public List<InsertIntoClause> Targets { get; set; } = [];
 }
 
-public sealed class InsertIntoClause : SqlNode
+public sealed partial class InsertIntoClause : SqlNode
 {
     public TableReference Table { get; set; } = null!;
     public List<Identifier> Columns { get; set; } = [];

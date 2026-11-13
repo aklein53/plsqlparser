@@ -97,7 +97,7 @@ public static class AstJson
             w.WriteEndObject();
         }
         stack.Push(EndObject);
-        var props = SqlNode.NodeProperties(node.GetType());
+        var props = AstReflection.NodeProperties(node.GetType());
         for (int i = props.Length - 1; i >= 0; i--)
             stack.Push(new Prop(Camel(props[i].Name), props[i].GetValue(node)));
     }

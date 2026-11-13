@@ -3,7 +3,7 @@ namespace OracleSqlParser;
 public sealed class ParseResult
 {
     public SqlScript Script { get; init; } = new();
-    public List<ParseError> Errors { get; init; } = [];
+    public IReadOnlyList<ParseError> Errors { get; init; } = [];
     public bool Success => Errors.Count == 0;
 }
 

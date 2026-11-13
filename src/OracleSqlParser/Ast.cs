@@ -1,45 +1,56 @@
-using System.Collections;
-using System.Reflection;
-
 namespace OracleSqlParser;
 
 /// <summary>Marks a property that records source spelling only (not meaning); <see cref="AstPrinter"/> leaves it out so shapes compare semantically.</summary>
 [AttributeUsage(AttributeTargets.Property)]
-internal sealed class SpellingOnlyAttribute : Attribute { }
+internal sealed partial class SpellingOnlyAttribute : Attribute { }
 
 /// <summary>
-/// Base class of every AST node. Start/End are character offsets into the source text.
+/// Base class of every AST node. Start/End are character offsets into the source text; Line/Column are 1-based.
+/// Nodes created in code (not by the parser) have zero spans; the span setters are internal.
 /// Parsing (<see cref="SqlParser"/>) is thread-safe: every call uses its own state. Trees are mutable and
 /// are NOT thread-safe; do not share a tree between threads while any of them may modify it.
 /// </summary>
-public abstract class SqlNode
+/// <remarks>
+/// The per-type members (<c>GetChildren</c>, <c>Accept</c>, <c>AcceptChildren</c>, rewriting, cloning and comparison)
+/// are generated into <c>Generated/*.g.cs</c> by <c>tools/AstGen</c>; the virtual members below are only the
+/// fallbacks that let the library compile while that code is being (re)generated.
+/// </remarks>
+public abstract partial class SqlNode
 {
-    public int Start { get; set; }
-    public int End { get; set; }
-    public int Line { get; set; }
-    public int Column { get; set; }
+    /// <summary>Character offset of the first character of this node in the source text.</summary>
+    public int Start { get; internal set; }
+    /// <summary>Character offset just past the last character of this node.</summary>
+    public int End { get; internal set; }
+    /// <summary>1-based line of <see cref="Start"/>.</summary>
+    public int Line { get; internal set; }
+    /// <summary>1-based column of <see cref="Start"/>.</summary>
+    public int Column { get; internal set; }
 
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, PropertyInfo[]> PropertyCache = new();
-
-    /// <summary>Public instance properties declared below <see cref="SqlNode"/>, in declaration order (cached per type).</summary>
-    internal static PropertyInfo[] NodeProperties(Type type) =>
-        PropertyCache.GetOrAdd(type, t => t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.DeclaringType != typeof(SqlNode) && p.GetIndexParameters().Length == 0).ToArray());
+    /// <summary>Direct child nodes, in property declaration order (nested lists are flattened). Generated per node type; no reflection.</summary>
+    public virtual IEnumerable<SqlNode> GetChildren() => [];
 
     /// <summary>Direct child nodes, in property declaration order (nested lists are flattened).</summary>
-    public IEnumerable<SqlNode> Children()
-    {
-        foreach (var p in NodeProperties(GetType()))
-            foreach (var n in Nodes(p.GetValue(this))) yield return n;
-    }
+    public IEnumerable<SqlNode> Children() => GetChildren();
 
-    private static IEnumerable<SqlNode> Nodes(object? v)
-    {
-        if (v is SqlNode n) yield return n;
-        else if (v is IEnumerable e and not string)
-            foreach (var item in e)
-                foreach (var c in Nodes(item)) yield return c;
-    }
+    /// <summary>Calls <c>visitor.ExplicitVisit(this)</c> (the typed overload for this node's concrete type).</summary>
+    public virtual void Accept(SqlNodeVisitor visitor) => visitor.Visit(this);
+
+    /// <summary>Accepts <paramref name="visitor"/> on every direct child, in declaration order.</summary>
+    public virtual void AcceptChildren(SqlNodeVisitor visitor) { }
+
+    internal virtual SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal virtual void RewriteChildren(SqlNodeRewriter rewriter) { }
+
+    internal virtual SqlNode CloneCore() => (SqlNode)MemberwiseClone();
+
+    internal virtual bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending) => true;
+
+    /// <summary>Deep copy of this node and everything below it (scalars, spelling-only text, spans and children). Recursive: do not use on chains deeper than a few thousand links.</summary>
+    public SqlNode DeepClone() => CloneCore();
+
+    /// <summary>Deep copy typed as <typeparamref name="TNode"/>. Throws <see cref="InvalidCastException"/> if this node is not a <typeparamref name="TNode"/>.</summary>
+    public TNode DeepClone<TNode>() where TNode : SqlNode => (TNode)CloneCore();
 
     /// <summary>This node and all descendants, depth-first pre-order. Uses an explicit stack (safe on very deep trees).</summary>
     public IEnumerable<SqlNode> Descendants()
@@ -52,15 +63,73 @@ public abstract class SqlNode
             var n = stack.Pop();
             yield return n;
             tmp.Clear();
-            tmp.AddRange(n.Children());
+            tmp.AddRange(n.GetChildren());
             for (int i = tmp.Count - 1; i >= 0; i--) stack.Push(tmp[i]);
         }
     }
+
+    // ---- helpers called by generated code ----
+
+    internal static void CopySpan(SqlNode from, SqlNode to)
+    {
+        to.Start = from.Start; to.End = from.End; to.Line = from.Line; to.Column = from.Column;
+    }
+
+    internal static T? CloneChild<T>(T? node) where T : SqlNode => node is null ? null : (T)node.CloneCore();
+
+    internal static List<T> CloneList<T>(List<T>? list) where T : SqlNode
+    {
+        if (list is null) return null!;
+        var r = new List<T>(list.Count);
+        foreach (var n in list) r.Add(CloneChild(n)!);
+        return r;
+    }
+
+    internal static List<List<T>> CloneNested<T>(List<List<T>>? list) where T : SqlNode
+    {
+        if (list is null) return null!;
+        var r = new List<List<T>>(list.Count);
+        foreach (var l in list) r.Add(CloneList(l));
+        return r;
+    }
+
+    internal static List<string> CloneStrings(List<string>? list) => list is null ? null! : [.. list];
+
+    internal static bool SameStrings(List<string>? a, List<string>? b) =>
+        a is null || b is null ? a is null && b is null : a.SequenceEqual(b);
+
+    internal static bool Pair(SqlNode? a, SqlNode? b, Stack<(SqlNode, SqlNode)> pending)
+    {
+        if (a is null || b is null) return a is null && b is null;
+        pending.Push((a, b));
+        return true;
+    }
+
+    internal static bool PairList<T>(List<T>? a, List<T>? b, Stack<(SqlNode, SqlNode)> pending) where T : SqlNode
+    {
+        if (a is null || b is null) return a is null && b is null;
+        if (a.Count != b.Count) return false;
+        for (int i = 0; i < a.Count; i++) if (!Pair(a[i], b[i], pending)) return false;
+        return true;
+    }
+
+    internal static bool PairNested<T>(List<List<T>>? a, List<List<T>>? b, Stack<(SqlNode, SqlNode)> pending) where T : SqlNode
+    {
+        if (a is null || b is null) return a is null && b is null;
+        if (a.Count != b.Count) return false;
+        for (int i = 0; i < a.Count; i++) if (!PairList(a[i], b[i], pending)) return false;
+        return true;
+    }
 }
 
-/// <summary>Visitor base: override Visit(T) for node types of interest; call base to keep descending.</summary>
+/// <summary>
+/// LEGACY visitor: one untyped <c>Visit(SqlNode)</c> that recurses through <see cref="SqlNode.Children"/>.
+/// Prefer <see cref="SqlNodeVisitor"/> (typed <c>Visit(T)</c> / <c>ExplicitVisit(T)</c> callbacks, ScriptDom's model).
+/// Kept for backward compatibility.
+/// </summary>
 public abstract class SqlVisitor
 {
+    /// <summary>Visits <paramref name="node"/>; the default visits every child. Call the base to keep descending.</summary>
     public virtual void Visit(SqlNode node)
     {
         foreach (var c in node.Children()) Visit(c);
@@ -69,19 +138,19 @@ public abstract class SqlVisitor
 
 // ---------- Script & statements ----------
 
-public sealed class SqlScript : SqlNode
+public sealed partial class SqlScript : SqlNode
 {
     public List<Statement> Statements { get; set; } = [];
 }
 
-public abstract class Statement : SqlNode
+public abstract partial class Statement : SqlNode
 {
     /// <summary>PL/SQL labels (&lt;&lt;name&gt;&gt;) attached to this statement.</summary>
     public List<string> Labels { get; set; } = [];
 }
 
 /// <summary>INSERT / UPDATE / DELETE / MERGE; carries an optional optimizer hint.</summary>
-public abstract class DmlStatement : Statement
+public abstract partial class DmlStatement : Statement
 {
     public HintClause? Hint { get; set; }
     public List<Expression> Returning { get; set; } = [];
@@ -90,7 +159,7 @@ public abstract class DmlStatement : Statement
     public ErrorLogging? ErrorLogging { get; set; }
 }
 
-public sealed class ErrorLogging : SqlNode
+public sealed partial class ErrorLogging : SqlNode
 {
     public List<Identifier> Table { get; set; } = [];
     public Expression? Tag { get; set; }
@@ -99,7 +168,7 @@ public sealed class ErrorLogging : SqlNode
 }
 
 /// <summary>A full query: [WITH] body [ORDER BY] [OFFSET] [FETCH] [FOR UPDATE]. Also used for subqueries.</summary>
-public sealed class SelectStatement : Statement
+public sealed partial class SelectStatement : Statement
 {
     public List<CommonTableExpression> With { get; set; } = [];
     public QueryExpression Body { get; set; } = null!;
@@ -112,7 +181,7 @@ public sealed class SelectStatement : Statement
     public List<Declaration> WithDeclarations { get; set; } = [];
 }
 
-public sealed class CommonTableExpression : SqlNode
+public sealed partial class CommonTableExpression : SqlNode
 {
     public Identifier Name { get; set; } = null!;
     public List<Identifier> Columns { get; set; } = [];
@@ -121,14 +190,14 @@ public sealed class CommonTableExpression : SqlNode
     public CycleClause? Cycle { get; set; }
 }
 
-public sealed class SearchClause : SqlNode
+public sealed partial class SearchClause : SqlNode
 {
     public bool DepthFirst { get; set; }
     public List<OrderByItem> By { get; set; } = [];
     public Identifier SetColumn { get; set; } = null!;
 }
 
-public sealed class CycleClause : SqlNode
+public sealed partial class CycleClause : SqlNode
 {
     public List<Identifier> Columns { get; set; } = [];
     public Identifier SetColumn { get; set; } = null!;
@@ -136,9 +205,9 @@ public sealed class CycleClause : SqlNode
     public Expression? DefaultValue { get; set; }
 }
 
-public abstract class QueryExpression : SqlNode { }
+public abstract partial class QueryExpression : SqlNode { }
 
-public sealed class QuerySpecification : QueryExpression
+public sealed partial class QuerySpecification : QueryExpression
 {
     public HintClause? Hint { get; set; }
     public QuantifierKind? Quantifier { get; set; }
@@ -158,7 +227,7 @@ public sealed class QuerySpecification : QueryExpression
 
 public enum QuantifierKind { All, Distinct, Unique }
 
-public sealed class SetOperation : QueryExpression
+public sealed partial class SetOperation : QueryExpression
 {
     public QueryExpression Left { get; set; } = null!;
     public SetOperator Operator { get; set; }
@@ -168,26 +237,26 @@ public sealed class SetOperation : QueryExpression
 
 public enum SetOperator { Union, Intersect, Minus }
 
-public sealed class ParenthesizedQuery : QueryExpression
+public sealed partial class ParenthesizedQuery : QueryExpression
 {
     public SelectStatement Query { get; set; } = null!;
 }
 
-public abstract class SelectItem : SqlNode { }
+public abstract partial class SelectItem : SqlNode { }
 
-public sealed class ExpressionSelectItem : SelectItem
+public sealed partial class ExpressionSelectItem : SelectItem
 {
     public Expression Expression { get; set; } = null!;
     public Identifier? Alias { get; set; }
 }
 
 /// <summary>`*` or `qualifier.*`.</summary>
-public sealed class StarSelectItem : SelectItem
+public sealed partial class StarSelectItem : SelectItem
 {
     public List<Identifier> Qualifier { get; set; } = [];
 }
 
-public sealed class OrderByItem : SqlNode
+public sealed partial class OrderByItem : SqlNode
 {
     public Expression Expression { get; set; } = null!;
     public bool Descending { get; set; }
@@ -196,7 +265,7 @@ public sealed class OrderByItem : SqlNode
 
 public enum NullsOrdering { First, Last }
 
-public sealed class FetchClause : SqlNode
+public sealed partial class FetchClause : SqlNode
 {
     public bool Next { get; set; }
     public Expression? Count { get; set; }
@@ -204,7 +273,7 @@ public sealed class FetchClause : SqlNode
     public bool WithTies { get; set; }
 }
 
-public sealed class ForUpdateClause : SqlNode
+public sealed partial class ForUpdateClause : SqlNode
 {
     public List<ColumnReference> Of { get; set; } = [];
     public bool NoWait { get; set; }
@@ -214,7 +283,7 @@ public sealed class ForUpdateClause : SqlNode
 
 // ---------- DML ----------
 
-public sealed class InsertStatement : DmlStatement
+public sealed partial class InsertStatement : DmlStatement
 {
     public TableReference Target { get; set; } = null!;
     public List<Identifier> Columns { get; set; } = [];
@@ -224,7 +293,7 @@ public sealed class InsertStatement : DmlStatement
     public SelectStatement? Query { get; set; }
 }
 
-public sealed class UpdateStatement : DmlStatement
+public sealed partial class UpdateStatement : DmlStatement
 {
     public TableReference Target { get; set; } = null!;
     public List<SetClause> Set { get; set; } = [];
@@ -234,7 +303,7 @@ public sealed class UpdateStatement : DmlStatement
 }
 
 /// <summary>`col = expr` or `(c1, c2) = (subquery)`.</summary>
-public sealed class SetClause : SqlNode
+public sealed partial class SetClause : SqlNode
 {
     /// <summary>PL/SQL: SET ROW = record (Columns is empty).</summary>
     public bool Row { get; set; }
@@ -242,13 +311,13 @@ public sealed class SetClause : SqlNode
     public Expression Value { get; set; } = null!;
 }
 
-public sealed class DeleteStatement : DmlStatement
+public sealed partial class DeleteStatement : DmlStatement
 {
     public TableReference Target { get; set; } = null!;
     public Expression? Where { get; set; }
 }
 
-public sealed class MergeStatement : DmlStatement
+public sealed partial class MergeStatement : DmlStatement
 {
     public TableReference Target { get; set; } = null!;
     public TableReference Source { get; set; } = null!;
@@ -256,7 +325,7 @@ public sealed class MergeStatement : DmlStatement
     public List<MergeClause> Clauses { get; set; } = [];
 }
 
-public sealed class MergeClause : SqlNode
+public sealed partial class MergeClause : SqlNode
 {
     public bool Matched { get; set; }
     public Expression? AndCondition { get; set; }
@@ -272,12 +341,12 @@ public sealed class MergeClause : SqlNode
 
 // ---------- Table references ----------
 
-public abstract class TableReference : SqlNode
+public abstract partial class TableReference : SqlNode
 {
     public Identifier? Alias { get; set; }
 }
 
-public sealed class NamedTable : TableReference
+public sealed partial class NamedTable : TableReference
 {
     public List<Identifier> Name { get; set; } = [];
     /// <summary>Database link name after '@' (dotted parts).</summary>
@@ -287,24 +356,24 @@ public sealed class NamedTable : TableReference
     public FlashbackClause? Flashback { get; set; }
 }
 
-public sealed class SubqueryTable : TableReference
+public sealed partial class SubqueryTable : TableReference
 {
     public bool Lateral { get; set; }
     public SelectStatement Query { get; set; } = null!;
 }
 
 /// <summary>TABLE(expr) collection expression.</summary>
-public sealed class TableFunction : TableReference
+public sealed partial class TableFunction : TableReference
 {
     public Expression Expression { get; set; } = null!;
 }
 
-public sealed class ParenthesizedTable : TableReference
+public sealed partial class ParenthesizedTable : TableReference
 {
     public TableReference Inner { get; set; } = null!;
 }
 
-public sealed class JoinTable : TableReference
+public sealed partial class JoinTable : TableReference
 {
     public TableReference Left { get; set; } = null!;
     public JoinKind Kind { get; set; }
@@ -318,9 +387,9 @@ public enum JoinKind { Inner, Left, Right, Full, Cross, CrossApply, OuterApply }
 
 // ---------- Expressions ----------
 
-public abstract class Expression : SqlNode { }
+public abstract partial class Expression : SqlNode { }
 
-public sealed class Identifier : SqlNode
+public sealed partial class Identifier : SqlNode
 {
     /// <summary>Normalized: unquoted names upper-cased; quoted names verbatim.</summary>
     public string Value { get; set; } = "";
@@ -330,7 +399,7 @@ public sealed class Identifier : SqlNode
     public override string ToString() => Value;
 }
 
-public sealed class ColumnReference : Expression
+public sealed partial class ColumnReference : Expression
 {
     public List<Identifier> Parts { get; set; } = [];
     /// <summary>Oracle (+) outer-join marker.</summary>
@@ -341,17 +410,17 @@ public sealed class ColumnReference : Expression
 
 public enum LiteralKind { Number, String, Null, Date, Timestamp, Boolean, Default, Any }
 
-public sealed class Literal : Expression
+public sealed partial class Literal : Expression
 {
     public LiteralKind Kind { get; set; }
     /// <summary>N'...' / NQ'...' national character literal.</summary>
     public bool National { get; set; }
     /// <summary>Opening delimiter of a q'…' alternative-quoting literal (e.g. '[' for q'[it's]'); null for ordinary 'strings'.</summary>
-    public char? QuoteDelimiter { get; set; }
+    [SpellingOnly] public char? QuoteDelimiter { get; set; }
     public string? Value { get; set; }
 }
 
-public sealed class IntervalLiteral : Expression
+public sealed partial class IntervalLiteral : Expression
 {
     public Expression Value { get; set; } = null!;
     public IntervalUnit From { get; set; }
@@ -362,30 +431,30 @@ public sealed class IntervalLiteral : Expression
 
 public enum IntervalUnit { Year, Month, Day, Hour, Minute, Second }
 
-public sealed class BindVariable : Expression
+public sealed partial class BindVariable : Expression
 {
     public string Name { get; set; } = "";
     /// <summary>The name was written quoted (:"name").</summary>
     public bool Quoted { get; set; }
 }
 
-public sealed class StarExpression : Expression
+public sealed partial class StarExpression : Expression
 {
     public List<Identifier> Qualifier { get; set; } = [];
 }
 
-public sealed class ParenthesizedExpression : Expression
+public sealed partial class ParenthesizedExpression : Expression
 {
     public Expression Inner { get; set; } = null!;
 }
 
 /// <summary>(a, b, c) row/list value.</summary>
-public sealed class ExpressionList : Expression
+public sealed partial class ExpressionList : Expression
 {
     public List<Expression> Items { get; set; } = [];
 }
 
-public sealed class BinaryExpression : Expression
+public sealed partial class BinaryExpression : Expression
 {
     public Expression Left { get; set; } = null!;
     /// <summary>Upper-cased operator text: + - * / ** || = &lt;&gt; &lt; &gt; &lt;= &gt;= AND OR LIKE ...</summary>
@@ -396,7 +465,7 @@ public sealed class BinaryExpression : Expression
 /// <summary>Comparison against a quantified set, e.g. x = ANY (subquery).</summary>
 public enum ComparisonQuantifier { Any, Some, All }
 
-public sealed class QuantifiedComparison : Expression
+public sealed partial class QuantifiedComparison : Expression
 {
     public Expression Left { get; set; } = null!;
     public string Operator { get; set; } = "";
@@ -404,14 +473,14 @@ public sealed class QuantifiedComparison : Expression
     public Expression Right { get; set; } = null!;
 }
 
-public sealed class UnaryExpression : Expression
+public sealed partial class UnaryExpression : Expression
 {
     /// <summary>+, -, NOT, PRIOR, CONNECT_BY_ROOT, DISTINCT</summary>
     public string Operator { get; set; } = "";
     public Expression Operand { get; set; } = null!;
 }
 
-public sealed class BetweenExpression : Expression
+public sealed partial class BetweenExpression : Expression
 {
     public Expression Value { get; set; } = null!;
     public bool Not { get; set; }
@@ -419,7 +488,7 @@ public sealed class BetweenExpression : Expression
     public Expression High { get; set; } = null!;
 }
 
-public sealed class InExpression : Expression
+public sealed partial class InExpression : Expression
 {
     public Expression Value { get; set; } = null!;
     public bool Not { get; set; }
@@ -429,7 +498,7 @@ public sealed class InExpression : Expression
 
 public enum LikeKind { Like, Likec, Like2, Like4 }
 
-public sealed class LikeExpression : Expression
+public sealed partial class LikeExpression : Expression
 {
     public Expression Value { get; set; } = null!;
     public bool Not { get; set; }
@@ -440,13 +509,13 @@ public sealed class LikeExpression : Expression
 
 public enum IsTest { Null, Nan, Infinite, Empty, Present, ASet, Json, OfType, Dangling }
 
-public sealed class IsOfType : SqlNode
+public sealed partial class IsOfType : SqlNode
 {
     public bool Only { get; set; }
     public DataType Type { get; set; } = null!;
 }
 
-public sealed class IsExpression : Expression
+public sealed partial class IsExpression : Expression
 {
     public Expression Value { get; set; } = null!;
     public bool Not { get; set; }
@@ -457,24 +526,24 @@ public sealed class IsExpression : Expression
     public List<IsOfType> OfTypes { get; set; } = [];
 }
 
-public sealed class ExistsExpression : Expression
+public sealed partial class ExistsExpression : Expression
 {
     public SelectStatement Subquery { get; set; } = null!;
 }
 
-public sealed class SubqueryExpression : Expression
+public sealed partial class SubqueryExpression : Expression
 {
     public SelectStatement Query { get; set; } = null!;
 }
 
-public sealed class CaseExpression : Expression
+public sealed partial class CaseExpression : Expression
 {
     public Expression? Operand { get; set; }
     public List<WhenClause> Whens { get; set; } = [];
     public Expression? Else { get; set; }
 }
 
-public sealed class WhenClause : SqlNode
+public sealed partial class WhenClause : SqlNode
 {
     public Expression When { get; set; } = null!;
     public Expression Then { get; set; } = null!;
@@ -483,7 +552,7 @@ public sealed class WhenClause : SqlNode
 public enum CastKind { Cast, XmlCast, Treat, ValidateConversion, XmlSerialize }
 
 /// <summary>CAST / XMLCAST / TREAT / VALIDATE_CONVERSION (all of the form f(expr AS type ...)).</summary>
-public sealed class CastExpression : Expression
+public sealed partial class CastExpression : Expression
 {
     public CastKind Kind { get; set; }
     public bool Multiset { get; set; }
@@ -504,7 +573,7 @@ public enum ExtractField
     Year, Month, Day, Hour, Minute, Second, TimezoneHour, TimezoneMinute, TimezoneRegion, TimezoneAbbr,
 }
 
-public sealed class ExtractExpression : Expression
+public sealed partial class ExtractExpression : Expression
 {
     public ExtractField Field { get; set; }
     public Expression Source { get; set; } = null!;
@@ -512,28 +581,28 @@ public sealed class ExtractExpression : Expression
 
 public enum TrimSpec { Leading, Trailing, Both }
 
-public sealed class TrimExpression : Expression
+public sealed partial class TrimExpression : Expression
 {
     public TrimSpec? Spec { get; set; }
     public Expression? Characters { get; set; }
     public Expression Source { get; set; } = null!;
 }
 
-public sealed class SubstitutionVariable : Expression
+public sealed partial class SubstitutionVariable : Expression
 {
     public string Name { get; set; } = "";
     /// <summary>&amp;&amp;name (persistent).</summary>
     public bool Persistent { get; set; }
 }
 
-public sealed class CollateExpression : Expression
+public sealed partial class CollateExpression : Expression
 {
     public Expression Value { get; set; } = null!;
     public Identifier Collation { get; set; } = null!;
 }
 
 /// <summary>FOR dim IN (...) / FOR dim [LIKE p] FROM a TO b INCREMENT n, used inside MODEL cell subscripts.</summary>
-public sealed class ForIterationSubscript : Expression
+public sealed partial class ForIterationSubscript : Expression
 {
     public List<Identifier> Dimensions { get; set; } = [];
     public List<Expression> InList { get; set; } = [];
@@ -547,7 +616,7 @@ public sealed class ForIterationSubscript : Expression
 
 public enum CharSemantics { Char, Byte }
 
-public sealed class DataType : SqlNode
+public sealed partial class DataType : SqlNode
 {
     /// <summary>E.g. "VARCHAR2", "NUMBER", "TIMESTAMP WITH TIME ZONE", or a dotted user-defined type.</summary>
     public string Name { get; set; } = "";
@@ -558,7 +627,7 @@ public sealed class DataType : SqlNode
     public string? Attribute { get; set; }
 }
 
-public sealed class AtTimeZoneExpression : Expression
+public sealed partial class AtTimeZoneExpression : Expression
 {
     public Expression Value { get; set; } = null!;
     /// <summary>AT LOCAL (Zone is null).</summary>
@@ -566,7 +635,7 @@ public sealed class AtTimeZoneExpression : Expression
     public Expression? Zone { get; set; }
 }
 
-public sealed class FunctionCall : Expression
+public sealed partial class FunctionCall : Expression
 {
     public List<Identifier> Name { get; set; } = [];
     /// <summary>NEW type(...) constructor call.</summary>
@@ -592,7 +661,7 @@ public sealed class FunctionCall : Expression
 
 public enum ArgumentKeyword { Name, EvalName, Key, Document, Content }
 
-public sealed class Argument : SqlNode
+public sealed partial class Argument : SqlNode
 {
     public Identifier? Name { get; set; }  // named notation: name => value
     /// <summary>Leading keyword in XML/JSON functions (XMLELEMENT(NAME x), JSON_OBJECT(KEY k ...)).</summary>
@@ -607,13 +676,13 @@ public sealed class Argument : SqlNode
     public OnBehaviorClause? OnConversionError { get; set; }
 }
 
-public sealed class KeepClause : SqlNode
+public sealed partial class KeepClause : SqlNode
 {
     public bool First { get; set; }
     public List<OrderByItem> OrderBy { get; set; } = [];
 }
 
-public sealed class WindowSpec : SqlNode
+public sealed partial class WindowSpec : SqlNode
 {
     /// <summary>OVER window_name form.</summary>
     public Identifier? Name { get; set; }
@@ -622,7 +691,7 @@ public sealed class WindowSpec : SqlNode
     public WindowFrame? Frame { get; set; }
 }
 
-public sealed class WindowFrame : SqlNode
+public sealed partial class WindowFrame : SqlNode
 {
     public FrameUnit Unit { get; set; }
     public FrameBound StartBound { get; set; } = null!;
@@ -632,7 +701,7 @@ public sealed class WindowFrame : SqlNode
 public enum FrameUnit { Rows, Range, Groups }
 public enum FrameBoundKind { UnboundedPreceding, UnboundedFollowing, CurrentRow, Preceding, Following }
 
-public sealed class FrameBound : SqlNode
+public sealed partial class FrameBound : SqlNode
 {
     public FrameBoundKind Kind { get; set; }
     public Expression? Offset { get; set; }

@@ -9,4 +9,7 @@
     <Project Path="tests/OracleSqlParser.Guard.Tests/OracleSqlParser.Guard.Tests.csproj" />
     <Project Path="tests/OracleSqlParser.Tests/OracleSqlParser.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/AstGen/AstGen.csproj" />
+  </Folder>
 </Solution>

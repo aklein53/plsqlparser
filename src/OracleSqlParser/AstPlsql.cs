@@ -2,7 +2,7 @@ namespace OracleSqlParser;
 
 // ---------- Blocks ----------
 
-public sealed class Block : Statement
+public sealed partial class Block : Statement
 {
     public bool HasDeclare { get; set; }
     public List<Declaration> Declarations { get; set; } = [];
@@ -11,7 +11,7 @@ public sealed class Block : Statement
     public Identifier? EndName { get; set; }
 }
 
-public sealed class ExceptionHandler : SqlNode
+public sealed partial class ExceptionHandler : SqlNode
 {
     public List<List<Identifier>> Exceptions { get; set; } = [];
     public bool Others { get; set; }
@@ -20,9 +20,9 @@ public sealed class ExceptionHandler : SqlNode
 
 // ---------- Declarations ----------
 
-public abstract class Declaration : SqlNode { }
+public abstract partial class Declaration : SqlNode { }
 
-public sealed class VariableDeclaration : Declaration
+public sealed partial class VariableDeclaration : Declaration
 {
     public Identifier Name { get; set; } = null!;
     public bool Constant { get; set; }
@@ -31,12 +31,12 @@ public sealed class VariableDeclaration : Declaration
     public Expression? Default { get; set; }
 }
 
-public sealed class ExceptionDeclaration : Declaration
+public sealed partial class ExceptionDeclaration : Declaration
 {
     public Identifier Name { get; set; } = null!;
 }
 
-public sealed class PragmaDeclaration : Declaration
+public sealed partial class PragmaDeclaration : Declaration
 {
     public Identifier Name { get; set; } = null!;
     public List<Expression> Arguments { get; set; } = [];
@@ -44,7 +44,7 @@ public sealed class PragmaDeclaration : Declaration
 
 public enum ParamMode { In, Out, InOut }
 
-public sealed class Parameter : SqlNode
+public sealed partial class Parameter : SqlNode
 {
     public Identifier Name { get; set; } = null!;
     public ParamMode? Mode { get; set; }
@@ -53,7 +53,7 @@ public sealed class Parameter : SqlNode
     public Expression? Default { get; set; }
 }
 
-public sealed class CursorDeclaration : Declaration
+public sealed partial class CursorDeclaration : Declaration
 {
     public Identifier Name { get; set; } = null!;
     public List<Parameter> Parameters { get; set; } = [];
@@ -61,7 +61,7 @@ public sealed class CursorDeclaration : Declaration
     public SelectStatement? Query { get; set; }
 }
 
-public sealed class RecordTypeDeclaration : Declaration
+public sealed partial class RecordTypeDeclaration : Declaration
 {
     public Identifier Name { get; set; } = null!;
     public List<VariableDeclaration> Fields { get; set; } = [];
@@ -69,7 +69,7 @@ public sealed class RecordTypeDeclaration : Declaration
 
 public enum CollectionKind { Table, Varray }
 
-public sealed class CollectionTypeDeclaration : Declaration
+public sealed partial class CollectionTypeDeclaration : Declaration
 {
     public Identifier Name { get; set; } = null!;
     public CollectionKind Kind { get; set; }
@@ -79,13 +79,13 @@ public sealed class CollectionTypeDeclaration : Declaration
     public DataType? IndexBy { get; set; }
 }
 
-public sealed class RefCursorTypeDeclaration : Declaration
+public sealed partial class RefCursorTypeDeclaration : Declaration
 {
     public Identifier Name { get; set; } = null!;
     public DataType? ReturnType { get; set; }
 }
 
-public sealed class SubtypeDeclaration : Declaration
+public sealed partial class SubtypeDeclaration : Declaration
 {
     public Identifier Name { get; set; } = null!;
     public DataType BaseType { get; set; } = null!;
@@ -108,7 +108,7 @@ public enum MemberModifiers
     Instantiable = 128, NotInstantiable = 256, Overriding = 512,
 }
 
-public sealed class ParallelEnableClause : SqlNode
+public sealed partial class ParallelEnableClause : SqlNode
 {
     public Identifier? PartitionArgument { get; set; }
     public ParallelPartitionMethod? Method { get; set; }
@@ -119,14 +119,14 @@ public sealed class ParallelEnableClause : SqlNode
     public List<Identifier> StreamingColumns { get; set; } = [];
 }
 
-public sealed class Accessor : SqlNode
+public sealed partial class Accessor : SqlNode
 {
     public AccessorKind? Kind { get; set; }
     public List<Identifier> Name { get; set; } = [];
 }
 
 /// <summary>Clauses between a program header and IS/AS (also package and type headers).</summary>
-public sealed class ProgramOptions : SqlNode
+public sealed partial class ProgramOptions : SqlNode
 {
     public AuthidKind? Authid { get; set; }
     public SharingKind? Sharing { get; set; }
@@ -148,7 +148,7 @@ public enum ExternalLanguage { Java, C, JavaScript }
 public enum ExternalParameterKind { Context, Self, Return, Named }
 public enum ExternalProperty { Indicator, IndicatorStruct, IndicatorTdo, Length, MaxLen, Tdo, CharsetId, CharsetForm }
 
-public sealed class ExternalParameter : SqlNode
+public sealed partial class ExternalParameter : SqlNode
 {
     public ExternalParameterKind Kind { get; set; }
     public Identifier? Name { get; set; }
@@ -158,7 +158,7 @@ public sealed class ExternalParameter : SqlNode
 }
 
 /// <summary>LANGUAGE JAVA/C/JAVASCRIPT call specification.</summary>
-public sealed class ExternalCall : SqlNode
+public sealed partial class ExternalCall : SqlNode
 {
     public ExternalLanguage Language { get; set; }
     public Expression? Name { get; set; }
@@ -174,7 +174,7 @@ public sealed class ExternalCall : SqlNode
 }
 
 /// <summary>Procedure or function: nested declaration, package member, type member or standalone (via CreateProgramStatement).</summary>
-public sealed class SubprogramDeclaration : Declaration
+public sealed partial class SubprogramDeclaration : Declaration
 {
     public bool IsFunction { get; set; }
     public MemberModifiers Modifiers { get; set; }
@@ -190,14 +190,14 @@ public sealed class SubprogramDeclaration : Declaration
 
 // ---------- Program units ----------
 
-public sealed class CreateProgramStatement : Statement
+public sealed partial class CreateProgramStatement : Statement
 {
     public bool OrReplace { get; set; }
     public EditionableKind? Editionable { get; set; }
     public SubprogramDeclaration Subprogram { get; set; } = null!;
 }
 
-public sealed class CreatePackageStatement : Statement
+public sealed partial class CreatePackageStatement : Statement
 {
     public bool OrReplace { get; set; }
     public EditionableKind? Editionable { get; set; }
@@ -207,7 +207,7 @@ public sealed class CreatePackageStatement : Statement
     public Identifier? EndName { get; set; }
 }
 
-public sealed class CreatePackageBodyStatement : Statement
+public sealed partial class CreatePackageBodyStatement : Statement
 {
     public bool OrReplace { get; set; }
     public EditionableKind? Editionable { get; set; }
@@ -226,7 +226,7 @@ public enum TriggerOrdering { Follows, Precedes }
 public enum CrossEdition { Forward, Reverse }
 public enum TimingPoint { BeforeStatement, BeforeEachRow, AfterStatement, AfterEachRow, InsteadOfEachRow }
 
-public sealed class TriggerEvent : SqlNode
+public sealed partial class TriggerEvent : SqlNode
 {
     public TriggerEventKind Kind { get; set; }
     /// <summary>UPDATE OF columns.</summary>
@@ -235,13 +235,13 @@ public sealed class TriggerEvent : SqlNode
     public string? EventName { get; set; }
 }
 
-public sealed class ReferencingItem : SqlNode
+public sealed partial class ReferencingItem : SqlNode
 {
     public ReferencingKind Kind { get; set; }
     public Identifier Alias { get; set; } = null!;
 }
 
-public sealed class CreateTriggerStatement : Statement
+public sealed partial class CreateTriggerStatement : Statement
 {
     public bool OrReplace { get; set; }
     public EditionableKind? Editionable { get; set; }
@@ -267,7 +267,7 @@ public sealed class CreateTriggerStatement : Statement
     public List<TimingPointSection> Sections { get; set; } = [];
 }
 
-public sealed class TimingPointSection : SqlNode
+public sealed partial class TimingPointSection : SqlNode
 {
     public TimingPoint Point { get; set; }
     public List<Statement> Statements { get; set; } = [];
@@ -276,7 +276,7 @@ public sealed class TimingPointSection : SqlNode
 
 public enum TypeKind { Object, Table, Varray, Under }
 
-public sealed class CreateTypeStatement : Statement
+public sealed partial class CreateTypeStatement : Statement
 {
     public bool OrReplace { get; set; }
     public EditionableKind? Editionable { get; set; }
@@ -296,7 +296,7 @@ public sealed class CreateTypeStatement : Statement
     public List<Identifier> SuperType { get; set; } = [];
 }
 
-public sealed class CreateTypeBodyStatement : Statement
+public sealed partial class CreateTypeBodyStatement : Statement
 {
     public bool OrReplace { get; set; }
     public List<Identifier> Name { get; set; } = [];
@@ -305,20 +305,20 @@ public sealed class CreateTypeBodyStatement : Statement
 
 // ---------- Statements ----------
 
-public sealed class NullStatement : Statement { }
+public sealed partial class NullStatement : Statement { }
 
-public sealed class AssignmentStatement : Statement
+public sealed partial class AssignmentStatement : Statement
 {
     public Expression Target { get; set; } = null!;
     public Expression Value { get; set; } = null!;
 }
 
-public sealed class ProcedureCallStatement : Statement
+public sealed partial class ProcedureCallStatement : Statement
 {
     public Expression Call { get; set; } = null!;
 }
 
-public sealed class IfStatement : Statement
+public sealed partial class IfStatement : Statement
 {
     public Expression Condition { get; set; } = null!;
     public List<Statement> ThenStatements { get; set; } = [];
@@ -326,20 +326,20 @@ public sealed class IfStatement : Statement
     public List<Statement>? ElseStatements { get; set; }
 }
 
-public sealed class IfBranch : SqlNode
+public sealed partial class IfBranch : SqlNode
 {
     public Expression Condition { get; set; } = null!;
     public List<Statement> Statements { get; set; } = [];
 }
 
-public sealed class PlsqlCaseStatement : Statement
+public sealed partial class PlsqlCaseStatement : Statement
 {
     public Expression? Operand { get; set; }
     public List<CaseStatementWhen> Whens { get; set; } = [];
     public List<Statement>? ElseStatements { get; set; }
 }
 
-public sealed class CaseStatementWhen : SqlNode
+public sealed partial class CaseStatementWhen : SqlNode
 {
     public Expression When { get; set; } = null!;
     public List<Statement> Statements { get; set; } = [];
@@ -347,7 +347,7 @@ public sealed class CaseStatementWhen : SqlNode
 
 public enum LoopKind { Basic, While, ForNumeric, ForCursor }
 
-public sealed class LoopStatement : Statement
+public sealed partial class LoopStatement : Statement
 {
     public LoopKind Kind { get; set; }
     public Expression? Condition { get; set; }
@@ -363,40 +363,40 @@ public sealed class LoopStatement : Statement
     public Identifier? EndLabel { get; set; }
 }
 
-public sealed class ExitStatement : Statement
+public sealed partial class ExitStatement : Statement
 {
     public Identifier? Label { get; set; }
     public Expression? When { get; set; }
 }
 
-public sealed class ContinueStatement : Statement
+public sealed partial class ContinueStatement : Statement
 {
     public Identifier? Label { get; set; }
     public Expression? When { get; set; }
 }
 
-public sealed class GotoStatement : Statement
+public sealed partial class GotoStatement : Statement
 {
     public Identifier Target { get; set; } = null!;
 }
 
-public sealed class ReturnStatement : Statement
+public sealed partial class ReturnStatement : Statement
 {
     public Expression? Value { get; set; }
 }
 
-public sealed class RaiseStatement : Statement
+public sealed partial class RaiseStatement : Statement
 {
     public List<Identifier> Exception { get; set; } = [];
 }
 
-public sealed class UsingArgument : SqlNode
+public sealed partial class UsingArgument : SqlNode
 {
     public ParamMode? Mode { get; set; }
     public Expression Value { get; set; } = null!;
 }
 
-public sealed class OpenStatement : Statement
+public sealed partial class OpenStatement : Statement
 {
     public Expression Cursor { get; set; } = null!;
     public SelectStatement? ForQuery { get; set; }
@@ -404,7 +404,7 @@ public sealed class OpenStatement : Statement
     public List<UsingArgument> Using { get; set; } = [];
 }
 
-public sealed class FetchStatement : Statement
+public sealed partial class FetchStatement : Statement
 {
     public Expression Cursor { get; set; } = null!;
     public bool BulkCollect { get; set; }
@@ -412,12 +412,12 @@ public sealed class FetchStatement : Statement
     public Expression? Limit { get; set; }
 }
 
-public sealed class CloseStatement : Statement
+public sealed partial class CloseStatement : Statement
 {
     public Expression Cursor { get; set; } = null!;
 }
 
-public sealed class ExecuteImmediateStatement : Statement
+public sealed partial class ExecuteImmediateStatement : Statement
 {
     public Expression Sql { get; set; } = null!;
     public bool BulkCollect { get; set; }
@@ -427,7 +427,7 @@ public sealed class ExecuteImmediateStatement : Statement
     public bool ReturningBulkCollect { get; set; }
 }
 
-public sealed class ForallStatement : Statement
+public sealed partial class ForallStatement : Statement
 {
     public Identifier Index { get; set; } = null!;
     public Expression? Lower { get; set; }
@@ -440,7 +440,7 @@ public sealed class ForallStatement : Statement
     public Statement Body { get; set; } = null!;
 }
 
-public sealed class PipeRowStatement : Statement
+public sealed partial class PipeRowStatement : Statement
 {
     public Expression Value { get; set; } = null!;
 }
@@ -449,7 +449,7 @@ public enum JavaObjectKind { Source, Class, Resource }
 public enum JavaUsingKind { Bfile, Clob, Blob, Key }
 
 /// <summary>CREATE JAVA SOURCE/CLASS/RESOURCE. SourceText is the embedded Java program (not SQL).</summary>
-public sealed class CreateJavaStatement : Statement
+public sealed partial class CreateJavaStatement : Statement
 {
     public bool OrReplace { get; set; }
     public bool AndResolve { get; set; }
@@ -468,7 +468,7 @@ public sealed class CreateJavaStatement : Statement
     public string? SourceText { get; set; }
 }
 
-public sealed class CreateLibraryStatement : Statement
+public sealed partial class CreateLibraryStatement : Statement
 {
     public bool OrReplace { get; set; }
     public EditionableKind? Editionable { get; set; }

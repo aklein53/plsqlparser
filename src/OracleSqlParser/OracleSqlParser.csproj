@@ -35,6 +35,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="OracleSqlParser.Tests" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.404" PrivateAssets="All" />
   </ItemGroup>

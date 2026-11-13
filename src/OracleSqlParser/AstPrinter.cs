@@ -100,7 +100,7 @@ public static class AstPrinter
     /// <summary>Writes the members from index <paramref name="skip"/> on, then the closing parenthesis.</summary>
     private static void WriteProps(StringBuilder sb, SqlNode n, int skip)
     {
-        var props = SqlNode.NodeProperties(n.GetType());
+        var props = AstReflection.NodeProperties(n.GetType());
         for (int pi = skip; pi < props.Length; pi++)
         {
             var p = props[pi];

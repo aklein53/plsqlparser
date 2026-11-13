@@ -5,13 +5,13 @@ namespace OracleSqlParser;
 public enum WaitMode { Wait, NoWait }
 public enum CommitWriteMode { Immediate, Batch }
 
-public sealed class CommitWrite : SqlNode
+public sealed partial class CommitWrite : SqlNode
 {
     public WaitMode? Wait { get; set; }
     public CommitWriteMode? Mode { get; set; }
 }
 
-public sealed class CommitStatement : Statement
+public sealed partial class CommitStatement : Statement
 {
     public bool Work { get; set; }
     public Expression? Comment { get; set; }
@@ -21,14 +21,14 @@ public sealed class CommitStatement : Statement
     public Expression? ForceScn { get; set; }
 }
 
-public sealed class RollbackStatement : Statement
+public sealed partial class RollbackStatement : Statement
 {
     public bool Work { get; set; }
     public Identifier? ToSavepoint { get; set; }
     public Expression? Force { get; set; }
 }
 
-public sealed class SavepointStatement : Statement
+public sealed partial class SavepointStatement : Statement
 {
     public Identifier Name { get; set; } = null!;
 }
@@ -36,7 +36,7 @@ public sealed class SavepointStatement : Statement
 public enum TransactionAccess { ReadOnly, ReadWrite }
 public enum IsolationLevel { Serializable, ReadCommitted }
 
-public sealed class SetTransactionStatement : Statement
+public sealed partial class SetTransactionStatement : Statement
 {
     public TransactionAccess? Access { get; set; }
     public IsolationLevel? Isolation { get; set; }
@@ -44,20 +44,20 @@ public sealed class SetTransactionStatement : Statement
     public Expression? Name { get; set; }
 }
 
-public sealed class SetConstraintsStatement : Statement
+public sealed partial class SetConstraintsStatement : Statement
 {
     public bool All { get; set; }
     public List<List<Identifier>> Constraints { get; set; } = [];
     public bool Deferred { get; set; }
 }
 
-public sealed class RoleSpec : SqlNode
+public sealed partial class RoleSpec : SqlNode
 {
     public Identifier Name { get; set; } = null!;
     public Expression? IdentifiedBy { get; set; }
 }
 
-public sealed class SetRoleStatement : Statement
+public sealed partial class SetRoleStatement : Statement
 {
     public bool None { get; set; }
     public bool All { get; set; }
@@ -69,7 +69,7 @@ public enum AlterSessionKind { Set, Enable, Disable, Force, CloseDatabaseLink, A
 public enum SessionFeature { CommitInProcedure, Guard, ParallelDml, ParallelDdl, ParallelQuery, Resumable, Other }
 public enum AdviseMode { Commit, Rollback, Nothing }
 
-public sealed class AlterSessionStatement : Statement
+public sealed partial class AlterSessionStatement : Statement
 {
     public AlterSessionKind Kind { get; set; }
     public List<SessionSetting> Settings { get; set; } = [];
@@ -83,19 +83,19 @@ public sealed class AlterSessionStatement : Statement
     public List<SyntaxItem> FeatureSyntax { get; set; } = [];
 }
 
-public sealed class SessionSetting : SqlNode
+public sealed partial class SessionSetting : SqlNode
 {
     public List<Identifier> Name { get; set; } = [];
     public Expression Value { get; set; } = null!;
 }
 
-public sealed class CallStatement : Statement
+public sealed partial class CallStatement : Statement
 {
     public Expression Routine { get; set; } = null!;
     public Expression? Into { get; set; }
 }
 
-public sealed class ExplainPlanStatement : Statement
+public sealed partial class ExplainPlanStatement : Statement
 {
     public Expression? StatementId { get; set; }
     public List<Identifier> IntoTable { get; set; } = [];
@@ -104,7 +104,7 @@ public sealed class ExplainPlanStatement : Statement
 
 public enum LockMode { RowShare, RowExclusive, ShareUpdate, Share, ShareRowExclusive, Exclusive }
 
-public sealed class LockTableStatement : Statement
+public sealed partial class LockTableStatement : Statement
 {
     public List<TableReference> Tables { get; set; } = [];
     public LockMode Mode { get; set; }
@@ -116,7 +116,7 @@ public enum TruncateTarget { Table, Cluster }
 public enum MaterializedViewLogAction { Preserve, Purge }
 public enum TruncateStorage { DropStorage, DropAllStorage, ReuseStorage }
 
-public sealed class TruncateStatement : Statement
+public sealed partial class TruncateStatement : Statement
 {
     public TruncateTarget Target { get; set; }
     public List<Identifier> Name { get; set; } = [];
@@ -127,21 +127,21 @@ public sealed class TruncateStatement : Statement
 
 public enum CommentTarget { Table, Column, MaterializedView, Operator, Indextype, MiningModel, Edition }
 
-public sealed class CommentStatement : Statement
+public sealed partial class CommentStatement : Statement
 {
     public CommentTarget Target { get; set; }
     public List<Identifier> Name { get; set; } = [];
     public string Text { get; set; } = "";
 }
 
-public sealed class GrantPrivilege : SqlNode
+public sealed partial class GrantPrivilege : SqlNode
 {
     /// <summary>Privilege or role name as a keyword phrase, e.g. SELECT, CREATE ANY TABLE, DBA.</summary>
     public string Name { get; set; } = "";
     public List<Identifier> Columns { get; set; } = [];
 }
 
-public sealed class Grantee : SqlNode
+public sealed partial class Grantee : SqlNode
 {
     public Identifier? Name { get; set; }
     public bool Public { get; set; }
@@ -150,7 +150,7 @@ public sealed class Grantee : SqlNode
 public enum GrantObjectKind { Directory, Edition, MiningModel, JavaSource, JavaResource, SqlTranslationProfile, User }
 public enum GrantContainer { Current, All }
 
-public sealed class GrantStatement : Statement
+public sealed partial class GrantStatement : Statement
 {
     public bool Revoke { get; set; }
     public bool AllPrivileges { get; set; }
@@ -166,7 +166,7 @@ public sealed class GrantStatement : Statement
     public GrantContainer? Container { get; set; }
 }
 
-public sealed class RenameStatement : Statement
+public sealed partial class RenameStatement : Statement
 {
     public List<Identifier> From { get; set; } = [];
     public List<Identifier> To { get; set; } = [];
@@ -174,7 +174,7 @@ public sealed class RenameStatement : Statement
 
 public enum PurgeTarget { Recyclebin, DbaRecyclebin, Table, Index, Tablespace, TablespaceSet }
 
-public sealed class PurgeStatement : Statement
+public sealed partial class PurgeStatement : Statement
 {
     public PurgeTarget Target { get; set; }
     public List<Identifier> Name { get; set; } = [];
@@ -183,7 +183,7 @@ public sealed class PurgeStatement : Statement
 
 public enum FlashbackTarget { Scn, Timestamp, RestorePoint, BeforeDrop }
 
-public sealed class FlashbackTableStatement : Statement
+public sealed partial class FlashbackTableStatement : Statement
 {
     public List<List<Identifier>> Tables { get; set; } = [];
     public FlashbackTarget Target { get; set; }
@@ -196,13 +196,13 @@ public sealed class FlashbackTableStatement : Statement
 // ---------- SQL*Plus & script-level ----------
 
 /// <summary>EXEC[UTE] procedure(args) (SQL*Plus shorthand for an anonymous block).</summary>
-public sealed class ExecStatement : Statement
+public sealed partial class ExecStatement : Statement
 {
     public Expression Call { get; set; } = null!;
 }
 
 /// <summary>A SQL*Plus client command (SET, SPOOL, DEFINE, @script, PROMPT, REM, VARIABLE, WHENEVER, ...). Never sent to the server.</summary>
-public sealed class SqlPlusCommand : Statement
+public sealed partial class SqlPlusCommand : Statement
 {
     public string Command { get; set; } = "";
     /// <summary>Remaining tokens on the command's line.</summary>
@@ -223,7 +223,7 @@ public enum ObjectKind
 }
 
 /// <summary>CREATE of an object kind that has no dedicated node; the clause body is a token tree.</summary>
-public sealed class CreateObjectStatement : Statement
+public sealed partial class CreateObjectStatement : Statement
 {
     public ObjectKind Kind { get; set; }
     public bool OrReplace { get; set; }
@@ -234,7 +234,7 @@ public sealed class CreateObjectStatement : Statement
 }
 
 /// <summary>ALTER of an object kind that has no dedicated node; the clause body is a token tree.</summary>
-public sealed class AlterObjectStatement : Statement
+public sealed partial class AlterObjectStatement : Statement
 {
     public ObjectKind Kind { get; set; }
     public bool Public { get; set; }
@@ -244,13 +244,13 @@ public sealed class AlterObjectStatement : Statement
 }
 
 /// <summary>Statements such as ANALYZE, AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT (token-tree body).</summary>
-public sealed class AdminStatement : Statement
+public sealed partial class AdminStatement : Statement
 {
     public string Verb { get; set; } = "";
     public List<SyntaxItem> Body { get; set; } = [];
 }
 
-public sealed class DropStatement : Statement
+public sealed partial class DropStatement : Statement
 {
     public ObjectKind Kind { get; set; }
     public bool Public { get; set; }
@@ -272,9 +272,9 @@ public sealed class DropStatement : Statement
 
 // ---------- Physical attributes ----------
 
-public abstract class PhysicalAttribute : SqlNode { }
+public abstract partial class PhysicalAttribute : SqlNode { }
 
-public sealed class TablespaceAttribute : PhysicalAttribute
+public sealed partial class TablespaceAttribute : PhysicalAttribute
 {
     public Identifier Name { get; set; } = null!;
     public bool Default { get; set; }
@@ -282,34 +282,34 @@ public sealed class TablespaceAttribute : PhysicalAttribute
 
 public enum NumericAttributeKind { PctFree, PctUsed, InitTrans, MaxTrans, PctThreshold, Freelists }
 
-public sealed class NumericAttribute : PhysicalAttribute
+public sealed partial class NumericAttribute : PhysicalAttribute
 {
     public NumericAttributeKind Kind { get; set; }
     public Expression Value { get; set; } = null!;
 }
 
-public sealed class StorageAttribute : PhysicalAttribute
+public sealed partial class StorageAttribute : PhysicalAttribute
 {
     public List<StorageOption> Options { get; set; } = [];
 }
 
-public sealed class StorageOption : SqlNode
+public sealed partial class StorageOption : SqlNode
 {
     public string Name { get; set; } = "";
     public Expression? Value { get; set; }
 }
 
-public sealed class LoggingAttribute : PhysicalAttribute { public bool Logging { get; set; } }
-public sealed class CacheAttribute : PhysicalAttribute { public bool Cache { get; set; } }
-public sealed class RowMovementAttribute : PhysicalAttribute { public bool Enabled { get; set; } }
+public sealed partial class LoggingAttribute : PhysicalAttribute { public bool Logging { get; set; } }
+public sealed partial class CacheAttribute : PhysicalAttribute { public bool Cache { get; set; } }
+public sealed partial class RowMovementAttribute : PhysicalAttribute { public bool Enabled { get; set; } }
 
-public sealed class ParallelAttribute : PhysicalAttribute
+public sealed partial class ParallelAttribute : PhysicalAttribute
 {
     public bool NoParallel { get; set; }
     public Expression? Degree { get; set; }
 }
 
-public sealed class CompressAttribute : PhysicalAttribute
+public sealed partial class CompressAttribute : PhysicalAttribute
 {
     public bool Compress { get; set; }
     public Expression? PrefixLength { get; set; }
@@ -319,7 +319,7 @@ public sealed class CompressAttribute : PhysicalAttribute
 
 public enum TableOrganization { Heap, Index, External }
 
-public sealed class OrganizationAttribute : PhysicalAttribute
+public sealed partial class OrganizationAttribute : PhysicalAttribute
 {
     public TableOrganization Organization { get; set; }
     /// <summary>ORGANIZATION EXTERNAL (...) / INDEX options.</summary>
@@ -328,7 +328,7 @@ public sealed class OrganizationAttribute : PhysicalAttribute
 
 public enum PartitionMethod { Range, List, Hash, Reference, System }
 
-public sealed class PartitionByAttribute : PhysicalAttribute
+public sealed partial class PartitionByAttribute : PhysicalAttribute
 {
     public PartitionMethod Method { get; set; }
     public List<Identifier> Columns { get; set; } = [];
@@ -341,7 +341,7 @@ public sealed class PartitionByAttribute : PhysicalAttribute
     public List<Identifier> SubpartitionColumns { get; set; } = [];
 }
 
-public sealed class PartitionDefinition : SqlNode
+public sealed partial class PartitionDefinition : SqlNode
 {
     public Identifier? Name { get; set; }
     public bool LessThan { get; set; }
@@ -352,7 +352,7 @@ public sealed class PartitionDefinition : SqlNode
 }
 
 /// <summary>Attribute syntax without a dedicated node, as a token tree (see COVERAGE.md).</summary>
-public sealed class OtherAttribute : PhysicalAttribute
+public sealed partial class OtherAttribute : PhysicalAttribute
 {
     public List<SyntaxItem> Items { get; set; } = [];
 }
@@ -361,7 +361,7 @@ public sealed class OtherAttribute : PhysicalAttribute
 
 public enum OnCommitAction { PreserveRows, DeleteRows, DropDefinition, PreserveDefinition }
 
-public sealed class CreateTableStatement : Statement
+public sealed partial class CreateTableStatement : Statement
 {
     public SharingKind? Sharing { get; set; }
     public bool OrReplace { get; set; }
@@ -383,14 +383,14 @@ public sealed class CreateTableStatement : Statement
 
 public enum IdentityMode { Always, ByDefault }
 
-public sealed class IdentityClause : SqlNode
+public sealed partial class IdentityClause : SqlNode
 {
     public IdentityMode Mode { get; set; }
     public bool OnNull { get; set; }
     public List<SequenceOption> Options { get; set; } = [];
 }
 
-public sealed class EncryptClause : SqlNode
+public sealed partial class EncryptClause : SqlNode
 {
     public Expression? Algorithm { get; set; }
     public Expression? IdentifiedBy { get; set; }
@@ -398,7 +398,7 @@ public sealed class EncryptClause : SqlNode
     public bool Salt { get; set; }
 }
 
-public sealed class ColumnDefinition : SqlNode
+public sealed partial class ColumnDefinition : SqlNode
 {
     public Identifier Name { get; set; } = null!;
     public DataType? Type { get; set; }
@@ -417,7 +417,7 @@ public sealed class ColumnDefinition : SqlNode
 
 public enum ConstraintKind { PrimaryKey, Unique, ForeignKey, Check, NotNull, Null }
 
-public sealed class ConstraintState : SqlNode
+public sealed partial class ConstraintState : SqlNode
 {
     public bool? Deferrable { get; set; }
     public bool? InitiallyDeferred { get; set; }
@@ -428,7 +428,7 @@ public sealed class ConstraintState : SqlNode
     public List<Identifier> ExceptionsInto { get; set; } = [];
 }
 
-public sealed class UsingIndexClause : SqlNode
+public sealed partial class UsingIndexClause : SqlNode
 {
     public List<Identifier> IndexName { get; set; } = [];
     public CreateIndexStatement? Create { get; set; }
@@ -437,7 +437,7 @@ public sealed class UsingIndexClause : SqlNode
 
 public enum ReferentialAction { Cascade, SetNull }
 
-public sealed class TableConstraint : SqlNode
+public sealed partial class TableConstraint : SqlNode
 {
     public Identifier? Name { get; set; }
     /// <summary>Null only for MODIFY CONSTRAINT name ... which identifies a constraint by name.</summary>
@@ -450,7 +450,7 @@ public sealed class TableConstraint : SqlNode
     public ConstraintState? State { get; set; }
 }
 
-public sealed class CreateIndexStatement : Statement
+public sealed partial class CreateIndexStatement : Statement
 {
     public bool Unique { get; set; }
     public bool Bitmap { get; set; }
@@ -471,7 +471,7 @@ public sealed class CreateIndexStatement : Statement
     public List<PhysicalAttribute> Attributes { get; set; } = [];
 }
 
-public sealed class IndexColumn : SqlNode
+public sealed partial class IndexColumn : SqlNode
 {
     public Expression Expression { get; set; } = null!;
     public bool Descending { get; set; }
@@ -481,7 +481,7 @@ public enum ViewBequeath { CurrentUser, Definer }
 public enum RefreshMethod { Fast, Complete, Force, Never }
 public enum RefreshMode { OnDemand, OnCommit }
 
-public sealed class RefreshClause : SqlNode
+public sealed partial class RefreshClause : SqlNode
 {
     public RefreshMethod? Method { get; set; }
     public RefreshMode? Mode { get; set; }
@@ -491,7 +491,7 @@ public sealed class RefreshClause : SqlNode
     public bool WithRowId { get; set; }
 }
 
-public sealed class CreateViewStatement : Statement
+public sealed partial class CreateViewStatement : Statement
 {
     public SharingKind? Sharing { get; set; }
     public bool OrReplace { get; set; }
@@ -514,7 +514,7 @@ public sealed class CreateViewStatement : Statement
     public Identifier? CheckOptionConstraint { get; set; }
 }
 
-public sealed class CreateSequenceStatement : Statement
+public sealed partial class CreateSequenceStatement : Statement
 {
     public SharingKind? Sharing { get; set; }
     public bool IfNotExists { get; set; }
@@ -522,14 +522,14 @@ public sealed class CreateSequenceStatement : Statement
     public List<SequenceOption> Options { get; set; } = [];
 }
 
-public sealed class SequenceOption : SqlNode
+public sealed partial class SequenceOption : SqlNode
 {
     /// <summary>Keyword phrase: START WITH, INCREMENT BY, MAXVALUE, NOMAXVALUE, CACHE, CYCLE, ORDER, KEEP, SCALE, ...</summary>
     public string Name { get; set; } = "";
     public Expression? Value { get; set; }
 }
 
-public sealed class CreateSynonymStatement : Statement
+public sealed partial class CreateSynonymStatement : Statement
 {
     public SharingKind? Sharing { get; set; }
     public bool OrReplace { get; set; }
@@ -540,7 +540,7 @@ public sealed class CreateSynonymStatement : Statement
     public List<Identifier> DbLink { get; set; } = [];
 }
 
-public sealed class AlterTableStatement : Statement
+public sealed partial class AlterTableStatement : Statement
 {
     public List<Identifier> Name { get; set; } = [];
     public bool IfExists { get; set; }
@@ -553,7 +553,7 @@ public enum AlterTableActionKind
     RenameColumn, RenameConstraint, RenameTo, ModifyConstraint, SetUnused, Attributes, Other,
 }
 
-public sealed class AlterTableAction : SqlNode
+public sealed partial class AlterTableAction : SqlNode
 {
     public AlterTableActionKind Kind { get; set; }
     public List<ColumnDefinition> Columns { get; set; } = [];
