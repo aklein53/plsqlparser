@@ -321,6 +321,8 @@ public sealed class Identifier : SqlNode
     /// <summary>Normalized: unquoted names upper-cased; quoted names verbatim.</summary>
     public string Value { get; set; } = "";
     public bool Quoted { get; set; }
+    /// <summary>The name exactly as typed (without quotes); null for synthesized identifiers. Used by <see cref="SqlScriptGenerator"/> to preserve case.</summary>
+    public string? Text { get; set; }
     public override string ToString() => Value;
 }
 
@@ -340,6 +342,8 @@ public sealed class Literal : Expression
     public LiteralKind Kind { get; set; }
     /// <summary>N'...' / NQ'...' national character literal.</summary>
     public bool National { get; set; }
+    /// <summary>Opening delimiter of a q'…' alternative-quoting literal (e.g. '[' for q'[it's]'); null for ordinary 'strings'.</summary>
+    public char? QuoteDelimiter { get; set; }
     public string? Value { get; set; }
 }
 
@@ -357,6 +361,8 @@ public enum IntervalUnit { Year, Month, Day, Hour, Minute, Second }
 public sealed class BindVariable : Expression
 {
     public string Name { get; set; } = "";
+    /// <summary>The name was written quoted (:"name").</summary>
+    public bool Quoted { get; set; }
 }
 
 public sealed class StarExpression : Expression

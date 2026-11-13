@@ -262,6 +262,14 @@ public sealed partial class SqlParser
         return e;
     }
 
+    /// <summary>For a q'[..]' / nq'[..]' token, the opening delimiter character; otherwise null.</summary>
+    private static char? QuoteDelimiterOf(string text)
+    {
+        int q = text.IndexOf('\'');
+        if (q <= 0 || q + 1 >= text.Length) return null;
+        return text.AsSpan(0, q).IndexOfAny('q', 'Q') >= 0 ? text[q + 1] : null;
+    }
+
     private Expression ParsePrimary()
     {
         var start = Cur;
@@ -272,7 +280,7 @@ public sealed partial class SqlParser
                 return Fin(new Literal { Kind = LiteralKind.Number, Value = start.Text }, start);
             case TokenType.String:
                 Next();
-                return Fin(new Literal { Kind = LiteralKind.String, Value = start.Value, National = start.Text[0] is 'n' or 'N' }, start);
+                return Fin(new Literal { Kind = LiteralKind.String, Value = start.Value, National = start.Text[0] is 'n' or 'N', QuoteDelimiter = QuoteDelimiterOf(start.Text) }, start);
             case TokenType.Substitution:
                 Next();
                 return Fin(new SubstitutionVariable { Name = start.Value.TrimStart('&'), Persistent = start.Value.StartsWith('&') }, start);
@@ -286,7 +294,7 @@ public sealed partial class SqlParser
                     Next();
                     name += "." + Next().Text;
                 }
-                return Fin(new BindVariable { Name = name }, start);
+                return Fin(new BindVariable { Name = name, Quoted = start.Text.Length > 1 && start.Text[1] == '"' }, start);
             }
             case TokenType.Operator:
                 if (IsOp("("))

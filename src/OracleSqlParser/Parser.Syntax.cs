@@ -26,8 +26,8 @@ public sealed partial class SqlParser
         var s = Cur;
         switch (s.Type)
         {
-            case TokenType.Identifier: Next(); return Fin(new WordItem { Value = s.Value }, s);
-            case TokenType.QuotedIdentifier: Next(); return Fin(new WordItem { Value = s.Value, Quoted = true }, s);
+            case TokenType.Identifier: Next(); return Fin(new WordItem { Value = s.Value, Text = s.Text }, s);
+            case TokenType.QuotedIdentifier: Next(); return Fin(new WordItem { Value = s.Value, Quoted = true, Text = s.Value }, s);
             case TokenType.Number: Next(); return Fin(new LiteralItem { Kind = LiteralKind.Number, Value = s.Text }, s);
             case TokenType.String: Next(); return Fin(new LiteralItem { Kind = LiteralKind.String, Value = s.Value }, s);
             case TokenType.Bind: Next(); return Fin(new BindItem { Name = s.Text[1..] }, s);

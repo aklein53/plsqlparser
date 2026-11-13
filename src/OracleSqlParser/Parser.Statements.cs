@@ -346,7 +346,7 @@ public sealed partial class SqlParser
 
     // ---- object kinds ----
 
-    private static readonly (string[] Words, ObjectKind Kind)[] ObjectKindTable = new (string[], ObjectKind)[]
+    internal static readonly (string[] Words, ObjectKind Kind)[] ObjectKindTable = new (string[], ObjectKind)[]
     {
         (["MATERIALIZED","VIEW","LOG"], ObjectKind.MaterializedViewLog), (["MATERIALIZED","ZONEMAP"], ObjectKind.MaterializedZonemap),
         (["MATERIALIZED","VIEW"], ObjectKind.MaterializedView), (["PACKAGE","BODY"], ObjectKind.PackageBody),

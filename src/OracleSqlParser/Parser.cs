@@ -813,7 +813,7 @@ public sealed partial class SqlParser
         if (t.Type is not (TokenType.Identifier or TokenType.QuotedIdentifier))
             throw Fail($"Expected identifier but found {Describe(t)}");
         Next();
-        return Fin(new Identifier { Value = t.Value, Quoted = t.Type == TokenType.QuotedIdentifier }, t);
+        return Fin(new Identifier { Value = t.Value, Quoted = t.Type == TokenType.QuotedIdentifier, Text = t.Type == TokenType.QuotedIdentifier ? t.Value : t.Text }, t);
     }
 
     private List<Identifier> ParseIdentifierList()

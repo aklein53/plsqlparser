@@ -60,10 +60,11 @@ public class SqlWriterTests
     }
 
     [Fact]
-    public void WithFunction_IsRejectedExplicitly() =>
-        Assert.Throws<NotSupportedException>(() => SqlWriter.ToSql(Shape.Parse("WITH FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; END; SELECT f FROM dual").Statements[0]));
+    public void WithFunction_IsPrinted() =>
+        Assert.Equal("WITH FUNCTION F RETURN NUMBER IS BEGIN RETURN 1; END; SELECT F FROM DUAL",
+            SqlWriter.ToSql(Shape.Parse("WITH FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; END; SELECT f FROM dual").Statements[0]));
 
     [Fact]
-    public void NonQueryStatements_AreRejectedExplicitly() =>
-        Assert.Throws<NotSupportedException>(() => SqlWriter.ToSql(Shape.Parse("DELETE FROM t").Statements[0]));
+    public void NonQueryStatements_ArePrintedByTheFacade() =>
+        Assert.Equal("DELETE FROM T", SqlWriter.ToSql(Shape.Parse("DELETE FROM t").Statements[0]));
 }
