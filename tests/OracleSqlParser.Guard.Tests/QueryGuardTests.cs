@@ -1,7 +1,8 @@
 using OracleSqlParser;
+using OracleSqlParser.Guard;
 using Xunit;
 
-namespace OracleSqlParser.Tests;
+namespace OracleSqlParser.Guard.Tests;
 
 public class QueryGuardTests
 {

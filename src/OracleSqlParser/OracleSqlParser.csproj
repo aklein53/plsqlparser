@@ -11,7 +11,7 @@
     <PackageId>PlsqlParser</PackageId>
     <Version>0.1.0-preview.1</Version>
     <Authors>aklein53</Authors>
-    <Description>Oracle SQL and PL/SQL parser producing a typed AST, with a SQL writer and a query guard for user-supplied queries.</Description>
+    <Description>Oracle SQL and PL/SQL parser producing a typed AST, with a SQL writer for SELECT statements.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/aklein53/plsqlparser</PackageProjectUrl>
     <RepositoryUrl>https://github.com/aklein53/plsqlparser</RepositoryUrl>
