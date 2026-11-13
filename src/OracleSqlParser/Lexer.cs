@@ -4,10 +4,27 @@ namespace OracleSqlParser;
 
 public enum TokenType { Identifier, QuotedIdentifier, Number, String, Bind, Substitution, Hint, Operator, EOF }
 
+public enum TriviaKind { Whitespace, LineComment, BlockComment }
+
+/// <summary>
+/// Source text that is not a token: whitespace or a comment. <see cref="Start"/> and <see cref="End"/> are offsets into
+/// the source; <see cref="Text"/> is the source substring.
+/// </summary>
+public readonly record struct Trivia(TriviaKind Kind, string Text, int Start, int End);
+
 public readonly record struct Token(TokenType Type, string Text, int Start, int End, int Line, int Column)
 {
     /// <summary>Normalized value: unquoted identifiers upper-cased, quotes/escapes stripped.</summary>
     public string Value { get; init; } = Text;
+
+    /// <summary>
+    /// Whitespace and comments between the previous token and this one, in source order. Optimizer hints are
+    /// tokens, not trivia. Concatenating every token's trivia and <c>source[Start..End]</c> reproduces the source.
+    /// </summary>
+    public IReadOnlyList<Trivia> LeadingTrivia { get; init; } = [];
+
+    /// <summary>Index of this token in <c>ParseResult.Tokens</c>, or -1 when the token is not part of one.</summary>
+    internal int TokenIndex { get; init; } = -1;
 }
 
 public sealed class ParseError(string message, int offset, int line, int column)
@@ -38,6 +55,7 @@ public sealed class Lexer
     private bool _javaBody;
     private readonly List<string> _words = [];
     private bool _pendingSemi;
+    private readonly List<Trivia> _trivia = [];
 
     /// <summary>Lexical errors recorded so far (the lexer recovers and keeps going).</summary>
     public List<ParseError> Errors { get; } = [];
@@ -75,7 +93,19 @@ public sealed class Lexer
         return new Token(type, text, start, _i, line, col) { Value = value ?? text };
     }
 
+    /// <summary>Returns the next token; whitespace and comments skipped before it are attached as its <see cref="Token.LeadingTrivia"/>.</summary>
     public Token Next()
+    {
+        var t = NextCore();
+        if (_trivia.Count > 0)
+        {
+            t = t with { LeadingTrivia = _trivia.ToArray() };
+            _trivia.Clear();
+        }
+        return t;
+    }
+
+    private Token NextCore()
     {
         if (_pendingSemi)
         {
@@ -86,7 +116,7 @@ public sealed class Lexer
         {
             _javaBody = false;
             _words.Clear();
-            while (_i < _s.Length && char.IsWhiteSpace(Cur)) Advance();
+            ScanWhitespace(stopAtNewline: false);
             int js = _i, jl = _line, jc = _i - _lineStart + 1;
             while (_i < _s.Length)
             {
@@ -99,7 +129,7 @@ public sealed class Lexer
         if (_pendingRest)
         {
             _pendingRest = false;
-            while (_i < _s.Length && Cur != '\n' && char.IsWhiteSpace(Cur)) Advance();
+            ScanWhitespace(stopAtNewline: true);
             if (_i < _s.Length && Cur != '\n')
             {
                 int rs = _i, rl = _line, rc = _i - _lineStart + 1;
@@ -189,16 +219,28 @@ public sealed class Lexer
         return Make(TokenType.Operator, start, line, col); // unknown character: let the parser decide (SQL*Plus lines may contain any text)
     }
 
+    private void AddTrivia(TriviaKind kind, int start) =>
+        _trivia.Add(new Trivia(kind, _s.Substring(start, _i - start), start, _i));
+
+    private void ScanWhitespace(bool stopAtNewline)
+    {
+        int ws = _i;
+        while (_i < _s.Length && char.IsWhiteSpace(Cur) && !(stopAtNewline && Cur == '\n')) Advance();
+        if (_i > ws) AddTrivia(TriviaKind.Whitespace, ws);
+    }
+
     private void SkipTrivia(out Token? hint)
     {
         hint = null;
         while (_i < _s.Length)
         {
             char c = Cur;
-            if (char.IsWhiteSpace(c)) { Advance(); continue; }
+            if (char.IsWhiteSpace(c)) { ScanWhitespace(stopAtNewline: false); continue; }
             if (c == '-' && Peek() == '-')
             {
+                int cs = _i;
                 while (_i < _s.Length && Cur != '\n') Advance();
+                AddTrivia(TriviaKind.LineComment, cs);
                 continue;
             }
             if (c == '/' && Peek() == '*')
@@ -208,7 +250,7 @@ public sealed class Lexer
                 Advance(); Advance();
                 while (true)
                 {
-                    if (_i >= _s.Length) { Error("Unterminated comment", start, line, col); return; }
+                    if (_i >= _s.Length) { Error("Unterminated comment", start, line, col); AddTrivia(TriviaKind.BlockComment, start); return; }
                     if (Cur == '*' && Peek() == '/') { Advance(); Advance(); break; }
                     Advance();
                 }
@@ -218,6 +260,7 @@ public sealed class Lexer
                     hint = new Token(TokenType.Hint, text, start, _i, line, col) { Value = text[3..^2].Trim() };
                     return;
                 }
+                AddTrivia(TriviaKind.BlockComment, start);
                 continue;
             }
             break;
