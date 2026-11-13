@@ -16,13 +16,13 @@ fuzz) and were re-verified by hand where cited.
 
 | # | Defect (verified) | Fix |
 |---|---|---|
-| 0.1 | Infinite loop: `SELECT LAG(x, 1) IGNORE` (function-clause loop never advances) | Loop must consume or fail; global no-progress guard |
-| 0.2 | Stack overflow kills the process at ~300 nesting levels on a thread-pool thread (parens, subqueries, CASE, calls); writer/printer overflow on 6–7k-term `AND`/`||`/`UNION` chains | Depth counter → `ParseException` (default 200, configurable via `ParseOptions`); iterative traversal in `Descendants`/writer/printer for left-deep chains |
-| 0.3 | `Parse` throws undocumented `InvalidCastException` (`*` in MODEL/MATCH_RECOGNIZE/XMLTABLE item lists), `FormatException`/`OverflowException` (`INTERVAL '' YEAR(3.`) | Type checks at the cast sites; `TryParse` for precision; fuzz harness becomes a regression test |
-| 0.4 | `Descendants()` is O(n·depth) (12 s on a 20k-term AND chain) | Explicit stack; generated children (Epic 2) |
-| 0.5 | `AstJson.Serialize` throws at depth 64 | Raise `MaxDepth` |
-| 0.6 | Recovery loses statements after an error when separated only by `/`; a lexer error drops the rest of the script; negative error columns | Resync on lone `/`; resume lexing on the next line after an unterminated literal; fix column math |
-| 0.7 | Fidelity: `UTL_HTTP.REQUEST(...).foo()` parses as `FOO()` — the receiver is dropped | `MethodCall { Target, Name, Arguments }` node |
+| 0.1 ✅ | Infinite loop: `SELECT LAG(x, 1) IGNORE` (function-clause loop never advances) | Loop must consume or fail; global no-progress guard |
+| 0.2 ✅ | Stack overflow kills the process at ~300 nesting levels on a thread-pool thread (parens, subqueries, CASE, calls); writer/printer overflow on 6–7k-term `AND`/`||`/`UNION` chains | Depth counter → `ParseException` (default 200, configurable via `ParseOptions`); iterative traversal in `Descendants`/writer/printer for left-deep chains |
+| 0.3 ✅ | `Parse` throws undocumented `InvalidCastException` (`*` in MODEL/MATCH_RECOGNIZE/XMLTABLE item lists), `FormatException`/`OverflowException` (`INTERVAL '' YEAR(3.`) | Type checks at the cast sites; `TryParse` for precision; fuzz harness becomes a regression test |
+| 0.4 ✅ | `Descendants()` is O(n·depth) (12 s on a 20k-term AND chain) | Explicit stack; generated children (Epic 2) |
+| 0.5 ✅ | `AstJson.Serialize` throws at depth 64 | Raise `MaxDepth` |
+| 0.6 ✅ | Recovery loses statements after an error when separated only by `/`; a lexer error drops the rest of the script; negative error columns | Resync on lone `/`; resume lexing on the next line after an unterminated literal; fix column math |
+| 0.7 ✅ | Fidelity: `UTL_HTTP.REQUEST(...).foo()` parses as `FOO()` — the receiver is dropped | `MethodCall { Target, Name, Arguments }` node |
 
 ## Epic 1 — Script generation for every statement (ScriptDom's `SqlScriptGenerator`) · ~3 weeks
 

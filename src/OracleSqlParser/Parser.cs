@@ -198,6 +198,7 @@ public sealed partial class SqlParser
             if (Cur.Type == TokenType.EOF) break;
             int startIdx = _p;
             _depth = 0;
+            Exception? failure = null;
             try
             {
                 var st = ParseStatementCore();
@@ -207,15 +208,18 @@ public sealed partial class SqlParser
                 if (st is not SqlPlusCommand && !(st is ExecStatement && Cur.Line > Prev.Line) && Cur.Type != TokenType.EOF && !IsOp(";") && !IsOp("/"))
                     throw Fail($"Unexpected {Describe(Cur)}");
             }
-            catch (ParseException ex)
+            catch (ParseException ex) { failure = ex; }
+            // Last-resort net for defects not yet found: Parse must never throw.
+            catch (Exception ex) when (ex is not OutOfMemoryException) { failure = ex; }
+            // Recover outside the catch block: a catch handler still runs on top of the throwing (possibly very deep) stack.
+            if (failure is ParseException pe)
             {
-                errors.Add(ex.Error);
+                errors.Add(pe.Error);
                 Resync(startIdx);
             }
-            catch (Exception ex) when (ex is not OutOfMemoryException)
+            else if (failure != null)
             {
-                // Last-resort net for defects not yet found: Parse must never throw.
-                errors.Add(new ParseError($"internal parser error: {ex.GetType().Name}", Cur.Start, Cur.Line, Cur.Column));
+                errors.Add(new ParseError($"internal parser error: {failure.GetType().Name}", Cur.Start, Cur.Line, Cur.Column));
                 Resync(startIdx);
             }
             if (_p == startIdx && Cur.Type != TokenType.EOF) Next();
