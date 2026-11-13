@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);PLSQLGUARD001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\OracleSqlParser\OracleSqlParser.csproj" />
+    <ProjectReference Include="..\..\src\OracleSqlParser.Guard\OracleSqlParser.Guard.csproj" />
     <ProjectReference Include="..\OracleSqlParser.Tests\OracleSqlParser.Tests.csproj" />
   </ItemGroup>
 

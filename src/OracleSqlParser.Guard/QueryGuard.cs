@@ -1,18 +1,23 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using OracleSqlParser;
 
-namespace OracleSqlParser;
+namespace OracleSqlParser.Guard;
 
+[Experimental("PLSQLGUARD001")]
 public enum ViolationCode
 {
     ParseError, NotSingleSelect, TableNotAllowed, DatabaseLink, IntoClause, ForUpdate, PlsqlDeclaration, SubstitutionVariable,
     FunctionNotAllowed, UnknownQualifier, StarNotAllowed, MissingRequiredColumn, DuplicateColumnName, BindNameCollision, UnsupportedAccessSql,
 }
 
+[Experimental("PLSQLGUARD001")]
 public sealed record PolicyViolation(ViolationCode Code, string Message, int Line = 0, int Column = 0)
 {
     public override string ToString() => Line > 0 ? $"({Line}:{Column}) {Code}: {Message}" : $"{Code}: {Message}";
 }
 
+[Experimental("PLSQLGUARD001")]
 public sealed class QueryRejectedException(IReadOnlyList<PolicyViolation> violations)
     : Exception("Query rejected: " + string.Join("; ", violations))
 {
@@ -20,6 +25,7 @@ public sealed class QueryRejectedException(IReadOnlyList<PolicyViolation> violat
 }
 
 /// <summary>What a user-supplied query may do.</summary>
+[Experimental("PLSQLGUARD001")]
 public sealed class QueryPolicy
 {
     /// <summary>Tables/views the query may read, matched exactly as written in the query: NAME or SCHEMA.NAME (case-insensitive; an unqualified use does not match a SCHEMA.NAME entry). CTE names defined in the query are always fine.</summary>
@@ -39,9 +45,11 @@ public sealed class QueryPolicy
     public bool AllowStar { get; init; }
 }
 
+[Experimental("PLSQLGUARD001")]
 public enum AccessJoinStyle { InSubquery, InnerJoin }
 
 /// <summary>The trusted restriction applied to a user query: only rows whose key is in the access list.</summary>
+[Experimental("PLSQLGUARD001")]
 public sealed class AccessFilter
 {
     /// <summary>Column of the user's query that identifies the row (must be exposed by its select list).</summary>
@@ -56,8 +64,10 @@ public sealed class AccessFilter
     public string AccessIdColumn { get; init; } = "ID";
 }
 
+[Experimental("PLSQLGUARD001")]
 public sealed record GuardedSql(string Sql, IReadOnlyList<string> BindNames);
 
+[Experimental("PLSQLGUARD001")]
 public static class QueryGuard
 {
     private static readonly HashSet<string> StructuralFunctions = new(StringComparer.OrdinalIgnoreCase) { "ROLLUP", "CUBE", "GROUPING SETS" };
