@@ -266,4 +266,66 @@ public class SourceEditorTests
 
         Assert.Equal("SELECT x, y FROM t", Reparsed(editor.Apply()));
     }
+
+    // ---------- SourceEdits.AndWhere ----------
+
+    private static string AndWhere(string sql, string predicate)
+    {
+        var r = SqlParser.Parse(sql);
+        var editor = new SourceEditor(r);
+        editor.AndWhere(Find<QuerySpecification>(r), SqlParser.ParseExpression(predicate));
+        return Reparsed(editor.Apply());
+    }
+
+    [Fact]
+    public void AndWhere_WithExistingWhere_WrapsTheConditionAndKeepsItsText()
+    {
+        Assert.Equal("SELECT a FROM t WHERE (x = 1) AND (y > 2) -- keep\n",
+            AndWhere("SELECT a FROM t WHERE x = 1 -- keep\n", "y > 2"));
+    }
+
+    [Fact]
+    public void AndWhere_WithExistingOr_KeepsTheOrGrouped()
+    {
+        var output = AndWhere("SELECT a FROM t WHERE x = 1 OR z = 3", "y > 2");
+
+        Assert.Equal("SELECT a FROM t WHERE (x = 1 OR z = 3) AND (y > 2)", output);
+        // The OR must be the left operand of the AND, not a sibling of it.
+        var where = Find<QuerySpecification>(SqlParser.Parse(output)).Where;
+        Assert.True(SqlNodeComparer.StructurallyEqual(where!, SqlParser.ParseExpression("(x = 1 OR z = 3) AND (y > 2)")));
+    }
+
+    [Fact]
+    public void AndWhere_WithExistingWhereComment_KeepsTheCommentInsideTheCondition()
+    {
+        Assert.Equal("SELECT a FROM t WHERE (x = 1 /* c */ OR z = 3) AND (y > 2)",
+            AndWhere("SELECT a FROM t WHERE x = 1 /* c */ OR z = 3", "y > 2"));
+    }
+
+    [Fact]
+    public void AndWhere_WithoutWhere_InsertsWhereAfterTheFromClause()
+    {
+        Assert.Equal("SELECT a FROM t WHERE y > 2 -- keep\n",
+            AndWhere("SELECT a FROM t -- keep\n", "y > 2"));
+    }
+
+    [Fact]
+    public void AndWhere_WithoutWhere_GoesBeforeLaterClauses()
+    {
+        Assert.Equal("SELECT a FROM t WHERE y > 2 ORDER BY a",
+            AndWhere("SELECT a FROM t ORDER BY a", "y > 2"));
+    }
+
+    [Fact]
+    public void AndWhere_WithAJoin_InsertsAfterTheLastTokenOfTheOnCondition()
+    {
+        Assert.Equal("SELECT a FROM t o JOIN u ON o.id = u.id WHERE y > 2 -- c\n",
+            AndWhere("SELECT a FROM t o JOIN u ON o.id = u.id -- c\n", "y > 2"));
+    }
+
+    [Fact]
+    public void AndWhere_WithoutFrom_InsertsAfterTheLastSelectItem()
+    {
+        Assert.Equal("SELECT a, b WHERE y > 2", AndWhere("SELECT a, b", "y > 2"));
+    }
 }
