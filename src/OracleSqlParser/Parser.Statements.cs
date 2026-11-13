@@ -360,7 +360,7 @@ public sealed partial class SqlParser
         (["RESTORE","POINT"], ObjectKind.RestorePoint), (["FLASHBACK","ARCHIVE"], ObjectKind.FlashbackArchive),
         (["TABLESPACE","SET"], ObjectKind.TablespaceSet), (["RESOURCE","COST"], ObjectKind.ResourceCost),
         (["JAVA","SOURCE"], ObjectKind.JavaSource), (["JAVA","CLASS"], ObjectKind.JavaClass), (["JAVA","RESOURCE"], ObjectKind.JavaResource),
-        (["MLE","MODULE"], ObjectKind.Mle), (["MLE","ENV"], ObjectKind.Mle),
+        (["MLE","MODULE"], ObjectKind.MleModule), (["MLE","ENV"], ObjectKind.MleEnv),
         (["TABLE"], ObjectKind.Table), (["VIEW"], ObjectKind.View), (["INDEX"], ObjectKind.Index), (["INDEXTYPE"], ObjectKind.Indextype),
         (["SEQUENCE"], ObjectKind.Sequence), (["SYNONYM"], ObjectKind.Synonym), (["PROCEDURE"], ObjectKind.Procedure),
         (["FUNCTION"], ObjectKind.Function), (["PACKAGE"], ObjectKind.Package), (["TRIGGER"], ObjectKind.Trigger),

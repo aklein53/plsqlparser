@@ -219,7 +219,7 @@ public enum ObjectKind
     Operator, Outline, FlashbackArchive, RollbackSegment, RestorePoint, Diskgroup, PluggableDatabase, Database,
     LockdownProfile, AuditPolicy, AnalyticView, AttributeDimension, Hierarchy, InmemoryJoinGroup, MiningModel,
     PropertyGraph, JsonRelationalDualityView, SqlTranslationProfile, ControlFile, Pfile, Spfile, Schema, ResourceCost,
-    System, Session, Json, Mle, Sharding, Other,
+    System, Session, Json, MleModule, MleEnv, Sharding, Other,
 }
 
 /// <summary>CREATE of an object kind that has no dedicated node; the clause body is a token tree.</summary>

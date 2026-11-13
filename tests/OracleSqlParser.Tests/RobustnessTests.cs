@@ -143,18 +143,22 @@ public class RobustnessTests
     public void LeftDeepChains_ParseAndTraverse_WithoutStackOverflow(string name, string sql)
     {
         _ = name;
-        var (ok, nodes, printed, json) = RunOnSmallStack(() =>
+        var (ok, nodes, printed, json, generated) = RunOnSmallStack(() =>
         {
             var r = SqlParser.Parse(sql);
             int count = r.Script.Descendants().Count();
             string p = AstPrinter.Print(r.Script);
             string j = AstJson.Serialize(r.Script, indented: false);
-            return (r.Success, count, p.Length, j.Length);
+            string g = new SqlScriptGenerator().Generate(r.Script);
+            // the generated text must parse back to the same tree (also on the small stack)
+            bool same = AstPrinter.Print(SqlParser.Parse(g).Script) == p;
+            return (r.Success && same, count, p.Length, j.Length, g.Length);
         });
         Assert.True(ok);
         Assert.True(nodes > 1000);
         Assert.True(printed > 1000);
         Assert.True(json > 1000);
+        Assert.True(generated > 1000);
     }
 
     [Fact]
