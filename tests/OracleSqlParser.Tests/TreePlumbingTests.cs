@@ -103,7 +103,7 @@ public class TreePlumbingTests
     public void Rewriter_ReplacesNamedTableWithSubquery()
     {
         var script = Shape.Parse("SELECT * FROM a x JOIN b ON x.i = b.i");
-        var result = new TableToSubquery().Rewrite<SqlScript>(script);
+        var result = new TableToSubquery().RewriteTree(script);
         Assert.Same(script, result);
         var sql = Gen(script);
         Assert.Equal(0, script.Descendants().OfType<SubqueryTable>().Count(s => s.Query.Body is QuerySpecification q && q.From[0] is SubqueryTable));
@@ -127,7 +127,7 @@ public class TreePlumbingTests
     public void Rewriter_AndsPredicateOntoEveryWhere()
     {
         var script = Shape.Parse("SELECT a FROM t WHERE x = 1 OR y = 2 UNION ALL SELECT b FROM (SELECT c FROM u) v");
-        new AndWhere("tenant = 7").Rewrite<SqlScript>(script);
+        new AndWhere("tenant = 7").RewriteTree(script);
         Assert.Equal(
             "SELECT a FROM t WHERE (x = 1 OR y = 2) AND tenant = 7 UNION ALL SELECT b FROM (SELECT c FROM u WHERE tenant = 7) v WHERE tenant = 7",
             Gen(script));
@@ -142,7 +142,7 @@ public class TreePlumbingTests
     public void Rewriter_NullRemovesFromList()
     {
         var script = Shape.Parse("SELECT * FROM a, b, c");
-        new DropTable("B").Rewrite<SqlScript>(script);
+        new DropTable("B").RewriteTree(script);
         Assert.Equal("SELECT * FROM a, c", Gen(script));
     }
 
@@ -155,7 +155,7 @@ public class TreePlumbingTests
     public void Rewriter_NullNullsOptionalProperty()
     {
         var script = Shape.Parse("SELECT * FROM a WHERE x = 1");
-        new DropWhere().Rewrite<SqlScript>(script);
+        new DropWhere().RewriteTree(script);
         Assert.Equal("SELECT * FROM a", Gen(script));
     }
 
@@ -168,7 +168,7 @@ public class TreePlumbingTests
     public void Rewriter_NullForRequiredProperty_Throws()
     {
         var script = Shape.Parse("SELECT * FROM a WHERE x = 1");
-        var ex = Assert.Throws<InvalidOperationException>(() => new DropRequired().Rewrite<SqlScript>(script));
+        var ex = Assert.Throws<InvalidOperationException>(() => new DropRequired().RewriteTree(script));
         Assert.Contains("BinaryExpression.Right", ex.Message);
     }
 
@@ -181,7 +181,7 @@ public class TreePlumbingTests
     public void Rewriter_WrongType_ThrowsNamingTheProperty()
     {
         var script = Shape.Parse("SELECT * FROM a");
-        var ex = Assert.Throws<InvalidOperationException>(() => new WrongType().Rewrite<SqlScript>(script));
+        var ex = Assert.Throws<InvalidOperationException>(() => new WrongType().RewriteTree(script));
         Assert.Contains("QuerySpecification.From", ex.Message);
         Assert.Contains("Literal", ex.Message);
     }
@@ -193,7 +193,7 @@ public class TreePlumbingTests
         {
             var script = Shape.Parse(sql);
             var before = AstPrinter.Print(script);
-            new IdentityRewriter().Rewrite<SqlScript>(script);
+            new IdentityRewriter().RewriteTree(script);
             Assert.Equal(before, AstPrinter.Print(script));
         }
     }
@@ -222,7 +222,7 @@ public class TreePlumbingTests
         var original = Shape.Parse("SELECT a FROM t WHERE x = 1");
         var before = Gen(original);
         var clone = original.DeepClone<SqlScript>();
-        new TableToSubquery().Rewrite<SqlScript>(clone);
+        new TableToSubquery().RewriteTree(clone);
         clone.Descendants().OfType<Identifier>().First().Value = "ZZZ";
         Assert.Equal(before, Gen(original));
         Assert.NotEqual(before, Gen(clone));

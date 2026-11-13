@@ -5,7 +5,7 @@ using Xunit;
 
 namespace OracleSqlParser.Tests;
 
-public class GeneratedCodeTests
+public class GeneratedCodeTests(Xunit.Abstractions.ITestOutputHelper output)
 {
     internal static string RepoRoot()
     {
@@ -41,6 +41,7 @@ public class GeneratedCodeTests
         var sw = Stopwatch.StartNew();
         int count = script.Descendants().Count();
         sw.Stop();
+        output.WriteLine($"20k AND chain traversal: {sw.ElapsedMilliseconds} ms");
         Assert.True(count > 60_000);
         Assert.True(sw.ElapsedMilliseconds < 500, $"traversal took {sw.ElapsedMilliseconds} ms");
     }

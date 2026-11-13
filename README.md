@@ -150,7 +150,7 @@ sealed class TenantFilter(string predicate) : SqlNodeRewriter
     }
 }
 var script = SqlParser.Parse("SELECT a FROM t WHERE x = 1 OR y = 2").Script;
-new TenantFilter("tenant = 7").Rewrite<SqlScript>(script);                       // use the explicit type argument for the root
+new TenantFilter("tenant = 7").RewriteTree(script);                     
 new SqlScriptGenerator().Generate(script);                                       // SELECT a FROM t WHERE (x = 1 OR y = 2) AND tenant = 7;
 ```
 

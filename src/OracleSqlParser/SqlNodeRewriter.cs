@@ -9,7 +9,7 @@ namespace OracleSqlParser;
 /// Returning <c>null</c> for a required (non-nullable) property, or a node of a type the property cannot hold,
 /// throws <see cref="InvalidOperationException"/> naming the property.
 /// To rewrite the children of a replacement as well, call <c>base.Rewrite(...)</c> or rewrite it yourself.
-/// Use <see cref="Rewrite{TNode}(TNode)"/> (note the explicit type argument, which avoids the typed overloads) to start at a root.
+/// Use <see cref="RewriteTree{TNode}(TNode)"/> to start at a root.
 /// Rewriting is recursive, like <see cref="SqlNodeVisitor"/>, and mutates the tree it is given: clone first
 /// (<see cref="SqlNode.DeepClone{TNode}"/>) to keep the original.
 /// </summary>
@@ -23,7 +23,7 @@ public abstract partial class SqlNodeRewriter
     }
 
     /// <summary>Rewrites the tree under <paramref name="root"/> (and <paramref name="root"/> itself) and returns the new root. Throws <see cref="InvalidOperationException"/> if the root is removed or replaced by a node of another type.</summary>
-    public TNode Rewrite<TNode>(TNode root) where TNode : SqlNode
+    public TNode RewriteTree<TNode>(TNode root) where TNode : SqlNode
     {
         ArgumentNullException.ThrowIfNull(root);
         var r = root.AcceptRewriter(this);
