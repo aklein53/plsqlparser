@@ -283,7 +283,7 @@ public sealed partial class SqlParser
                 return Fin(new Literal { Kind = LiteralKind.String, Value = start.Value, National = start.Text[0] is 'n' or 'N', QuoteDelimiter = QuoteDelimiterOf(start.Text) }, start);
             case TokenType.Substitution:
                 Next();
-                return Fin(new SubstitutionVariable { Name = start.Value.TrimStart('&'), Persistent = start.Value.StartsWith('&') }, start);
+                return Fin(new SubstitutionVariable { Name = start.Value.TrimStart('&'), Persistent = start.Value.StartsWith('&'), Prefix = start.Text[0] }, start);
             case TokenType.Bind:
             {
                 Next();

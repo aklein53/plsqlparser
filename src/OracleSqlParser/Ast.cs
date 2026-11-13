@@ -604,6 +604,8 @@ public sealed partial class SubstitutionVariable : Expression
     public string Name { get; set; } = "";
     /// <summary>&amp;&amp;name (persistent).</summary>
     public bool Persistent { get; set; }
+    /// <summary>The prefix character as typed: '&amp;' by default, or the character set by SQL*Plus <c>SET DEFINE</c> (e.g. '^').</summary>
+    [SpellingOnly] public char Prefix { get; set; } = '&';
 }
 
 public sealed partial class CollateExpression : Expression

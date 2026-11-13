@@ -137,4 +137,26 @@ public class SubstitutionDefineTests
         Assert.True(new ParseOptions().SubstitutionEnabled);
         Assert.Single(Subs(SqlParser.Parse("SELECT &x FROM dual", new ParseOptions())));
     }
+
+    [Fact]
+    public void Custom_prefix_is_printed_back_and_reparses_to_the_same_tree()
+    {
+        const string sql = "SET DEFINE ^\nSELECT ^x, ^^y FROM dual";
+        var r = SqlParser.Parse(sql);
+        Assert.True(r.Success);
+        var printed = new SqlScriptGenerator(new SqlScriptGeneratorOptions()).Generate(r.Script);
+        Assert.Contains("^x", printed);
+        Assert.Contains("^^y", printed);
+        Assert.DoesNotContain("&", printed);
+        Assert.Equal(Shape.Of(sql), Shape.Of(printed));
+    }
+
+    [Fact]
+    public void Custom_prefix_survives_deep_clone()
+    {
+        var sv = Subs(SqlParser.Parse("SET DEFINE ^\nSELECT ^^y FROM dual")).Single();
+        var clone = sv.DeepClone<SubstitutionVariable>();
+        Assert.Equal('^', clone.Prefix);
+        Assert.True(clone.Persistent);
+    }
 }

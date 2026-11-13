@@ -73,7 +73,7 @@ public sealed partial class SqlScriptGenerator
                     if (c.OuterJoin) Add("(+)");
                     break;
                 case BindVariable b: Raw(b.Quoted ? ":\"" + b.Name + "\"" : ":" + b.Name); break;
-                case SubstitutionVariable sv: Raw(sv.Persistent ? "&&" : "&").Raw(sv.Name); break;
+                case SubstitutionVariable sv: Raw(sv.Persistent ? new string(sv.Prefix, 2) : sv.Prefix.ToString()).Raw(sv.Name); break;
                 case StarExpression st:
                     if (st.Qualifier.Count > 0) { Name(st.Qualifier); Add("."); }
                     Add("*");

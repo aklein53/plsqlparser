@@ -9561,6 +9561,7 @@ public partial class SubstitutionVariable
         CopySpan(this, c);
         c.Name = Name;
         c.Persistent = Persistent;
+        c.Prefix = Prefix;
         return c;
     }
 
