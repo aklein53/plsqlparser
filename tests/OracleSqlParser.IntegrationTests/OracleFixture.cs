@@ -70,9 +70,21 @@ public sealed class OracleFixture : IAsyncLifetime
 
     public async Task<OracleConnection> OpenAsync(string user, string pw, CancellationToken ct = default)
     {
-        var c = new OracleConnection(ConnectionString(user, pw));
-        await c.OpenAsync(ct);
-        return c;
+        // The listener occasionally refuses connections for a moment shortly after container start (ORA-50201 / ORA-12516); retry briefly.
+        for (int attempt = 1; ; attempt++)
+        {
+            var c = new OracleConnection(ConnectionString(user, pw));
+            try
+            {
+                await c.OpenAsync(ct);
+                return c;
+            }
+            catch (OracleException e) when (attempt < 30 && (e.Number is 50201 or 12516 or 12520 or 12518 or 12541))
+            {
+                await c.DisposeAsync();
+                await Task.Delay(500, ct);
+            }
+        }
     }
 
     public Task<OracleConnection> OpenAppAsync() => OpenAsync("APP", AppPassword);

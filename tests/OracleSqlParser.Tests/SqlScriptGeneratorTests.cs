@@ -342,6 +342,14 @@ public class SqlScriptGeneratorTests
     public void Comments_AreNotPreserved_KnownLimitation() =>
         Assert.Equal("SELECT a FROM t", Gen("SELECT /* inline */ a -- trailing\nFROM t /* more */"));
 
+    [Theory]
+    [InlineData("ALTER TABLE t DROP CONSTRAINT pk CASCADE", "ALTER TABLE t DROP CONSTRAINT pk CASCADE")]
+    [InlineData("ALTER TABLE t DROP PRIMARY KEY CASCADE", "ALTER TABLE t DROP PRIMARY KEY CASCADE")]
+    [InlineData("ALTER TABLE t DROP COLUMN c CASCADE CONSTRAINTS", "ALTER TABLE t DROP COLUMN c CASCADE CONSTRAINTS")]
+    [InlineData("SELECT * FROM s PIVOT XML (SUM(a) FOR (x, y) IN (ANY, ANY))", "SELECT * FROM s PIVOT XML (SUM(a) FOR (x, y) IN (ANY, ANY))")]
+    [InlineData("SELECT * FROM s PIVOT XML (SUM(a) FOR x IN (ANY))", "SELECT * FROM s PIVOT XML (SUM(a) FOR x IN (ANY))")]
+    public void OracleVerifiedForms_ArePrintedAsOracleRequires(string sql, string expected) => Assert.Equal(expected, Gen(sql));
+
     [Fact]
     public void SqlWriterFacade_IsCompactUppercase() =>
         Assert.Equal("SELECT MYCOL FROM T", SqlWriter.ToSql(Shape.Parse("select MyCol from t").Statements[0]));

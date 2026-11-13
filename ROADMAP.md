@@ -28,7 +28,7 @@ fuzz) and were re-verified by hand where cited.
 
 - [x] `SqlWriter` → `SqlScriptGenerator` covering DML, DDL (incl. token-tree bodies), transaction/session, PL/SQL
   blocks and program units, SQL*Plus commands. Verified by parse → print → parse tree equality over the whole
-  corpus (default, formatted and lower-case options) — [ ] and by execution against Oracle in the integration suite (run separately; needs Docker).
+  corpus (default, formatted and lower-case options) — and by execution against Oracle in the integration suite (`GeneratorAcceptanceTests`, `WriterRoundTripTests`; run separately, needs Docker).
 - [x] `SqlScriptGeneratorOptions`: keyword case, identifier case (**preserve** keeps the original lexeme on
   `Identifier.Text`), indentation, newline before clauses, clause-body alignment — modelled on ScriptDom's options. [ ] Maximum line width.
 - [x] Keep `q'…'` literal form, `N'…'` prefix, bind quoting (`:"b"`), number and hint text.

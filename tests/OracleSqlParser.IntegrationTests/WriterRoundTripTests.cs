@@ -117,4 +117,33 @@ public class WriterRoundTripTests(OracleFixture db)
         Assert.True(original.Rows.Count == reprinted.Rows.Count && original.Rows.Zip(reprinted.Rows).All(p => p.First.SequenceEqual(p.Second)),
             $"rows differ\nORIGINAL: {sql}\nPRINTED:  {printed}\n--- original\n{original.Render()}\n--- printed\n{reprinted.Render()}");
     }
+
+    public static IEnumerable<object[]> GeneratorCaseNames() =>
+        Cases.SelectMany(c => GeneratorOptionSets.All.Select(o => new object[] { c.Name, o.Name }));
+
+    /// <summary>Same comparison, but the SQL is printed by SqlScriptGenerator with the defaults, the fully formatted and the lower-case option sets.</summary>
+    [SkippableTheory]
+    [MemberData(nameof(GeneratorCaseNames))]
+    public async Task GeneratedSql_ReturnsSameRowsAsOriginal(string name, string optionSet)
+    {
+        db.SkipIfUnavailable();
+        var (_, sql, binds) = Cases.Single(c => c.Name == name);
+        await using var conn = await db.OpenAppAsync();
+
+        var original = await OracleFixture.QueryAsync(conn, sql, binds);
+
+        var parsed = SqlParser.Parse(sql);
+        Assert.True(parsed.Success, $"parser rejected: {string.Join("; ", parsed.Errors)}");
+        var options = GeneratorOptionSets.Get(optionSet)();
+        options.IncludeSemicolons = false; // ExecuteReader takes a bare statement
+        var generated = new SqlScriptGenerator(options).Generate(parsed.Script.Statements[0]);
+
+        ResultSet regenerated;
+        try { regenerated = await OracleFixture.QueryAsync(conn, generated, binds); }
+        catch (Exception e) { throw new Xunit.Sdk.XunitException($"Oracle rejected generated SQL ({optionSet}).\nORIGINAL:  {sql}\nGENERATED: {generated}\n{e.Message}"); }
+
+        Assert.True(original.Columns.SequenceEqual(regenerated.Columns), $"column names differ ({optionSet})\nORIGINAL:  {sql}\nGENERATED: {generated}\n{string.Join(",", original.Columns)}\nvs\n{string.Join(",", regenerated.Columns)}");
+        Assert.True(original.Rows.Count == regenerated.Rows.Count && original.Rows.Zip(regenerated.Rows).All(p => p.First.SequenceEqual(p.Second)),
+            $"rows differ ({optionSet})\nORIGINAL:  {sql}\nGENERATED: {generated}\n--- original\n{original.Render()}\n--- generated\n{regenerated.Render()}");
+    }
 }

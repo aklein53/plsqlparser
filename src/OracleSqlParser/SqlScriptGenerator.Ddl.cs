@@ -354,9 +354,9 @@ public sealed partial class SqlScriptGenerator
 
         // ---------- ALTER TABLE ----------
 
-        private void DropTail(AlterTableAction a)
+        private void DropTail(AlterTableAction a, bool columns = true)
         {
-            if (a.Cascade) Add(" CASCADE CONSTRAINTS");
+            if (a.Cascade) Add(columns ? " CASCADE CONSTRAINTS" : " CASCADE"); // DROP CONSTRAINT / PRIMARY KEY / UNIQUE take plain CASCADE (CASCADE CONSTRAINTS is the column form)
             if (a.Online) Add(" ONLINE");
             if (a.Syntax.Count > 0) { Sp(); SyntaxList(a.Syntax); }
         }
@@ -388,9 +388,9 @@ public sealed partial class SqlScriptGenerator
                     else { Add("DROP ("); IdList(a.Names); Add(")"); }
                     DropTail(a);
                     break;
-                case AlterTableActionKind.DropConstraint: Add("DROP CONSTRAINT "); IdList(a.Names); DropTail(a); break;
-                case AlterTableActionKind.DropPrimaryKey: Add("DROP PRIMARY KEY"); DropTail(a); break;
-                case AlterTableActionKind.DropUnique: Add("DROP UNIQUE ("); IdList(a.Names); Add(")"); DropTail(a); break;
+                case AlterTableActionKind.DropConstraint: Add("DROP CONSTRAINT "); IdList(a.Names); DropTail(a, false); break;
+                case AlterTableActionKind.DropPrimaryKey: Add("DROP PRIMARY KEY"); DropTail(a, false); break;
+                case AlterTableActionKind.DropUnique: Add("DROP UNIQUE ("); IdList(a.Names); Add(")"); DropTail(a, false); break;
                 case AlterTableActionKind.SetUnused:
                     if (a.Names.Count == 1) { Add("SET UNUSED COLUMN "); Id(a.Names[0]); }
                     else { Add("SET UNUSED ("); IdList(a.Names); Add(")"); }

@@ -140,5 +140,8 @@ dotnet test tests/OracleSqlParser.IntegrationTests
 One container is started per test run (first run pulls the image; allow a few minutes). They check that (a) the SQL printed
 by `SqlScriptGenerator` is accepted by Oracle and returns the same columns and rows as the original query, (b) the experimental `QueryGuard.RestrictToIds`
 output executes and returns only permitted ids in the tested scenarios for both `AccessJoinStyle` values, and (c) every statement of the smoke
-corpus passes Oracle's own syntax check inside a scratch schema (PL/SQL-only forms such as `SELECT ... INTO` are asserted to be rejected). Container startup is capped at 8 minutes (override with `ORACLE_TEST_STARTUP_TIMEOUT_SECONDS`); on timeout the tests are skipped with a clear message. If Docker is not available the tests are skipped, not failed.
+corpus passes Oracle's own syntax check inside a scratch schema (PL/SQL-only forms such as `SELECT ... INTO` are asserted to be rejected), and (d) generator verification: every corpus statement that Oracle accepts
+is regenerated with `SqlScriptGenerator` using the default, the fully formatted and the lower-case option sets, and each generated text must be classified by Oracle like
+the original (never rejected); the 62 result-comparing queries are also printed with all three option sets and must return identical rows
+(`GeneratorAcceptanceTests`, `WriterRoundTripTests`; known gaps, if any, are listed with a reason in `KnownGeneratorGaps`). Container startup is capped at 8 minutes (override with `ORACLE_TEST_STARTUP_TIMEOUT_SECONDS`); on timeout the tests are skipped with a clear message. If Docker is not available the tests are skipped, not failed.
 The default unit tests (`dotnet test tests/OracleSqlParser.Tests`) do not need Docker.
