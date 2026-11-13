@@ -167,6 +167,25 @@ new SqlScriptGenerator().Generate(script);                                      
 
   The tool builds the library without `Generated/` in a temporary copy and reflects over it, so it works even when the generated files are stale. The unit test `GeneratedCode_IsUpToDate` fails CI if you forget.
 
+## Tokens and comments
+
+Modelled on ScriptDom's `ScriptTokenStream`: the parse result keeps every token, and every node knows which tokens it covers.
+
+```csharp
+var r = SqlParser.Parse("SELECT /* c1 */ a -- c2\nFROM t");
+foreach (var tok in r.Tokens)                                     // every token, hints and EOF included, in source order
+    Console.WriteLine($"{tok.Text} preceded by {tok.LeadingTrivia.Count} trivia");
+
+var stmt = r.Script.Statements[0];
+Console.WriteLine(r.Tokens[stmt.FirstTokenIndex].Text);           // SELECT
+Console.WriteLine(r.Tokens[stmt.LastTokenIndex].Text);            // t
+```
+
+- `ParseResult.Tokens` is the complete lexer output. Optimizer hints the parser does not use are still listed there, though they are absent from the parser's own view of the stream.
+- `Token.LeadingTrivia` lists the whitespace and comments (`TriviaKind.Whitespace`, `LineComment`, `BlockComment`) between the previous token and this one. Each `Trivia` has its `Text` and source `Start`/`End`.
+- `SqlNode.FirstTokenIndex` and `LastTokenIndex` are indexes into `ParseResult.Tokens`. `Tokens[node.FirstTokenIndex].Start == node.Start` and `Tokens[node.LastTokenIndex].End == node.End` for every parsed node. Nodes built in code, and nodes from `ParseStatement`/`ParseExpression`, have -1.
+- Reconstruction invariant: for every token in order, append its leading trivia text, then `source[token.Start..token.End]`. The result is the original input exactly, so no text between tokens is lost.
+
 ## Roadmap
 
 See [ROADMAP.md](https://github.com/aklein53/plsqlparser/blob/main/ROADMAP.md) for planned work.

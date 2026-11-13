@@ -47,11 +47,12 @@ fuzz) and were re-verified by hand where cited.
 
 ## Epic 3 — Token stream and trivia (ScriptDom's `ScriptTokenStream`) · ~2 weeks
 
-- Lexer retains comments and whitespace as trivia; `ParseResult.Tokens`; every node gets `FirstTokenIndex` /
-  `LastTokenIndex` (ScriptDom's model) in addition to character spans.
-- Format-preserving rewrite: `SourceEditor` applies edits by span so untouched user text, comments and layout
+- [x] Lexer retains comments and whitespace as trivia (`Token.LeadingTrivia`).
+- [x] `ParseResult.Tokens`: the complete token stream, including dropped hints and EOF.
+- [x] Every node gets `FirstTokenIndex` / `LastTokenIndex` (ScriptDom's model) in addition to character spans.
+- [ ] Format-preserving rewrite: `SourceEditor` applies edits by span so untouched user text, comments and layout
   survive; generator used only for new/replaced nodes.
-- Honour `SET DEFINE OFF` for `&` handling in scripts.
+- [ ] Honour `SET DEFINE OFF` for `&` handling in scripts.
 
 ## Epic 4 — Syntax coverage (all rejections today; none are mis-parses) · S/M each
 
