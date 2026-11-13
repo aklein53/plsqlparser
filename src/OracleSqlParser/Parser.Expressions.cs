@@ -369,7 +369,7 @@ public sealed partial class SqlParser
                 {
                     Next();
                     var e = ParseNameOrFunction();
-                    if (e is FunctionCall f) { f.New = true; f.Start = start.Start; return f; }
+                    if (e is FunctionCall f) { f.New = true; f.Start = start.Start; f.FirstTokenIndex = start.TokenIndex; return f; }
                     throw Fail("Expected constructor call after NEW");
                 }
             }
@@ -465,6 +465,7 @@ public sealed partial class SqlParser
                         if (beh.Event == BehaviorEvent.ConversionError) arg.OnConversionError = beh;
                         else fc.Clauses.Add(beh);
                         arg.End = Prev.End;
+                        arg.LastTokenIndex = Prev.TokenIndex;
                     }
                     fc.Arguments.Add(arg);
                 } while (AcceptOp(","));

@@ -50,7 +50,7 @@ public sealed partial class SqlParser
 
     private HintClause ParseHint(Token tok)
     {
-        var h = new HintClause { Text = tok.Value, Start = tok.Start, End = tok.End, Line = tok.Line, Column = tok.Column };
+        var h = new HintClause { Text = tok.Value, Start = tok.Start, End = tok.End, Line = tok.Line, Column = tok.Column, FirstTokenIndex = tok.TokenIndex, LastTokenIndex = tok.TokenIndex };
         List<Token> toks;
         try { toks = Lexer.Tokenize(tok.Value); }
         catch (ParseException) { return h; }
@@ -59,7 +59,7 @@ public sealed partial class SqlParser
         {
             if (sub.Cur.Type == TokenType.Identifier)
             {
-                var item = new HintItem { Name = sub.Next().Value, Start = tok.Start, End = tok.End };
+                var item = new HintItem { Name = sub.Next().Value, Start = tok.Start, End = tok.End, FirstTokenIndex = tok.TokenIndex, LastTokenIndex = tok.TokenIndex };
                 if (sub.IsOp("(")) item.Arguments = ((GroupItem)sub.ParseSyntaxItem()).Items;
                 h.Items.Add(item);
             }

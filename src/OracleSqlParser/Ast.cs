@@ -25,6 +25,16 @@ public abstract partial class SqlNode
     public int Line { get; internal set; }
     /// <summary>1-based column of <see cref="Start"/>.</summary>
     public int Column { get; internal set; }
+    /// <summary>
+    /// Index into <c>ParseResult.Tokens</c> of the first token this node covers, or -1 when the node was built in code
+    /// (or came from a parse that has no token stream). <c>Tokens[FirstTokenIndex].Start == Start</c> when set.
+    /// </summary>
+    public int FirstTokenIndex { get; internal set; } = -1;
+    /// <summary>
+    /// Index into <c>ParseResult.Tokens</c> of the last token this node covers, or -1 (see <see cref="FirstTokenIndex"/>).
+    /// <c>Tokens[LastTokenIndex].End == End</c> when set.
+    /// </summary>
+    public int LastTokenIndex { get; internal set; } = -1;
 
     /// <summary>Direct child nodes, in property declaration order (nested lists are flattened). Generated per node type; no reflection.</summary>
     public virtual IEnumerable<SqlNode> GetChildren() => [];
@@ -73,6 +83,7 @@ public abstract partial class SqlNode
     internal static void CopySpan(SqlNode from, SqlNode to)
     {
         to.Start = from.Start; to.End = from.End; to.Line = from.Line; to.Column = from.Column;
+        to.FirstTokenIndex = from.FirstTokenIndex; to.LastTokenIndex = from.LastTokenIndex;
     }
 
     internal static T? CloneChild<T>(T? node) where T : SqlNode => node is null ? null : (T)node.CloneCore();

@@ -158,6 +158,7 @@ public sealed partial class SqlParser
         }
         ExpectOp(";");
         d.End = Prev.End;
+        d.LastTokenIndex = Prev.TokenIndex;
         return d;
     }
 

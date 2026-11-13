@@ -156,6 +156,8 @@ public sealed partial class SqlParser
         node.End = Prev.End;
         node.Line = start.Line;
         node.Column = start.Column;
+        node.FirstTokenIndex = start.TokenIndex;
+        node.LastTokenIndex = Prev.TokenIndex;
         return node;
     }
 
@@ -480,7 +482,7 @@ public sealed partial class SqlParser
         if (IsKw("GROUPING") && IsKwAt(1, "SETS") && IsOpAt(2, "("))
         {
             Next(); Next(); Next();
-            var fc = new FunctionCall { Name = [new Identifier { Value = "GROUPING SETS", Start = start.Start, End = start.End }] };
+            var fc = new FunctionCall { Name = [new Identifier { Value = "GROUPING SETS", Start = start.Start, End = start.End, FirstTokenIndex = start.TokenIndex, LastTokenIndex = start.TokenIndex }] };
             if (!IsOp(")"))
                 do { var a = Cur; fc.Arguments.Add(Fin(new Argument { Value = ParseGroupingSetElement() }, a)); } while (AcceptOp(","));
             ExpectOp(")");
