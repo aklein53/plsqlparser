@@ -3,7 +3,11 @@ using System.Reflection;
 
 namespace OracleSqlParser;
 
-/// <summary>Base class of every AST node. Start/End are character offsets into the source text.</summary>
+/// <summary>
+/// Base class of every AST node. Start/End are character offsets into the source text.
+/// Parsing (<see cref="SqlParser"/>) is thread-safe: every call uses its own state. Trees are mutable and
+/// are NOT thread-safe; do not share a tree between threads while any of them may modify it.
+/// </summary>
 public abstract class SqlNode
 {
     public int Start { get; set; }
@@ -11,14 +15,18 @@ public abstract class SqlNode
     public int Line { get; set; }
     public int Column { get; set; }
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, PropertyInfo[]> PropertyCache = new();
+
+    /// <summary>Public instance properties declared below <see cref="SqlNode"/>, in declaration order (cached per type).</summary>
+    internal static PropertyInfo[] NodeProperties(Type type) =>
+        PropertyCache.GetOrAdd(type, t => t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.DeclaringType != typeof(SqlNode) && p.GetIndexParameters().Length == 0).ToArray());
+
     /// <summary>Direct child nodes, in property declaration order (nested lists are flattened).</summary>
     public IEnumerable<SqlNode> Children()
     {
-        foreach (var p in GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
-        {
-            if (p.DeclaringType == typeof(SqlNode)) continue;
+        foreach (var p in NodeProperties(GetType()))
             foreach (var n in Nodes(p.GetValue(this))) yield return n;
-        }
     }
 
     private static IEnumerable<SqlNode> Nodes(object? v)
@@ -29,12 +37,20 @@ public abstract class SqlNode
                 foreach (var c in Nodes(item)) yield return c;
     }
 
-    /// <summary>This node and all descendants, depth-first pre-order.</summary>
+    /// <summary>This node and all descendants, depth-first pre-order. Uses an explicit stack (safe on very deep trees).</summary>
     public IEnumerable<SqlNode> Descendants()
     {
-        yield return this;
-        foreach (var c in Children())
-            foreach (var d in c.Descendants()) yield return d;
+        var stack = new Stack<SqlNode>();
+        stack.Push(this);
+        var tmp = new List<SqlNode>();
+        while (stack.Count > 0)
+        {
+            var n = stack.Pop();
+            yield return n;
+            tmp.Clear();
+            tmp.AddRange(n.Children());
+            for (int i = tmp.Count - 1; i >= 0; i--) stack.Push(tmp[i]);
+        }
     }
 }
 
