@@ -37,12 +37,13 @@ fuzz) and were re-verified by hand where cited.
 
 ## Epic 2 — Typed visitor and generated tree plumbing (ScriptDom's `TSqlFragmentVisitor`) · ~2 weeks
 
-- Source-generate per node type: `Accept(visitor)`, `Visit(T)` + `ExplicitVisit(T)` on an abstract `SqlFragmentVisitor`
-  (matching ScriptDom's model), and `GetChildren` (removes reflection: faster, AOT/trim-safe).
-- `SqlRewriter`/`ConcreteVisitor` that returns replacements (copy-on-write) for editing scenarios.
-- `required` members instead of `= null!` (~120 sites) so a hand-built tree fails at compile time, not in the printer.
-- Span setters internal; synthetic nodes marked; `ParseResult.Errors` read-only.
-- Thread-safety documented: parsing is thread-safe; trees are mutable and not.
+- [x] Generate per node type (checked-in output of `tools/AstGen`, no Roslyn generator): `Accept(visitor)`, `Visit(T)` + `ExplicitVisit(T)` on an abstract `SqlNodeVisitor`
+  (matching ScriptDom's model), and `GetChildren` (removes reflection from traversal: faster, AOT/trim-safe).
+- [x] `SqlNodeRewriter` with typed `Rewrite(T)` returning replacements (in place; null removes) for editing scenarios; `DeepClone`; `SqlNodeComparer.StructurallyEqual`.
+- [ ] `required` members instead of `= null!` (~120 sites) so a hand-built tree fails at compile time, not in the printer.
+  Deferred: would force every parser construction site to use initializers; ScriptDom does not do this either.
+- [x] Span setters internal (nodes built in code have zero spans); `ParseResult.Errors` read-only.
+- [x] Thread-safety documented: parsing is thread-safe; trees are mutable and not.
 
 ## Epic 3 — Token stream and trivia (ScriptDom's `ScriptTokenStream`) · ~2 weeks
 

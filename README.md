@@ -37,7 +37,7 @@ string json = AstJson.Serialize(result.Script, includePositions: true);
 
 - `SqlParser.Parse` handles multi-statement scripts (`;` or `/`), collects errors and resyncs at the next `;`.
 - `SqlParser.ParseStatement` / `ParseExpression` throw `ParseException` instead.
-- Every `SqlNode` has `Start`/`End`/`Line`/`Column`, `Children()` and `Descendants()`; subclass `SqlVisitor` to walk.
+- Every `SqlNode` has `Start`/`End`/`Line`/`Column`, `Children()` and `Descendants()`; subclass `SqlNodeVisitor` to walk (see below; `SqlVisitor` is the legacy untyped visitor). Spans are set by the parser; nodes you build in code have zero spans.
 - Unquoted identifiers are upper-cased in `Identifier.Value`; quoted ones keep case (`Quoted = true`).
 
 ## CLI
@@ -123,6 +123,49 @@ Limitations:
 
 `SqlWriter.ToSql(node)` remains as a thin compatibility facade: compact output, upper-case keywords and upper-case unquoted
 identifiers (it is not marked `[Obsolete]` so that dependent code builds without warnings). New code should use `SqlScriptGenerator`.
+
+## Examining and editing trees
+
+Modelled on ScriptDom: typed visitor callbacks, an in-place rewriter, no reflection.
+
+```csharp
+// Examine: override Visit(T) for the node types you care about, then root.Accept(visitor).
+sealed class TableCollector : SqlNodeVisitor
+{
+    public List<string> Names { get; } = [];
+    public override void Visit(NamedTable node) => Names.Add(string.Join(".", node.Name.Select(i => i.Value)));
+}
+var tables = new TableCollector();
+SqlParser.Parse("SELECT * FROM a JOIN s.b ON a.x = b.x").Script.Accept(tables);   // A, S.B
+
+// Edit: Rewrite(T) returns the node (edited), a replacement, or null to remove it (from a list, or an optional property).
+sealed class TenantFilter(string predicate) : SqlNodeRewriter
+{
+    public override SqlNode? Rewrite(QuerySpecification node)
+    {
+        base.Rewrite(node);                                   // rewrite nested subqueries first
+        var p = SqlParser.ParseExpression(predicate);
+        node.Where = node.Where is null ? p : new BinaryExpression { Left = node.Where, Operator = "AND", Right = p };
+        return node;
+    }
+}
+var script = SqlParser.Parse("SELECT a FROM t WHERE x = 1 OR y = 2").Script;
+new TenantFilter("tenant = 7").Rewrite<SqlScript>(script);                       // use the explicit type argument for the root
+new SqlScriptGenerator().Generate(script);                                       // SELECT a FROM t WHERE (x = 1 OR y = 2) AND tenant = 7;
+```
+
+- `ExplicitVisit(T)` (default: `Visit(node)`, then `node.AcceptChildren(this)`) is where to change how the walk descends, as in ScriptDom's `TSqlFragmentVisitor`.
+- A rewriter changes the tree in place. Keep the original with `node.DeepClone<T>()` first. A wrong replacement type, or removing a required child, throws `InvalidOperationException` naming the property.
+- `SqlNodeComparer.StructurallyEqual(a, b)` compares two trees ignoring source positions and spelling-only properties (`Identifier.Text`, `q'[...]'` delimiters).
+- Visitors and rewriters recurse once per tree level, so a very deep left-leaning chain (more than about 5,000 `a AND b AND ...` terms) can exhaust the stack. For such trees use the iterative `node.Descendants()` (which also handles 20,000-term chains in well under a second); `StructurallyEqual` is iterative too.
+- `GetChildren()`, `Accept`, `AcceptChildren`, the typed `Visit`/`ExplicitVisit`/`Rewrite` overloads, cloning and comparison are **generated** into `src/OracleSqlParser/Generated/*.g.cs` by `tools/AstGen`.
+  After adding or changing an AST node class or property, regenerate and commit the result:
+
+  ```
+  dotnet run --project tools/AstGen
+  ```
+
+  The tool builds the library without `Generated/` in a temporary copy and reflects over it, so it works even when the generated files are stale. The unit test `GeneratedCode_IsUpToDate` fails CI if you forget.
 
 ## Roadmap
 
