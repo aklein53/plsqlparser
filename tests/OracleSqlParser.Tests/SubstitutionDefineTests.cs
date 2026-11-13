@@ -125,7 +125,10 @@ public class SubstitutionDefineTests
         Assert.False(r.Success);
         Assert.Empty(Subs(r));
         Assert.Throws<ParseException>(() => SqlParser.ParseStatement("SELECT &x FROM dual", options));
-        Assert.Contains("'A&B'", Shape.Of("SELECT 'A&B' FROM dual"));
+        var lit = SqlParser.Parse("SELECT 'A&B' FROM dual", options);
+        Assert.True(lit.Success);
+        Assert.Empty(Subs(lit));
+        Assert.Contains(lit.Tokens, t => t.Type == TokenType.String && t.Value == "A&B");
     }
 
     [Fact]
