@@ -306,7 +306,7 @@ public sealed partial class SqlParser
                 var words = new List<string>();
                 int prog17 = -1;
                 while (Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier && !IsKw("ON") && !IsKw("TO") && !IsKw("FROM") && Progress(ref prog17))
-                    words.Add(Next().Value);
+                    words.Add(Cur.Type == TokenType.QuotedIdentifier ? "\"" + Next().Value.Replace("\"", "\"\"") + "\"" : Next().Value);
                 gp.Name = string.Join(" ", words);
                 if (IsOp("(")) { Next(); gp.Columns = ParseIdentifierList(); ExpectOp(")"); }
                 st.Privileges.Add(Fin(gp, ps));

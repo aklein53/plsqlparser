@@ -147,7 +147,9 @@ public sealed partial class SqlScriptGenerator
                     if (sp2.Arguments.Count > 0)
                     {
                         if (sp2.Command is not ("@" or "@@")) Sp();
-                        SyntaxList(sp2.Arguments);
+                        // PROMPT / REM: the lexer keeps the rest of the line as one string token that is verbatim text, not a literal
+                        if (sp2.Command is "PROMPT" or "REM" or "REMARK" && sp2.Arguments is [LiteralItem { Kind: LiteralKind.String } rest]) Raw(rest.Value);
+                        else SyntaxList(sp2.Arguments);
                     }
                     break;
                 case AdminStatement ad:
@@ -197,7 +199,7 @@ public sealed partial class SqlScriptGenerator
         {
             Add(g.Revoke ? "REVOKE " : "GRANT ");
             if (g.AllPrivileges) Add("ALL PRIVILEGES");
-            else Sep(g.Privileges, p => { Add(p.Name); if (p.Columns.Count > 0) { Add(" ("); IdList(p.Columns); Add(")"); } });
+            else Sep(g.Privileges, p => { if (p.Name.Contains('"')) Raw(p.Name); else Add(p.Name); if (p.Columns.Count > 0) { Add(" ("); IdList(p.Columns); Add(")"); } });
             if (g.Object.Count > 0 || g.ObjectKind != null)
             {
                 Add(" ON ");

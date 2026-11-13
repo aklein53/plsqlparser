@@ -244,7 +244,7 @@ public sealed partial class SqlParser
         var start = Cur;
         var items = new List<PatternNode>();
         int prog123 = -1;
-        while (!IsOp("|") && !IsOp(")") && !(IsOp("-") && IsOpAt(1, "}")) && Cur.Type != TokenType.EOF && Progress(ref prog123))
+        while (!IsOp("|") && !IsOp(")") && !IsOp(",") && !(IsOp("-") && IsOpAt(1, "}")) && Cur.Type != TokenType.EOF && Progress(ref prog123))
             items.Add(ParsePatternQuantified());
         if (items.Count == 0) throw Fail("Expected pattern element");
         return items.Count == 1 ? items[0] : Fin(new PatternConcat { Items = items }, start);
