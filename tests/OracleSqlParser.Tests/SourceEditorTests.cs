@@ -1,3 +1,4 @@
+using System.Reflection;
 using OracleSqlParser;
 using Xunit;
 
@@ -266,6 +267,25 @@ public class SourceEditorTests
 
         Assert.Equal("SELECT x, y FROM t", Reparsed(editor.Apply()));
     }
+
+    /// <summary>Every input of the smoke corpus, read from the InlineData attributes of <see cref="SmokeCorpusTests.Parses"/>.</summary>
+    public static IEnumerable<object[]> SmokeCorpus()
+    {
+        var attrs = typeof(SmokeCorpusTests).GetMethod("Parses")!.GetCustomAttributes<InlineDataAttribute>();
+        foreach (var a in attrs)
+            foreach (var d in a.GetData(null!))
+                yield return [(string)d[0]];
+    }
+
+    [Theory]
+    [MemberData(nameof(SmokeCorpus))]
+    public void NoEdits_ApplyReturnsTheOriginalTextExactly(string sql)
+    {
+        Assert.Equal(sql, new SourceEditor(SqlParser.Parse(sql)).Apply());
+    }
+
+    [Fact]
+    public void SmokeCorpus_HasInputs() => Assert.True(SmokeCorpus().Count() > 40, $"only {SmokeCorpus().Count()} inputs");
 
     // ---------- SourceEdits.AndWhere ----------
 
