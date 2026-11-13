@@ -1,10 +1,12 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/OracleSqlParser.Cli/OracleSqlParser.Cli.csproj" />
+    <Project Path="src/OracleSqlParser.Guard/OracleSqlParser.Guard.csproj" />
     <Project Path="src/OracleSqlParser/OracleSqlParser.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/OracleSqlParser.IntegrationTests/OracleSqlParser.IntegrationTests.csproj" />
+    <Project Path="tests/OracleSqlParser.Guard.Tests/OracleSqlParser.Guard.Tests.csproj" />
     <Project Path="tests/OracleSqlParser.Tests/OracleSqlParser.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>PlsqlParser.Guard</PackageId>
+    <Version>0.1.0-preview.1</Version>
+    <Authors>aklein53</Authors>
+    <Description>EXPERIMENTAL: policy validation and access-restriction rewriting for user-supplied Oracle SELECT queries, built on PlsqlParser. Not a security boundary; see README.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/aklein53/plsqlparser</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/aklein53/plsqlparser</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>oracle;sql;plsql;parser;ast;experimental</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RootNamespace>OracleSqlParser.Guard</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CI)' == 'true' or '$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.404" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OracleSqlParser\OracleSqlParser.csproj" />
+  </ItemGroup>
+
+</Project>

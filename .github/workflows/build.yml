@@ -24,9 +24,13 @@ jobs:
         run: dotnet build --configuration Release --no-restore
       # Unit tests only. Integration tests (if any) need Docker and are run separately.
       - name: Test
-        run: dotnet test tests/OracleSqlParser.Tests --configuration Release --no-build
+        run: |
+          dotnet test tests/OracleSqlParser.Tests --configuration Release --no-build
+          dotnet test tests/OracleSqlParser.Guard.Tests --configuration Release --no-build
       - name: Pack
-        run: dotnet pack src/OracleSqlParser --configuration Release --no-build --output ./artifacts
+        run: |
+          dotnet pack src/OracleSqlParser --configuration Release --no-build --output ./artifacts
+          dotnet pack src/OracleSqlParser.Guard --configuration Release --no-build --output ./artifacts
       - uses: actions/upload-artifact@v4
         with:
           name: package

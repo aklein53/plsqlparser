@@ -1,7 +1,7 @@
 # OracleSqlParser
 
 A hand-written lexer and recursive-descent parser for Oracle SQL that builds an abstract syntax tree
-(similar in spirit to Microsoft's `TSqlParser`/ScriptDom). .NET 10, no dependencies.
+(similar in spirit to Microsoft's `TSqlParser`/ScriptDom). Targets net8.0 and net10.0, no runtime dependencies.
 
 ## Installing
 
@@ -49,41 +49,26 @@ Prints the AST as JSON; syntax errors go to stderr with exit code 1.
 
 ## Coverage
 
-See [COVERAGE.md](COVERAGE.md): every statement in Oracle's statement index, the node that represents it, whether
+See [COVERAGE.md](https://github.com/aklein53/plsqlparser/blob/main/COVERAGE.md): every statement in Oracle's statement index, the node that represents it, whether
 it is fully typed or a typed header with a token-tree body, and the known gaps. `dotnet run --project src/OracleSqlParser.Cli -- --shape -e "..."`
 prints the compact tree used by the shape tests.
 
 ## Tests
 
-`tests/OracleSqlParser.Tests`: hand-written expected trees (`*ShapeTests.cs`, compared via `AstPrinter`) plus a smoke
+`tests/OracleSqlParser.Tests` (and `tests/OracleSqlParser.Guard.Tests` for the guard): hand-written expected trees (`*ShapeTests.cs`, compared via `AstPrinter`) plus a smoke
 corpus (`SmokeCorpusTests.cs`) that only checks inputs parse.
 
-## Validating and restricting user-supplied queries
+## Query guard (experimental, separate package)
 
-```csharp
-var policy = new QueryPolicy
-{
-    AllowedTables = new HashSet<string>(["ORDERS", "CUSTOMERS"], StringComparer.OrdinalIgnoreCase),
-    AllowedFunctions = new HashSet<string>(["UPPER", "LOWER", "TRUNC", "NVL"], StringComparer.OrdinalIgnoreCase), // safest
-    RequiredColumns = ["ID"],
-};
-var filter = new AccessFilter
-{
-    KeyColumn = "ID",
-    AccessSql = "SELECT order_id FROM user_orders WHERE user_id = :accessUserId",
-};
+An experimental package, `PlsqlParser.Guard`, validates and rewrites user-supplied SELECT queries. It is **not a
+security boundary**; read its [README](https://github.com/aklein53/plsqlparser/blob/main/src/OracleSqlParser.Guard/README.md) before using it.
 
-GuardedSql g = QueryGuard.RestrictToIds(userSql, policy, filter);   // throws QueryRejectedException with all violations
-var rows = connection.Query(g.Sql, new { accessUserId = 42, /* the user's own binds */ });
-```
-
-`g.Sql` is `SELECT Q.* FROM (<user query>) Q WHERE Q.ID IN (<access query>)`: the restriction is applied *outside* the
-user's query, so `OR`, `UNION` and `GROUP BY` inside it cannot bypass it. `QueryGuard.Validate` checks without wrapping.
 `SqlWriter.ToSql(node)` prints any SELECT AST back to Oracle SQL (precedence-aware parentheses, so trees you edit
-print correctly); non-query statements throw `NotSupportedException`.
+print correctly); non-query statements throw `NotSupportedException`. Output is Oracle SQL only.
 
-Limits: output is Oracle SQL only (T-SQL needs ScriptDom); the generated SQL is verified by re-parsing and, in the integration tests, by running it against a live Oracle 23 Free
-against a database; the user's top-level `ORDER BY` is moved outside the wrapper only when expressible on output columns.
+## Roadmap
+
+See [ROADMAP.md](https://github.com/aklein53/plsqlparser/blob/main/ROADMAP.md) for planned work.
 
 ## Integration tests
 
@@ -95,7 +80,7 @@ dotnet test tests/OracleSqlParser.IntegrationTests
 ```
 
 One container is started per test run (first run pulls the image; allow a few minutes). They check that (a) the SQL printed
-by `SqlWriter` is accepted by Oracle and returns the same columns and rows as the original query, (b) `QueryGuard.RestrictToIds`
-output executes and only returns permitted ids for both `AccessJoinStyle` values, and (c) every statement of the smoke
+by `SqlWriter` is accepted by Oracle and returns the same columns and rows as the original query, (b) the experimental `QueryGuard.RestrictToIds`
+output executes and returns only permitted ids in the tested scenarios for both `AccessJoinStyle` values, and (c) every statement of the smoke
 corpus passes Oracle's own syntax check inside a scratch schema (PL/SQL-only forms such as `SELECT ... INTO` are asserted to be rejected). Container startup is capped at 8 minutes (override with `ORACLE_TEST_STARTUP_TIMEOUT_SECONDS`); on timeout the tests are skipped with a clear message. If Docker is not available the tests are skipped, not failed.
 The default unit tests (`dotnet test tests/OracleSqlParser.Tests`) do not need Docker.
