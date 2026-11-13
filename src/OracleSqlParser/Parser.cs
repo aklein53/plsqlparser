@@ -2,6 +2,12 @@ namespace OracleSqlParser;
 
 public sealed class ParseResult
 {
+    /// <summary>
+    /// The exact text that was parsed. Node <see cref="SqlNode.Start"/>/<see cref="SqlNode.End"/> offsets and
+    /// <see cref="Token.Start"/>/<see cref="Token.End"/> index into this string. Empty for a result not produced by <see cref="SqlParser.Parse(string)"/>.
+    /// </summary>
+    public string Source { get; init; } = string.Empty;
+
     public SqlScript Script { get; init; } = new();
     public IReadOnlyList<ParseError> Errors { get; init; } = [];
 
@@ -34,7 +40,7 @@ public sealed partial class SqlParser
         var parser = new SqlParser(tokens, sql, options);
         parser._lexErrors = errors.ToList();
         var script = parser.ParseScript(errors);
-        return new ParseResult { Script = script, Errors = errors, Tokens = tokens };
+        return new ParseResult { Source = sql, Script = script, Errors = errors, Tokens = tokens };
     }
 
     /// <summary>Parses a single expression; throws ParseException on error.</summary>
