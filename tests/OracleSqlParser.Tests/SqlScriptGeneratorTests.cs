@@ -196,6 +196,18 @@ public class SqlScriptGeneratorTests
     }
 
     [Fact]
+    public void ReadmeExample_ExactText()
+    {
+        var script = SqlParser.Parse("select e.name, d.name dname from emp e left join dept d on e.d = d.id where e.sal > 100 order by e.name").Script;
+        var generator = new SqlScriptGenerator(new SqlScriptGeneratorOptions
+        {
+            NewLineBeforeFromClause = true, NewLineBeforeJoinClause = true, NewLineBeforeWhereClause = true,
+            NewLineBeforeOrderByClause = true, MultilineSelectElementsList = true,
+        });
+        Assert.Equal("SELECT\n    e.name,\n    d.name AS dname\nFROM emp e\nLEFT OUTER JOIN dept d ON e.d = d.id\nWHERE e.sal > 100\nORDER BY e.name;", generator.Generate(script));
+    }
+
+    [Fact]
     public void FormattedSelect_AlignClauseBodies_ExactText()
     {
         var options = new SqlScriptGeneratorOptions

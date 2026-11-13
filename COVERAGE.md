@@ -54,6 +54,6 @@ Error recovery resyncs at `;`, or for PL/SQL units at a `/` alone on its line (e
 - PL/SQL Oracle 21+ iterator forms (`FOR i IN 1..3, REVERSE 5..7`, `FOR x IN VALUES OF c`), qualified expressions
   (`t_rec(a => 1)` parses as a function call), `DELETE ... FROM` join form.
 - `IN (subquery, expr)` mixed lists, `CREATE ... SHARDED/DUPLICATED` modifiers beyond those listed.
-- Not generated back to SQL: `SqlWriter` prints SELECT statements back to Oracle SQL; other statements are not printed yet (the `AstPrinter` text is for assertions, not SQL).
+- Every node can be generated back to SQL by `SqlScriptGenerator` (comments excepted; token-tree bodies print as space-separated tokens). The `AstPrinter` text is for assertions, not SQL.
 - Collection indexing vs. function call: `arr(i)` is syntactically identical to a call and is represented as
   `FunctionCall`.

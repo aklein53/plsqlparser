@@ -63,8 +63,66 @@ corpus (`SmokeCorpusTests.cs`) that only checks inputs parse.
 An experimental package, `PlsqlParser.Guard`, validates and rewrites user-supplied SELECT queries. It is **not a
 security boundary**; read its [README](https://github.com/aklein53/plsqlparser/blob/main/src/OracleSqlParser.Guard/README.md) before using it.
 
-`SqlWriter.ToSql(node)` prints any SELECT AST back to Oracle SQL (precedence-aware parentheses, so trees you edit
-print correctly); non-query statements throw `NotSupportedException`. Output is Oracle SQL only.
+
+## Generating SQL
+
+`SqlScriptGenerator` (the equivalent of ScriptDom's `SqlScriptGenerator`) prints any node the parser produces back to
+Oracle SQL / PL/SQL: scripts, queries, DML, DDL (including the token-tree bodies), transaction/session statements, PL/SQL
+blocks and program units, SQL*Plus commands. The output parses back to an identical tree (verified over the whole test
+corpus). Parentheses are added from operator precedence, so trees you build or edit print correctly; a node type the
+generator does not know throws `NotSupportedException` naming it.
+
+```csharp
+var script = SqlParser.Parse("select e.name, d.name dname from emp e left join dept d on e.d = d.id where e.sal > 100 order by e.name").Script;
+var generator = new SqlScriptGenerator(new SqlScriptGeneratorOptions
+{
+    NewLineBeforeFromClause = true, NewLineBeforeJoinClause = true, NewLineBeforeWhereClause = true,
+    NewLineBeforeOrderByClause = true, MultilineSelectElementsList = true,
+});
+Console.WriteLine(generator.Generate(script));
+```
+
+```
+SELECT
+    e.name,
+    d.name AS dname
+FROM emp e
+LEFT OUTER JOIN dept d ON e.d = d.id
+WHERE e.sal > 100
+ORDER BY e.name;
+```
+
+`Generate(node)` returns a string; `Generate(node, textWriter)` writes to a writer. Any node can be generated, not only scripts.
+Instances are immutable (options are copied) and thread-safe.
+
+| Option | Default | Effect |
+|---|---|---|
+| `KeywordCasing` | `Uppercase` | `Uppercase` / `Lowercase` keywords |
+| `IdentifierCasing` | `Preserve` | `Preserve` prints unquoted names as typed (`Identifier.Text`), `Uppercase` / `Lowercase` normalise; quoted names are always verbatim |
+| `IndentSize` | `4` | Spaces per indentation level |
+| `NewLineBeforeFromClause`, `...WhereClause`, `...HierarchicalClause`, `...GroupByClause`, `...HavingClause`, `...OrderByClause`, `...JoinClause`, `...SetOperator` | `false` | Start that clause on a new line (SELECT; FROM/WHERE also apply to UPDATE/DELETE/MERGE; ORDER BY also covers OFFSET/FETCH/FOR UPDATE) |
+| `NewLineBeforeSetClause`, `...ValuesClause`, `...ReturningClause` | `false` | UPDATE ... SET / MERGE WHEN, INSERT VALUES/SELECT/INTO branches, RETURNING and LOG ERRORS on a new line |
+| `MultilineSelectElementsList` | `false` | One select-list element per line below `SELECT` |
+| `MultilineColumnDefinitions` | `false` | One column/constraint per line in `CREATE TABLE` |
+| `MultilinePlsql` | `false` | PL/SQL declarations, statements, handlers and member lists each on an indented line |
+| `AlignClauseBodies` | `false` | Clause body on its own indented line below `SELECT` / `FROM` / `WHERE` / `GROUP BY` / `HAVING` / `ORDER BY` |
+| `IncludeSemicolons` | `true` | Script generation: `;` after each statement |
+| `SqlPlusSlashAfterPlsql` | `false` | Script generation: a `/` line after PL/SQL units (blocks, `CREATE PROCEDURE/FUNCTION/PACKAGE/TRIGGER/TYPE`); Java sources always get their required `/` |
+
+The parser keeps the source spelling that is not part of the meaning: `q'[it's]'` / `nq'...'` literals, `N'x'`, `:"Bind"`,
+number literals and optimizer hint text print back as written.
+
+Limitations:
+
+- Comments are not part of the AST and are **not printed** (trivia is planned, see the roadmap).
+- Token-tree bodies (long-tail DDL/admin syntax: `ALTER USER`, `CREATE TABLESPACE`, `ANALYZE`, SQL*Plus arguments, ...) are printed as their tokens,
+  separated by single spaces (no space around `.`, `@`, `%` and before `(`), so their original line layout is lost. Words in them follow `IdentifierCasing`, not `KeywordCasing`.
+- Data type names are stored normalised, so they print with the keyword casing, not as typed. Quoted parts of a dotted type name are not preserved.
+- Without `IncludeSemicolons` a multi-statement script no longer parses (statements are only separated by newlines).
+- Some purely optional spellings are not stored and are normalised: `ASC`, `VIRTUAL`, `1..3` vs `1 .. 3`, `RETURN`/`RETURNING`, `JSON DUALITY VIEW` as `JSON RELATIONAL DUALITY VIEW`, `PIPELINED ROW POLYMORPHIC`.
+
+`SqlWriter.ToSql(node)` remains as a thin compatibility facade: compact output, upper-case keywords and upper-case unquoted
+identifiers (it is not marked `[Obsolete]` so that dependent code builds without warnings). New code should use `SqlScriptGenerator`.
 
 ## Roadmap
 
@@ -80,7 +138,7 @@ dotnet test tests/OracleSqlParser.IntegrationTests
 ```
 
 One container is started per test run (first run pulls the image; allow a few minutes). They check that (a) the SQL printed
-by `SqlWriter` is accepted by Oracle and returns the same columns and rows as the original query, (b) the experimental `QueryGuard.RestrictToIds`
+by `SqlScriptGenerator` is accepted by Oracle and returns the same columns and rows as the original query, (b) the experimental `QueryGuard.RestrictToIds`
 output executes and returns only permitted ids in the tested scenarios for both `AccessJoinStyle` values, and (c) every statement of the smoke
 corpus passes Oracle's own syntax check inside a scratch schema (PL/SQL-only forms such as `SELECT ... INTO` are asserted to be rejected). Container startup is capped at 8 minutes (override with `ORACLE_TEST_STARTUP_TIMEOUT_SECONDS`); on timeout the tests are skipped with a clear message. If Docker is not available the tests are skipped, not failed.
 The default unit tests (`dotnet test tests/OracleSqlParser.Tests`) do not need Docker.
