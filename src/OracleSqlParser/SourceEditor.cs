@@ -117,8 +117,14 @@ public sealed class SourceEditor
     /// <item><description>Comments that sit inside the removed range (between the node and its comma) are removed with it.</description></item>
     /// </list>
     /// <para>
-    /// A node that is not next to a comma is removed on its own. Removing the only item of a list, or any node whose
-    /// removal leaves invalid SQL, produces text that no longer parses; re-parse the output to check.
+    /// A node that is not next to a comma is removed on its own. A node that is only part of a larger node (the alias
+    /// <c>x</c> in <c>a x</c>, or <c>x</c> in <c>a.x</c>) is not a list item, so it is removed without a comma; remove the
+    /// enclosing item to take the comma too. Removing the only item of a list, or any node whose removal leaves invalid
+    /// SQL, produces text that no longer parses; re-parse the output to check.
+    /// </para>
+    /// <para>
+    /// Removing two adjacent items of one list throws, because each takes the comma between them and the two ranges
+    /// overlap. Apply the first removal, then remove the second from the new text with another editor.
     /// </para>
     /// </remarks>
     /// <param name="node">A node of this parse result that has a source position.</param>
@@ -180,8 +186,10 @@ public sealed class SourceEditor
         int first = node.FirstTokenIndex, last = node.LastTokenIndex;
 
         // Followed by a comma: take the comma and everything up to the next item (stopping at a comment in front of it).
+        // Not when the node is the tail of a larger node (the alias of "a x", the "x" of "a.x"): that is not a list item.
         if (last + 1 < tokens.Count && IsComma(tokens[last + 1]))
         {
+            if (HasLargerNodeSharing(node, sharesLastToken: true)) return (start, end);
             var next = last + 2 < tokens.Count ? tokens[last + 2] : tokens[^1];
             int nextStart = next.Start;
             foreach (var trivia in next.LeadingTrivia)
@@ -194,10 +202,29 @@ public sealed class SourceEditor
         }
 
         // Preceded by a comma (the last item of a list): take the comma back to the end of the token before it.
-        if (first >= 2 && IsComma(tokens[first - 1]))
+        // Not when the node is the head of a larger node (the "b" of "b.c").
+        if (first >= 2 && IsComma(tokens[first - 1]) && !HasLargerNodeSharing(node, sharesLastToken: false))
             return (tokens[first - 2].End, end);
 
         return (start, end);
+    }
+
+    /// <summary>
+    /// True when a different node, larger than <paramref name="node"/>, ends (or starts) on the same token, so that
+    /// <paramref name="node"/> is only part of it. Such a node is not a list item and must not take a comma with it.
+    /// </summary>
+    private bool HasLargerNodeSharing(SqlNode node, bool sharesLastToken)
+    {
+        int first = node.FirstTokenIndex, last = node.LastTokenIndex;
+        foreach (var n in _result.Script.Descendants())
+        {
+            if (ReferenceEquals(n, node) || n.FirstTokenIndex < 0) continue;
+            bool hit = sharesLastToken
+                ? n.LastTokenIndex == last && n.FirstTokenIndex < first
+                : n.FirstTokenIndex == first && n.LastTokenIndex > last;
+            if (hit) return true;
+        }
+        return false;
     }
 
     private static bool IsComma(Token t) => t.Type == TokenType.Operator && t.Text == ",";

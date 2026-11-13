@@ -91,6 +91,55 @@ public class SourceEditorTests
     }
 
     [Fact]
+    public void Remove_Alias_DoesNotTakeTheCommaOfTheList()
+    {
+        var r = SqlParser.Parse("SELECT a x, b FROM t");
+        var editor = new SourceEditor(r);
+        var alias = ((ExpressionSelectItem)Find<QuerySpecification>(r).SelectList[0]).Alias!;
+        editor.Remove(alias);
+
+        var output = Reparsed(editor.Apply());
+        Assert.Equal("SELECT a , b FROM t", output);
+        Assert.Equal(2, Find<QuerySpecification>(SqlParser.Parse(output)).SelectList.Count);
+    }
+
+    [Fact]
+    public void Remove_ColumnReferenceOfAListItem_TakesTheComma()
+    {
+        // The item's expression has the same span as the item, so it is still a list item and takes the comma.
+        var r = SqlParser.Parse("SELECT a.x, b FROM t");
+        var editor = new SourceEditor(r);
+        var column = ((ExpressionSelectItem)Find<QuerySpecification>(r).SelectList[0]).Expression;
+        editor.Remove(column);
+
+        Assert.Equal("SELECT b FROM t", Reparsed(editor.Apply()));
+    }
+
+    [Fact]
+    public void Remove_PartOfADottedName_LeavesTheTextAloneBecauseItIsNotAListItem()
+    {
+        // Only the name's last part is removed, with no comma. The output is not valid SQL, so this checks the
+        // rule rather than a re-parse; callers remove the whole item to get valid SQL.
+        var r = SqlParser.Parse("SELECT a.x, b FROM t");
+        var editor = new SourceEditor(r);
+        var column = (ColumnReference)((ExpressionSelectItem)Find<QuerySpecification>(r).SelectList[0]).Expression;
+        editor.Remove(column.Parts[^1]);
+
+        Assert.Equal("SELECT a., b FROM t", editor.Apply());
+    }
+
+    [Fact]
+    public void Remove_TwoAdjacentItems_Throws_BecauseTheyShareTheComma()
+    {
+        var r = SqlParser.Parse("SELECT a, b, c FROM t");
+        var editor = new SourceEditor(r);
+        var items = Find<QuerySpecification>(r).SelectList;
+        editor.Remove(items[1]);
+
+        Assert.Throws<InvalidOperationException>(() => editor.Remove(items[2]));
+    }
+
+    [Fact]
     public void Remove_FirstItem_KeepsACommentBeforeTheNextItem()
     {
         var r = SqlParser.Parse("SELECT a, /* about b */ b FROM t");
@@ -162,9 +211,9 @@ public class SourceEditorTests
         var r = SqlParser.Parse("SELECT a FROM t");
         var editor = new SourceEditor(r);
         editor.Replace(Find<NamedTable>(r).Name[0], "u");
-        Assert.Equal("SELECT a FROM u", editor.Apply());
+        Assert.Equal("SELECT a FROM u", Reparsed(editor.Apply()));
         editor.InsertAfter(Find<NamedTable>(r), " -- new");
-        Assert.Equal("SELECT a FROM u -- new", editor.Apply());
+        Assert.Equal("SELECT a FROM u -- new", Reparsed(editor.Apply()));
     }
 
     // ---------- Validation ----------
