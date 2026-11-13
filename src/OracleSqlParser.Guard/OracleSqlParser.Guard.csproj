@@ -9,7 +9,7 @@
 
   <PropertyGroup>
     <PackageId>PlsqlParser.Guard</PackageId>
-    <Version>0.1.0-preview.2</Version>
+    <Version>0.2.0-preview.1</Version>
     <Authors>aklein53</Authors>
     <Description>EXPERIMENTAL: policy validation and access-restriction rewriting for user-supplied Oracle SELECT queries, built on PlsqlParser. Not a security boundary; see README.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
