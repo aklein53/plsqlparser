@@ -82,6 +82,34 @@ public class TokenStreamTests
     }
 
     [Fact]
+    public void ParseResult_Tokens_IsTheCompleteUnfilteredStream()
+    {
+        // The hint after the Number is not in a position the parser uses, so the parser's internal list drops it.
+        const string sql = "SELECT 1 /*+ FULL(t) */ FROM dual -- tail";
+        var r = SqlParser.Parse(sql);
+
+        Assert.Equal(Lex(sql).Select(t => (t.Type, t.Start, t.End)), r.Tokens.Select(t => (t.Type, t.Start, t.End)));
+        Assert.Contains(r.Tokens, t => t.Type == TokenType.Hint && t.Text == "/*+ FULL(t) */");
+        Assert.Equal(TokenType.EOF, r.Tokens[^1].Type);
+        for (int i = 0; i < r.Tokens.Count; i++)
+            Assert.Equal(i, r.Tokens[i].TokenIndex);
+    }
+
+    [Theory]
+    [MemberData(nameof(Inputs))]
+    public void ParseResult_Tokens_ReproducesSourceExactly(string sql)
+    {
+        var r = SqlParser.Parse(sql);
+        var sb = new StringBuilder();
+        foreach (var t in r.Tokens)
+        {
+            foreach (var tr in t.LeadingTrivia) sb.Append(tr.Text);
+            sb.Append(sql, t.Start, t.End - t.Start);
+        }
+        Assert.Equal(sql, sb.ToString());
+    }
+
+    [Fact]
     public void Trivia_OnlyCommentKeptForEmptyInput()
     {
         var tokens = Lex("-- only a comment");

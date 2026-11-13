@@ -4,6 +4,14 @@ public sealed class ParseResult
 {
     public SqlScript Script { get; init; } = new();
     public IReadOnlyList<ParseError> Errors { get; init; } = [];
+
+    /// <summary>
+    /// Every token the lexer produced, in source order, including optimizer hints that the parser does not use and
+    /// the final EOF token. Each token's <see cref="Token.LeadingTrivia"/> holds the whitespace and comments before it.
+    /// Node <c>FirstTokenIndex</c>/<c>LastTokenIndex</c> are indexes into this list.
+    /// </summary>
+    public IReadOnlyList<Token> Tokens { get; init; } = [];
+
     public bool Success => Errors.Count == 0;
 }
 
@@ -26,7 +34,7 @@ public sealed partial class SqlParser
         var parser = new SqlParser(tokens, sql, options);
         parser._lexErrors = errors.ToList();
         var script = parser.ParseScript(errors);
-        return new ParseResult { Script = script, Errors = errors };
+        return new ParseResult { Script = script, Errors = errors, Tokens = tokens };
     }
 
     /// <summary>Parses a single expression; throws ParseException on error.</summary>
@@ -60,7 +68,7 @@ public sealed partial class SqlParser
         var list = new List<Token>();
         while (true)
         {
-            var t = lx.Next();
+            var t = lx.Next() with { TokenIndex = list.Count };
             list.Add(t);
             if (t.Type == TokenType.EOF) break;
         }
