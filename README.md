@@ -167,6 +167,38 @@ new SqlScriptGenerator().Generate(script);                                      
 
   The tool builds the library without `Generated/` in a temporary copy and reflects over it, so it works even when the generated files are stale. The unit test `GeneratedCode_IsUpToDate` fails CI if you forget.
 
+### Format-preserving edits
+
+`SourceEditor` edits the original text instead of reprinting the tree, so comments, whitespace, line breaks and casing
+outside the edited ranges survive. `SqlScriptGenerator` prints only the replacement and inserted text.
+
+```csharp
+var parsed = SqlParser.Parse("SELECT /* keep */ a  ,  b\nFROM   orders o -- trailing\nWHERE x = 1");
+var query = parsed.Script.Descendants().OfType<QuerySpecification>().First();
+var editor = new SourceEditor(parsed);
+editor.Replace(((NamedTable)query.From[0]).Name[0], "employees");   // table name only; the alias o stays
+editor.Remove(query.SelectList[1]);                                  // removes "  ,  b"
+editor.AndWhere(query, SqlParser.ParseExpression("o.active = 1"));   // SourceEdits.AndWhere
+Console.WriteLine(editor.Apply());
+```
+
+```
+SELECT /* keep */ a
+FROM   employees o -- trailing
+WHERE (x = 1) AND (o.active = 1)
+```
+
+- `Replace(node, replacement)` prints a node with the editor's `SqlScriptGeneratorOptions`; `Replace(node, text)` inserts text as written.
+  `InsertBefore`, `InsertAfter` and `Remove` work the same way. `Apply()` returns the edited text.
+- A node's range runs from its first to its last character. Comments before a node and after its last token stay in place.
+- `Remove` on an item of a comma-separated list also removes its comma (see the `Remove` remarks), so the list stays valid.
+- A statement's range excludes its `;`, so `InsertAfter(statement, text)` puts `text` before the terminator.
+  Include the terminator in the text to add a statement after another.
+- Nodes built in code, or produced by `ParseStatement`/`ParseExpression`, have no source position and throw
+  `InvalidOperationException`, as do edits whose ranges overlap. Two inserts at one offset are kept in the order they were added.
+- `SourceEdits.AndWhere(query, predicate)` adds a condition with AND. An existing WHERE is wrapped in parentheses, so an `OR`
+  stays grouped: `WHERE x = 1 OR z = 3` becomes `WHERE (x = 1 OR z = 3) AND (predicate)`. Without a WHERE, the condition is inserted after the FROM clause.
+
 ## Tokens and comments
 
 Modelled on ScriptDom's `ScriptTokenStream`: the parse result keeps every token, and every node knows which tokens it covers.

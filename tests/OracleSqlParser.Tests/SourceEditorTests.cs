@@ -348,4 +348,17 @@ public class SourceEditorTests
     {
         Assert.Equal("SELECT a, b WHERE y > 2", AndWhere("SELECT a, b", "y > 2"));
     }
+
+    [Fact]
+    public void ReadmeExample_ProducesTheDocumentedOutput()
+    {
+        var parsed = SqlParser.Parse("SELECT /* keep */ a  ,  b\nFROM   orders o -- trailing\nWHERE x = 1");
+        var query = parsed.Script.Descendants().OfType<QuerySpecification>().First();
+        var editor = new SourceEditor(parsed);
+        editor.Replace(((NamedTable)query.From[0]).Name[0], "employees");   // table name only; the alias o stays
+        editor.Remove(query.SelectList[1]);                                  // removes "  ,  b"
+        editor.AndWhere(query, SqlParser.ParseExpression("o.active = 1"));
+
+        Assert.Equal("SELECT /* keep */ a\nFROM   employees o -- trailing\nWHERE (x = 1) AND (o.active = 1)", Reparsed(editor.Apply()));
+    }
 }
