@@ -47,7 +47,8 @@ public sealed partial class SqlParser
 
     private TableReference ParseTableModifiers(TableReference t, Token start)
     {
-        while (true)
+        int prog10 = -1;
+        while (Progress(ref prog10))
         {
             if (t is NamedTable nt)
             {
@@ -117,7 +118,8 @@ public sealed partial class SqlParser
         {
             pt.InAny = true;
             Next();
-            while (AcceptOp(",")) ExpectKw("ANY");
+            int prog121 = -1;
+            while (AcceptOp(",") && Progress(ref prog121)) ExpectKw("ANY");
         }
         else if (LooksLikeQuery()) pt.InSubquery = ParseSelectStatement();
         else
@@ -170,7 +172,7 @@ public sealed partial class SqlParser
         var mr = new MatchRecognizeTable { Source = source };
         if (IsKw("PARTITION")) { Next(); ExpectKw("BY"); do mr.PartitionBy.Add(ParseExpr()); while (AcceptOp(",")); }
         if (IsKw("ORDER")) { Next(); ExpectKw("BY"); mr.OrderBy = ParseOrderByList(); }
-        if (AcceptKw("MEASURES")) do mr.Measures.Add((ExpressionSelectItem)ParseSelectItem()); while (AcceptOp(","));
+        if (AcceptKw("MEASURES")) do mr.Measures.Add(ParseExpressionSelectItem()); while (AcceptOp(","));
         if (AcceptKw("ONE")) { ExpectKw("ROW"); ExpectKw("PER"); ExpectKw("MATCH"); mr.RowsPerMatch = RowsPerMatch.OneRow; }
         else if (IsKw("ALL") && IsKwAt(1, "ROWS"))
         {
@@ -232,7 +234,8 @@ public sealed partial class SqlParser
         var first = ParsePatternConcat();
         if (!IsOp("|")) return first;
         var alt = new PatternAlternation { Items = [first] };
-        while (AcceptOp("|")) alt.Items.Add(ParsePatternConcat());
+        int prog122 = -1;
+        while (AcceptOp("|") && Progress(ref prog122)) alt.Items.Add(ParsePatternConcat());
         return Fin(alt, start);
     }
 
@@ -240,7 +243,8 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         var items = new List<PatternNode>();
-        while (!IsOp("|") && !IsOp(")") && !(IsOp("-") && IsOpAt(1, "}")) && Cur.Type != TokenType.EOF)
+        int prog123 = -1;
+        while (!IsOp("|") && !IsOp(")") && !(IsOp("-") && IsOpAt(1, "}")) && Cur.Type != TokenType.EOF && Progress(ref prog123))
             items.Add(ParsePatternQuantified());
         if (items.Count == 0) throw Fail("Expected pattern element");
         return items.Count == 1 ? items[0] : Fin(new PatternConcat { Items = items }, start);
@@ -259,10 +263,10 @@ public sealed partial class SqlParser
             Next();
             min = 0; max = null;
             bool hasMin = Cur.Type == TokenType.Number;
-            if (hasMin) min = int.Parse(Next().Text);
+            if (hasMin) min = ParseSmallInt();
             if (AcceptOp(","))
             {
-                if (Cur.Type == TokenType.Number) max = int.Parse(Next().Text);
+                if (Cur.Type == TokenType.Number) max = ParseSmallInt();
             }
             else max = min;
             ExpectOp("}");
@@ -344,7 +348,8 @@ public sealed partial class SqlParser
         if (IsKw("FORMAT")) jt.InputFormat = (FormatClause)ParseFunctionClause();
         ExpectOp(",");
         jt.Path = ParseExpr();
-        while (!IsKw("COLUMNS") && Cur.Type != TokenType.EOF) jt.Clauses.Add(ParseFunctionClause());
+        int prog124 = -1;
+        while (!IsKw("COLUMNS") && Cur.Type != TokenType.EOF && Progress(ref prog124)) jt.Clauses.Add(ParseFunctionClause());
         ExpectKw("COLUMNS");
         ExpectOp("(");
         do jt.Columns.Add(ParsePathColumn()); while (AcceptOp(","));
@@ -387,7 +392,8 @@ public sealed partial class SqlParser
         if (IsKw("FOR") && IsKwAt(1, "ORDINALITY")) { Next(); Next(); pc.ForOrdinality = true; return Fin(pc, s); }
         if (Cur.Type == TokenType.Identifier && !IsKw("PATH") && !IsKw("EXISTS") && !AtPathColumnClause())
             pc.Type = ParseDataType();
-        while (!IsOp(",") && !IsOp(")") && Cur.Type != TokenType.EOF)
+        int prog125 = -1;
+        while (!IsOp(",") && !IsOp(")") && Cur.Type != TokenType.EOF && Progress(ref prog125))
         {
             if (IsKw("EXISTS")) { Next(); pc.Exists = true; }
             else if (IsKw("PATH")) { Next(); pc.Path = ParseExpr(); }
@@ -408,7 +414,8 @@ public sealed partial class SqlParser
 
     private void ParseCellOptions(ref NavMode? nav, ref ModelUniqueness? uniq)
     {
-        while (true)
+        int prog11 = -1;
+        while (Progress(ref prog11))
         {
             if (IsKw("IGNORE") && IsKwAt(1, "NAV")) { Next(); Next(); nav = NavMode.IgnoreNav; }
             else if (IsKw("KEEP") && IsKwAt(1, "NAV")) { Next(); Next(); nav = NavMode.KeepNav; }
@@ -430,7 +437,8 @@ public sealed partial class SqlParser
             mc.Return = AcceptKw("UPDATED") ? ModelReturn.UpdatedRows : (AcceptKw("ALL") ? ModelReturn.AllRows : throw Fail("Expected UPDATED or ALL"));
             ExpectKw("ROWS");
         }
-        while (IsKw("REFERENCE"))
+        int prog126 = -1;
+        while (IsKw("REFERENCE") && Progress(ref prog126))
         {
             var rs = Next();
             var rm = new ReferenceModel { Name = ParseIdentifier() };
@@ -475,7 +483,7 @@ public sealed partial class SqlParser
     {
         var list = new List<ExpressionSelectItem>();
         ExpectOp("(");
-        do list.Add((ExpressionSelectItem)ParseSelectItem()); while (AcceptOp(","));
+        do list.Add(ParseExpressionSelectItem()); while (AcceptOp(","));
         ExpectOp(")");
         return list;
     }
@@ -550,7 +558,8 @@ public sealed partial class SqlParser
         if (IsKw("WHEN"))
         {
             st.Conditional = true;
-            while (IsKw("WHEN"))
+            int prog127 = -1;
+            while (IsKw("WHEN") && Progress(ref prog127))
             {
                 var bs = Next();
                 var branch = new MultiInsertBranch { When = ParseExpr() };
@@ -577,7 +586,8 @@ public sealed partial class SqlParser
     {
         var list = new List<InsertIntoClause>();
         if (!IsKw("INTO")) throw Fail($"Expected INTO but found {Describe(Cur)}");
-        while (IsKw("INTO"))
+        int prog128 = -1;
+        while (IsKw("INTO") && Progress(ref prog128))
         {
             var s = Next();
             var ic = new InsertIntoClause { Table = ParseTablePrimary() };

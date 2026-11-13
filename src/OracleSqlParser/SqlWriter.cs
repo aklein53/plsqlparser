@@ -184,6 +184,7 @@ public static class SqlWriter
                 case CollateExpression co: Child(co.Value, 9); Add(" COLLATE "); Id(co.Collation); break;
                 case IntervalLiteral il: Interval(il); break;
                 case FunctionCall fc: Function(fc); break;
+                case MethodCall mc: Expr(mc.Target, 0); Add("."); Id(mc.Name); Add("("); Sep(mc.Arguments, Arg); Add(")"); break;
                 case MemberAccess ma: Expr(ma.Target, 0); Add("."); Id(ma.Member); break;
                 case CellReference cr:
                     Expr(cr.Base, 0); Add("[");

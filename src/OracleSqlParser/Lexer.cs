@@ -24,7 +24,12 @@ public sealed class ParseException(ParseError error) : Exception(error.ToString(
     public ParseError Error { get; } = error;
 }
 
-/// <summary>Tokenizer for Oracle SQL. Comments are skipped except optimizer hints (/*+ ... */).</summary>
+/// <summary>
+/// Tokenizer for Oracle SQL. Comments are skipped except optimizer hints (/*+ ... */).
+/// Lexical errors (unterminated string, quoted identifier, comment) are recorded in <see cref="Errors"/> and
+/// tokenising continues: an unterminated string or quoted identifier ends at end-of-line (followed by a
+/// synthetic ';' so the damaged statement is delimited), an unterminated comment ends at end-of-input.
+/// </summary>
 public sealed class Lexer
 {
     private readonly string _s;
@@ -32,9 +37,14 @@ public sealed class Lexer
     private bool _pendingRest;
     private bool _javaBody;
     private readonly List<string> _words = [];
+    private bool _pendingSemi;
+
+    /// <summary>Lexical errors recorded so far (the lexer recovers and keeps going).</summary>
+    public List<ParseError> Errors { get; } = [];
 
     public Lexer(string sql) => _s = sql;
 
+    /// <summary>Tokenises the whole input; throws <see cref="ParseException"/> for the first lexical error.</summary>
     public static List<Token> Tokenize(string sql)
     {
         var lx = new Lexer(sql);
@@ -43,6 +53,7 @@ public sealed class Lexer
         {
             var t = lx.Next();
             list.Add(t);
+            if (lx.Errors.Count > 0) throw new ParseException(lx.Errors[0]);
             if (t.Type == TokenType.EOF) return list;
         }
     }
@@ -50,7 +61,7 @@ public sealed class Lexer
     private char Cur => _i < _s.Length ? _s[_i] : '\0';
     private char Peek(int n = 1) => _i + n < _s.Length ? _s[_i + n] : '\0';
 
-    private ParseException Error(string msg, int at) => new(new ParseError(msg, at, _line, at - _lineStart + 1));
+    private void Error(string msg, int at, int line, int col) => Errors.Add(new ParseError(msg, at, line, col));
 
     private void Advance()
     {
@@ -66,6 +77,11 @@ public sealed class Lexer
 
     public Token Next()
     {
+        if (_pendingSemi)
+        {
+            _pendingSemi = false;
+            return new Token(TokenType.Operator, ";", _i, _i, _line, _i - _lineStart + 1);
+        }
         if (_javaBody)
         {
             _javaBody = false;
@@ -92,6 +108,7 @@ public sealed class Lexer
             }
         }
         SkipTrivia(out var hint);
+        if (_pendingSemi) { _pendingSemi = false; return new Token(TokenType.Operator, ";", _i, _i, _line, _i - _lineStart + 1); }
         if (hint is { } h) return h;
         int start = _i, line = _line, col = _i - _lineStart + 1;
         if (_i >= _s.Length) return new Token(TokenType.EOF, "", _i, _i, line, col);
@@ -126,7 +143,12 @@ public sealed class Lexer
             var sb = new StringBuilder();
             while (true)
             {
-                if (_i >= _s.Length) throw Error("Unterminated quoted identifier", start);
+                if (_i >= _s.Length || Cur == '\n')
+                {
+                    Error("Unterminated quoted identifier", start, line, col);
+                    _pendingSemi = true;
+                    return Make(TokenType.QuotedIdentifier, start, line, col, sb.ToString().TrimEnd('\r'));
+                }
                 if (Cur == '"') { if (Peek() == '"') { sb.Append('"'); Advance(); Advance(); continue; } Advance(); break; }
                 sb.Append(Cur); Advance();
             }
@@ -186,7 +208,7 @@ public sealed class Lexer
                 Advance(); Advance();
                 while (true)
                 {
-                    if (_i >= _s.Length) throw Error("Unterminated comment", start);
+                    if (_i >= _s.Length) { Error("Unterminated comment", start, line, col); return; }
                     if (Cur == '*' && Peek() == '/') { Advance(); Advance(); break; }
                     Advance();
                 }
@@ -208,7 +230,12 @@ public sealed class Lexer
         var sb = new StringBuilder();
         while (true)
         {
-            if (_i >= _s.Length) throw Error("Unterminated string literal", start);
+            if (_i >= _s.Length || Cur == '\n')
+            {
+                Error("Unterminated string literal", start, line, col);
+                _pendingSemi = true;
+                return Make(TokenType.String, start, line, col, sb.ToString().TrimEnd('\r'));
+            }
             if (Cur == '\'') { if (Peek() == '\'') { sb.Append('\''); Advance(); Advance(); continue; } Advance(); break; }
             sb.Append(Cur); Advance();
         }
@@ -219,13 +246,13 @@ public sealed class Lexer
     {
         for (int k = 0; k < prefixLen; k++) Advance();
         Advance(); // opening '
-        if (_i >= _s.Length) throw Error("Unterminated q-quote literal", start);
+        if (_i >= _s.Length) { Error("Unterminated q-quote literal", start, line, col); return Make(TokenType.String, start, line, col, ""); }
         char open = Cur; Advance();
         char close = open switch { '[' => ']', '(' => ')', '{' => '}', '<' => '>', _ => open };
         var sb = new StringBuilder();
         while (true)
         {
-            if (_i >= _s.Length) throw Error("Unterminated q-quote literal", start);
+            if (_i >= _s.Length) { Error("Unterminated q-quote literal", start, line, col); return Make(TokenType.String, start, line, col, sb.ToString()); }
             if (Cur == close && Peek() == '\'') { Advance(); Advance(); break; }
             sb.Append(Cur); Advance();
         }

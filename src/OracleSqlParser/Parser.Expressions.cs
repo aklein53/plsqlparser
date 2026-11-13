@@ -4,13 +4,20 @@ public sealed partial class SqlParser
 {
     // ---- expressions ----
 
-    private Expression ParseExpr() => ParseOr();
+    private Expression ParseExpr()
+    {
+        Enter();
+        var e = ParseOr();
+        Leave();
+        return e;
+    }
 
     private Expression ParseOr()
     {
         var start = Cur;
         var left = ParseAnd();
-        while (IsKw("OR"))
+        int prog107 = -1;
+        while (IsKw("OR") && Progress(ref prog107))
         {
             Next();
             left = Fin(new BinaryExpression { Left = left, Operator = "OR", Right = ParseAnd() }, start);
@@ -22,7 +29,8 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         var left = ParseNot();
-        while (IsKw("AND"))
+        int prog108 = -1;
+        while (IsKw("AND") && Progress(ref prog108))
         {
             Next();
             left = Fin(new BinaryExpression { Left = left, Operator = "AND", Right = ParseNot() }, start);
@@ -36,7 +44,10 @@ public sealed partial class SqlParser
         if (IsKw("NOT"))
         {
             Next();
-            return Fin(new UnaryExpression { Operator = "NOT", Operand = ParseNot() }, start);
+            Enter();
+            var operand = ParseNot();
+            Leave();
+            return Fin(new UnaryExpression { Operator = "NOT", Operand = operand }, start);
         }
         return ParseComparison();
     }
@@ -47,7 +58,8 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         var left = ParseAdditive();
-        while (true)
+        int prog5 = -1;
+        while (Progress(ref prog5))
         {
             if (Cur.Type == TokenType.Operator && ComparisonOps.Contains(Cur.Text))
             {
@@ -128,8 +140,9 @@ public sealed partial class SqlParser
         else if (AcceptKw("JSON"))
         {
             ie.Test = IsTest.Json;
-            while (IsKw("FORMAT") || IsKw("STRICT") || IsKw("LAX") || IsKw("ALLOW") || IsKw("DISALLOW") ||
-                   ((IsKw("WITH") || IsKw("WITHOUT")) && IsKwAt(1, "UNIQUE")))
+            int prog109 = -1;
+            while ((IsKw("FORMAT") || IsKw("STRICT") || IsKw("LAX") || IsKw("ALLOW") || IsKw("DISALLOW") ||
+                   ((IsKw("WITH") || IsKw("WITHOUT")) && IsKwAt(1, "UNIQUE"))) && Progress(ref prog109))
                 ie.JsonClauses.Add(ParseFunctionClause());
         }
         else if (AcceptKw("OF"))
@@ -154,7 +167,8 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         var left = ParseMultiplicative();
-        while (true)
+        int prog6 = -1;
+        while (Progress(ref prog6))
         {
             if (Cur.Type == TokenType.Operator && Cur.Text is "+" or "-" or "||")
             {
@@ -191,12 +205,18 @@ public sealed partial class SqlParser
         if (Cur.Type == TokenType.Operator && Cur.Text is "+" or "-")
         {
             var op = Next().Text;
-            return Fin(new UnaryExpression { Operator = op, Operand = ParseUnary() }, start);
+            Enter();
+            var operand = ParseUnary();
+            Leave();
+            return Fin(new UnaryExpression { Operator = op, Operand = operand }, start);
         }
         if (IsKw("PRIOR") || IsKw("CONNECT_BY_ROOT"))
         {
             var op = Next().Value;
-            return Fin(new UnaryExpression { Operator = op, Operand = ParseUnary() }, start);
+            Enter();
+            var operand = ParseUnary();
+            Leave();
+            return Fin(new UnaryExpression { Operator = op, Operand = operand }, start);
         }
         return ParsePower();
     }
@@ -205,7 +225,8 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         var left = ParsePostfix();
-        while (IsOp("**"))
+        int prog110 = -1;
+        while (IsOp("**") && Progress(ref prog110))
         {
             Next();
             left = Fin(new BinaryExpression { Left = left, Operator = "**", Right = ParsePostfix() }, start);
@@ -217,7 +238,8 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         var e = ParsePrimary();
-        while (true)
+        int prog7 = -1;
+        while (Progress(ref prog7))
         {
             if (IsOp("[")) e = ParseSubscripts(e, start);
             else if (IsKw("AT") && (IsKwAt(1, "TIME") || IsKwAt(1, "LOCAL")))
@@ -258,7 +280,8 @@ public sealed partial class SqlParser
             {
                 Next();
                 var name = start.Text[1..].Trim('"');
-                while (IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier)
+                int prog111 = -1;
+                while (IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog111))
                 {
                     Next();
                     name += "." + Next().Text;
@@ -280,7 +303,8 @@ public sealed partial class SqlParser
                     if (IsOp(","))
                     {
                         var list = new ExpressionList { Items = [first] };
-                        while (AcceptOp(",")) list.Items.Add(ParseExpr());
+                        int prog112 = -1;
+                        while (AcceptOp(",") && Progress(ref prog112)) list.Items.Add(ParseExpr());
                         ExpectOp(")");
                         return Fin(list, start);
                     }
@@ -351,7 +375,8 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         var parts = new List<Identifier> { ParseIdentifier() };
-        while (IsOp("."))
+        int prog113 = -1;
+        while (IsOp(".") && Progress(ref prog113))
         {
             if (IsOpAt(1, "*"))
             {
@@ -388,12 +413,17 @@ public sealed partial class SqlParser
         else result = Fin(new ColumnReference { Parts = parts, Attribute = attribute }, start);
 
         // member access on call/collection results: f(x).field, coll(i).field(j)
-        while (result is FunctionCall && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier)
+        int prog114 = -1;
+        while (result is FunctionCall or MethodCall or MemberAccess && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog114))
         {
             Next();
             var m = ParseIdentifier();
-            result = Fin(new MemberAccess { Target = result, Member = m }, start);
-            if (IsOp("(")) result = ParseFunctionCall([m], start);
+            if (IsOp("("))
+            {
+                var call = ParseFunctionCall([m], Cur);
+                result = Fin(new MethodCall { Target = result, Name = m, Arguments = call.Arguments }, start);
+            }
+            else result = Fin(new MemberAccess { Target = result, Member = m }, start);
         }
         return result;
     }
@@ -438,12 +468,14 @@ public sealed partial class SqlParser
                 Next(); Next();
                 fc.OrderBy = ParseOrderByList();
             }
-            while (!IsOp(")") && Cur.Type != TokenType.EOF)
+            int prog115 = -1;
+            while (!IsOp(")") && Cur.Type != TokenType.EOF && Progress(ref prog115))
                 fc.Clauses.Add(ParseFunctionClause());
         }
         ExpectOp(")");
 
-        while (true)
+        int prog8 = -1;
+        while (Progress(ref prog8))
         {
             if (IsKw("WITHIN") && IsKwAt(1, "GROUP"))
             {
@@ -503,10 +535,11 @@ public sealed partial class SqlParser
 
     private void ParseNullTreatment(FunctionCall fc)
     {
-        if ((IsKw("IGNORE") || IsKw("RESPECT")) && IsKwAt(1, "NULLS"))
+        if (IsKw("IGNORE") || IsKw("RESPECT"))
         {
-            if (Next().Value == "IGNORE") fc.IgnoreNulls = true; else fc.RespectNulls = true;
-            Next();
+            bool ignore = Next().Value == "IGNORE";
+            ExpectKw("NULLS");
+            if (ignore) fc.IgnoreNulls = true; else fc.RespectNulls = true;
         }
     }
 
@@ -654,7 +687,7 @@ public sealed partial class SqlParser
                 Next();
                 var pc = new PassingClause();
                 if (IsKw("BY")) { Next(); ExpectKw("VALUE"); pc.ByValue = true; }
-                do pc.Items.Add((ExpressionSelectItem)ParseSelectItem()); while (AcceptOp(","));
+                do pc.Items.Add(ParseExpressionSelectItem()); while (AcceptOp(","));
                 return Fin(pc, s);
             }
             case "USING":
@@ -680,7 +713,8 @@ public sealed partial class SqlParser
     private void ParseJsonTransformArgs(FunctionCall fc)
     {
         fc.Arguments.Add(ParseArgument());
-        while (AcceptOp(","))
+        int prog116 = -1;
+        while (AcceptOp(",") && Progress(ref prog116))
         {
             var s = Cur;
             if (Cur.Type != TokenType.Identifier || !JsonOps.TryGetValue(Cur.Value, out var op))
@@ -695,7 +729,8 @@ public sealed partial class SqlParser
                 jo.Value = ParseAdditive();
                 if (IsKw("FORMAT")) jo.Format = (FormatClause)ParseFunctionClause();
             }
-            while (AtBehaviorClause() && !IsKw("DEFAULT")) jo.Clauses.Add(ParseBehaviorClause());
+            int prog117 = -1;
+            while (AtBehaviorClause() && !IsKw("DEFAULT") && Progress(ref prog117)) jo.Clauses.Add(ParseBehaviorClause());
             fc.Operations.Add(Fin(jo, s));
         }
     }
@@ -769,7 +804,8 @@ public sealed partial class SqlParser
         ExpectKw("CASE");
         var ce = new CaseExpression();
         if (!IsKw("WHEN")) ce.Operand = ParseExpr();
-        while (IsKw("WHEN"))
+        int prog118 = -1;
+        while (IsKw("WHEN") && Progress(ref prog118))
         {
             var ws = Next();
             var w = new WhenClause { When = ParseExpr() };
@@ -801,7 +837,8 @@ public sealed partial class SqlParser
         ExpectKw("AS");
         if (cast.Kind == CastKind.Treat) cast.Ref = AcceptKw("REF");
         cast.Type = ParseDataType();
-        while (!IsOp(")") && Cur.Type != TokenType.EOF)
+        int prog119 = -1;
+        while (!IsOp(")") && Cur.Type != TokenType.EOF && Progress(ref prog119))
         {
             if (IsKw("DEFAULT")) cast.OnConversionError = ParseBehaviorClause();
             else if (AcceptOp(","))
@@ -871,7 +908,8 @@ public sealed partial class SqlParser
         var words = new List<string>();
         var first = ParseIdentifier();
         words.Add(first.Value);
-        while (IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier)
+        int prog120 = -1;
+        while (IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog120))
         {
             Next();
             words[^1] += "." + ParseIdentifier().Value;
@@ -883,7 +921,8 @@ public sealed partial class SqlParser
             dt.Name = words[0];
             return Fin(dt, start);
         }
-        while (true)
+        int prog9 = -1;
+        while (Progress(ref prog9))
         {
             if (IsOp("("))
             {
@@ -938,8 +977,27 @@ public sealed partial class SqlParser
         if (!IsOp("(")) return null;
         Next();
         if (Cur.Type != TokenType.Number) throw Fail($"Expected number but found {Describe(Cur)}");
-        var v = int.Parse(Next().Text);
+        var v = ParseSmallInt();
         ExpectOp(")");
         return v;
+    }
+
+    /// <summary>Consumes a Number token that must be a non-negative integer fitting in an int.</summary>
+    private int ParseSmallInt()
+    {
+        if (Cur.Type != TokenType.Number) throw Fail($"Expected integer but found {Describe(Cur)}");
+        if (!int.TryParse(Cur.Text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var v))
+            throw Fail($"Expected a small integer but found '{Cur.Text}'");
+        Next();
+        return v;
+    }
+
+    /// <summary>A select-list style item where '*' is not allowed (PASSING, MEASURES, MODEL columns, ...).</summary>
+    private ExpressionSelectItem ParseExpressionSelectItem()
+    {
+        var s = Cur;
+        var item = ParseSelectItem();
+        if (item is ExpressionSelectItem e) return e;
+        throw new ParseException(new ParseError("'*' is not allowed here", s.Start, s.Line, s.Column));
     }
 }

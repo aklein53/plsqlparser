@@ -11,7 +11,8 @@ public sealed partial class SqlParser
     private List<string> ParseLabels()
     {
         var labels = new List<string>();
-        while (IsOp("<<"))
+        int prog132 = -1;
+        while (IsOp("<<") && Progress(ref prog132))
         {
             Next();
             labels.Add(ParseIdentifier().Value);
@@ -21,6 +22,14 @@ public sealed partial class SqlParser
     }
 
     private Block ParseBlock()
+    {
+        Enter();
+        var r = ParseBlockCore();
+        Leave();
+        return r;
+    }
+
+    private Block ParseBlockCore()
     {
         var start = Cur;
         var labels = ParseLabels();
@@ -58,7 +67,8 @@ public sealed partial class SqlParser
     {
         ExpectKw("EXCEPTION");
         var list = new List<ExceptionHandler>();
-        while (IsKw("WHEN"))
+        int prog133 = -1;
+        while (IsKw("WHEN") && Progress(ref prog133))
         {
             var s = Next();
             var h = new ExceptionHandler();
@@ -77,8 +87,17 @@ public sealed partial class SqlParser
 
     private List<Statement> ParseStatements(Func<bool> stop)
     {
+        Enter();
+        var r = ParseStatementsCore(stop);
+        Leave();
+        return r;
+    }
+
+    private List<Statement> ParseStatementsCore(Func<bool> stop)
+    {
         var list = new List<Statement>();
-        while (!stop())
+        int prog30 = -1;
+        while (!stop() && Progress(ref prog30))
         {
             list.Add(ParsePlsqlStatement());
             ExpectOp(";");
@@ -90,8 +109,17 @@ public sealed partial class SqlParser
 
     private List<Declaration> ParseDeclarations(Func<bool> stop)
     {
+        Enter();
+        var r = ParseDeclarationsCore(stop);
+        Leave();
+        return r;
+    }
+
+    private List<Declaration> ParseDeclarationsCore(Func<bool> stop)
+    {
         var list = new List<Declaration>();
-        while (!stop() && !IsKw("END") && Cur.Type != TokenType.EOF)
+        int prog134 = -1;
+        while (!stop() && !IsKw("END") && Cur.Type != TokenType.EOF && Progress(ref prog134))
             list.Add(ParseDeclaration());
         return list;
     }
@@ -227,7 +255,8 @@ public sealed partial class SqlParser
     private MemberModifiers ParseMemberModifiers()
     {
         var m = MemberModifiers.None;
-        while (Cur.Type == TokenType.Identifier)
+        int prog31 = -1;
+        while (Cur.Type == TokenType.Identifier && Progress(ref prog31))
         {
             if (IsKw("NOT") && IsKwAt(1, "FINAL")) { Next(); Next(); m |= MemberModifiers.NotFinal; }
             else if (IsKw("NOT") && IsKwAt(1, "INSTANTIABLE")) { Next(); Next(); m |= MemberModifiers.NotInstantiable; }
@@ -274,7 +303,8 @@ public sealed partial class SqlParser
         var s = Cur;
         var po = new ProgramOptions();
         bool any = false;
-        while (Cur.Type == TokenType.Identifier && !stop())
+        int prog32 = -1;
+        while (Cur.Type == TokenType.Identifier && !stop() && Progress(ref prog32))
         {
             switch (Cur.Value)
             {
@@ -397,7 +427,8 @@ public sealed partial class SqlParser
             else { ExpectKw("C"); ec.Language = ExternalLanguage.C; }
         }
         else { ExpectKw("EXTERNAL"); ec.Language = ExternalLanguage.C; }
-        while (!AtStatementEnd())
+        int prog33 = -1;
+        while (!AtStatementEnd() && Progress(ref prog33))
         {
             if (AcceptKw("NAME")) ec.Name = ParseAdditive();
             else if (AcceptKw("LIBRARY")) ec.Library = ParseIdentifier();
@@ -535,12 +566,14 @@ public sealed partial class SqlParser
             tr.Target = ParseDottedName();
             if (tr.Target[^1] is { Quoted: false, Value: "SCHEMA" }) { tr.Target.RemoveAt(tr.Target.Count - 1); tr.TargetKind = TriggerTargetKind.Schema; }
         }
-        while (Cur.Type == TokenType.Identifier)
+        int prog34 = -1;
+        while (Cur.Type == TokenType.Identifier && Progress(ref prog34))
         {
             if (IsKw("REFERENCING"))
             {
                 Next();
-                while (IsKw("NEW") || IsKw("OLD") || IsKw("PARENT"))
+                int prog135 = -1;
+                while ((IsKw("NEW") || IsKw("OLD") || IsKw("PARENT")) && Progress(ref prog135))
                 {
                     var rs = Cur;
                     var ri = new ReferencingItem { Kind = Next().Value switch { "NEW" => ReferencingKind.New, "OLD" => ReferencingKind.Old, _ => ReferencingKind.Parent } };
@@ -571,7 +604,8 @@ public sealed partial class SqlParser
             Next(); ExpectKw("TRIGGER");
             tr.Compound = true;
             tr.CompoundDeclarations = ParseDeclarations(() => IsKw("BEFORE") || IsKw("AFTER") || IsKw("INSTEAD"));
-            while (IsKw("BEFORE") || IsKw("AFTER") || IsKw("INSTEAD"))
+            int prog136 = -1;
+            while ((IsKw("BEFORE") || IsKw("AFTER") || IsKw("INSTEAD")) && Progress(ref prog136))
             {
                 var ss = Cur;
                 var sec = new TimingPointSection { Point = ParseTimingPoint() };
@@ -613,7 +647,8 @@ public sealed partial class SqlParser
             TryIfNotExists();
             tb.Name = ParseDottedName();
             if (!AcceptKw("IS")) ExpectKw("AS");
-            while (!IsKw("END"))
+            int prog35 = -1;
+            while (!IsKw("END") && Progress(ref prog35))
             {
                 tb.Members.Add(ParseSubprogram());
                 ExpectOp(";");
@@ -624,7 +659,8 @@ public sealed partial class SqlParser
         var ts = new CreateTypeStatement { OrReplace = orReplace, Editionable = editionable };
         TryIfNotExists();
         ts.Name = ParseDottedName();
-        while (true)
+        int prog36 = -1;
+        while (Progress(ref prog36))
         {
             if (AcceptKw("FORCE")) ts.Force = true;
             else if (AcceptKw("OID")) ts.Oid = ParsePrimary();
@@ -662,7 +698,8 @@ public sealed partial class SqlParser
             }
             else throw Fail($"Expected OBJECT, TABLE or VARRAY but found {Describe(Cur)}");
         }
-        while (!AtStatementEnd())
+        int prog37 = -1;
+        while (!AtStatementEnd() && Progress(ref prog37))
         {
             bool not = AcceptKw("NOT");
             if (AcceptKw("FINAL")) ts.Final = !not;
@@ -755,7 +792,8 @@ public sealed partial class SqlParser
         var st = new IfStatement { Condition = ParseExpr() };
         ExpectKw("THEN");
         st.ThenStatements = ParseStatements(AtBlockEnd);
-        while (IsKw("ELSIF"))
+        int prog137 = -1;
+        while (IsKw("ELSIF") && Progress(ref prog137))
         {
             var bs = Next();
             var br = new IfBranch { Condition = ParseExpr() };
@@ -773,7 +811,8 @@ public sealed partial class SqlParser
         var start = Next();
         var st = new PlsqlCaseStatement();
         if (!IsKw("WHEN")) st.Operand = ParseExpr();
-        while (IsKw("WHEN"))
+        int prog138 = -1;
+        while (IsKw("WHEN") && Progress(ref prog138))
         {
             var ws = Next();
             var w = new CaseStatementWhen { When = ParseExpr() };
@@ -874,7 +913,8 @@ public sealed partial class SqlParser
     {
         var start = Next(); Next();
         var st = new ExecuteImmediateStatement { Sql = ParseExpr() };
-        while (true)
+        int prog38 = -1;
+        while (Progress(ref prog38))
         {
             if (IsKw("BULK") && IsKwAt(1, "COLLECT")) { Next(); Next(); st.BulkCollect = true; ExpectKw("INTO"); ParseIntoTargets(st.Into); }
             else if (AcceptKw("INTO")) ParseIntoTargets(st.Into);

@@ -233,6 +233,14 @@ public sealed class MemberAccess : Expression
     public Identifier Member { get; set; } = null!;
 }
 
+/// <summary>Method call on an expression: <c>target.name(args)</c>, e.g. <c>UTL_HTTP.REQUEST(url).foo()</c>.</summary>
+public sealed class MethodCall : Expression
+{
+    public Expression Target { get; set; } = null!;
+    public Identifier Name { get; set; } = null!;
+    public List<Argument> Arguments { get; set; } = [];
+}
+
 public sealed class CursorExpression : Expression
 {
     public SelectStatement Query { get; set; } = null!;

@@ -12,33 +12,42 @@ public sealed partial class SqlParser
 {
     // ---- public API ----
 
-    /// <summary>Parses a script of one or more statements separated by ';' (or '/'). Never throws on syntax errors; see Errors.</summary>
-    public static ParseResult Parse(string sql)
+    /// <summary>
+    /// Parses a script of one or more statements separated by ';' (or '/'). Never throws; see Errors.
+    /// Parsing is thread-safe (each call has its own state); the returned tree is mutable and not thread-safe.
+    /// </summary>
+    public static ParseResult Parse(string sql) => Parse(sql, null);
+
+    /// <summary>Parses a script with explicit <see cref="ParseOptions"/>. Never throws; see Errors.</summary>
+    public static ParseResult Parse(string sql, ParseOptions? options)
     {
         var errors = new List<ParseError>();
         var tokens = TokenizeLenient(sql, errors);
-        var parser = new SqlParser(tokens, sql);
-        int lexErrors = errors.Count;
+        var parser = new SqlParser(tokens, sql, options);
+        parser._lexErrors = errors.ToList();
         var script = parser.ParseScript(errors);
-        // A lexer error truncates the token stream; the resulting "unexpected end of input" is only a consequence of it.
-        if (lexErrors > 0)
-            errors.RemoveAll(e => errors.IndexOf(e) >= lexErrors && e.Offset >= sql.Length);
         return new ParseResult { Script = script, Errors = errors };
     }
 
     /// <summary>Parses a single expression; throws ParseException on error.</summary>
-    public static Expression ParseExpression(string sql)
+    public static Expression ParseExpression(string sql) => ParseExpression(sql, null);
+
+    /// <summary>Parses a single expression with explicit options; throws ParseException on error.</summary>
+    public static Expression ParseExpression(string sql, ParseOptions? options)
     {
-        var p = new SqlParser(Lexer.Tokenize(sql), sql);
+        var p = new SqlParser(Lexer.Tokenize(sql), sql, options);
         var e = p.ParseExpr();
         if (p.Cur.Type != TokenType.EOF) throw p.Fail($"Unexpected '{p.Cur.Text}' after expression");
         return e;
     }
 
     /// <summary>Parses a single statement; throws ParseException on error.</summary>
-    public static Statement ParseStatement(string sql)
+    public static Statement ParseStatement(string sql) => ParseStatement(sql, null);
+
+    /// <summary>Parses a single statement with explicit options; throws ParseException on error.</summary>
+    public static Statement ParseStatement(string sql, ParseOptions? options)
     {
-        var p = new SqlParser(Lexer.Tokenize(sql), sql);
+        var p = new SqlParser(Lexer.Tokenize(sql), sql, options);
         var s = p.ParseStatementCore();
         while (p.AcceptOp(";") || p.AcceptOp("/")) { }
         if (p.Cur.Type != TokenType.EOF) throw p.Fail($"Unexpected '{p.Cur.Text}' after statement");
@@ -49,20 +58,13 @@ public sealed partial class SqlParser
     {
         var lx = new Lexer(sql);
         var list = new List<Token>();
-        try
+        while (true)
         {
-            while (true)
-            {
-                var t = lx.Next();
-                list.Add(t);
-                if (t.Type == TokenType.EOF) break;
-            }
+            var t = lx.Next();
+            list.Add(t);
+            if (t.Type == TokenType.EOF) break;
         }
-        catch (ParseException ex)
-        {
-            errors.Add(ex.Error);
-            list.Add(new Token(TokenType.EOF, "", sql.Length, sql.Length, ex.Error.Line, ex.Error.Column));
-        }
+        errors.AddRange(lx.Errors);
         return list;
     }
 
@@ -72,9 +74,14 @@ public sealed partial class SqlParser
     private readonly string _src;
     private int _p;
 
-    private SqlParser(List<Token> tokens, string src)
+    private readonly int _maxDepth;
+    private int _depth;
+    private List<ParseError> _lexErrors = [];
+
+    private SqlParser(List<Token> tokens, string src, ParseOptions? options = null)
     {
         _src = src;
+        _maxDepth = options?.MaxNestingDepth ?? 200;
         // Keep optimizer hints only where they are meaningful (right after a statement keyword).
         _t = [];
         foreach (var tok in tokens)
@@ -87,10 +94,39 @@ public sealed partial class SqlParser
         }
     }
 
+    /// <summary>Enters one nesting level; throws when the configured maximum depth is exceeded. Pair with <see cref="Leave"/>.</summary>
+    private void Enter()
+    {
+        if (++_depth > _maxDepth) throw Fail($"nesting depth exceeds {_maxDepth}");
+        if (!System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            throw Fail($"nesting depth exceeds {_depth - 1} (insufficient stack space)");
+    }
+
+    private void Leave() => _depth--;
+
+    /// <summary>
+    /// Shared loop guard: call at the top of every iteration of an open-ended loop. Throws if the previous
+    /// iteration did not advance the token position (which would otherwise spin forever).
+    /// </summary>
+    private bool Progress(ref int mark)
+    {
+        if (_p == mark) throw Fail($"parser made no progress at {Describe(Cur)}");
+        mark = _p;
+        return true;
+    }
+
     private Token Cur => _t[_p];
     private Token Prev => _t[Math.Max(_p - 1, 0)];
     private Token PeekTok(int n = 1) => _t[Math.Min(_p + n, _t.Count - 1)];
-    private Token Next() { var t = Cur; if (_p < _t.Count - 1) _p++; return t; }
+    private Token Next()
+    {
+        // Every recursion consumes tokens, so this is a universal last line of defence against stack exhaustion.
+        if (!System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            throw Fail($"nesting depth exceeds {_depth} (insufficient stack space)");
+        var t = Cur;
+        if (_p < _t.Count - 1) _p++;
+        return t;
+    }
 
     private bool IsKw(string kw) => Cur.Type == TokenType.Identifier && Cur.Value == kw;
     private bool IsKwAt(int n, string kw) => PeekTok(n) is { Type: TokenType.Identifier } t && t.Value == kw;
@@ -154,15 +190,20 @@ public sealed partial class SqlParser
     {
         var script = new SqlScript();
         var first = Cur;
-        while (true)
+        int prog1 = -1;
+        while (Progress(ref prog1))
         {
-            while (AcceptOp(";") || AcceptOp("/")) { }
+            int prog103 = -1;
+            while ((AcceptOp(";") || AcceptOp("/")) && Progress(ref prog103)) { }
             if (Cur.Type == TokenType.EOF) break;
             int startIdx = _p;
+            _depth = 0;
             try
             {
                 var st = ParseStatementCore();
-                script.Statements.Add(st);
+                // A statement that contains a lexical error (already reported) is unreliable: drop it.
+                int from = _t[startIdx].Start, to = Prev.End;
+                if (!_lexErrors.Any(e => e.Offset >= from && e.Offset <= to)) script.Statements.Add(st);
                 if (st is not SqlPlusCommand && !(st is ExecStatement && Cur.Line > Prev.Line) && Cur.Type != TokenType.EOF && !IsOp(";") && !IsOp("/"))
                     throw Fail($"Unexpected {Describe(Cur)}");
             }
@@ -171,6 +212,13 @@ public sealed partial class SqlParser
                 errors.Add(ex.Error);
                 Resync(startIdx);
             }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                // Last-resort net for defects not yet found: Parse must never throw.
+                errors.Add(new ParseError($"internal parser error: {ex.GetType().Name}", Cur.Start, Cur.Line, Cur.Column));
+                Resync(startIdx);
+            }
+            if (_p == startIdx && Cur.Type != TokenType.EOF) Next();
         }
         return Fin(script, first);
     }
@@ -195,7 +243,7 @@ public sealed partial class SqlParser
             _p = _t.Count - 1;
             return;
         }
-        while (Cur.Type != TokenType.EOF && !IsOp(";")) Next();
+        while (Cur.Type != TokenType.EOF && !IsOp(";") && !IsLoneSlash(_p)) Next();
     }
 
     private bool IsEndToken(int i) => _t[i].Type == TokenType.Identifier && _t[i].Value == "END";
@@ -238,11 +286,20 @@ public sealed partial class SqlParser
 
     private SelectStatement ParseSelectStatement()
     {
+        Enter();
+        var r = ParseSelectStatementCore();
+        Leave();
+        return r;
+    }
+
+    private SelectStatement ParseSelectStatementCore()
+    {
         var start = Cur;
         var stmt = new SelectStatement();
         if (AcceptKw("WITH"))
         {
-            while (IsKw("FUNCTION") || IsKw("PROCEDURE")) { stmt.WithDeclarations.Add(ParseSubprogram()); AcceptOp(";"); }
+            int prog104 = -1;
+            while ((IsKw("FUNCTION") || IsKw("PROCEDURE")) && Progress(ref prog104)) { stmt.WithDeclarations.Add(ParseSubprogram()); AcceptOp(";"); }
             if (!(IsKw("SELECT") || IsOp("(")))
             do
             {
@@ -309,7 +366,8 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         var left = ParseQueryTerm();
-        while (true)
+        int prog2 = -1;
+        while (Progress(ref prog2))
         {
             SetOperator op;
             if (IsKw("UNION")) op = SetOperator.Union;
@@ -359,7 +417,8 @@ public sealed partial class SqlParser
         }
 
         // WHERE, hierarchical, GROUP BY, HAVING: Oracle permits hierarchical/GROUP BY in either order.
-        while (true)
+        int prog3 = -1;
+        while (Progress(ref prog3))
         {
             if (IsKw("WHERE") && qs.Where == null) { Next(); qs.Where = ParseExpr(); }
             else if (IsKw("START") && IsKwAt(1, "WITH") && qs.StartWith == null)
@@ -461,7 +520,8 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         var left = ParseTablePrimary();
-        while (true)
+        int prog4 = -1;
+        while (Progress(ref prog4))
         {
             var js = Cur;
             bool natural = false;
@@ -708,7 +768,8 @@ public sealed partial class SqlParser
         st.Source = ParseTablePrimary();
         ExpectKw("ON");
         st.On = ParseExpr();
-        while (IsKw("WHEN"))
+        int prog105 = -1;
+        while (IsKw("WHEN") && Progress(ref prog105))
         {
             var cs = Next();
             var mc = new MergeClause();
@@ -761,7 +822,8 @@ public sealed partial class SqlParser
     private List<Identifier> ParseDottedName()
     {
         var parts = new List<Identifier> { ParseIdentifier() };
-        while (IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier)
+        int prog106 = -1;
+        while (IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog106))
         {
             Next();
             parts.Add(ParseIdentifier());

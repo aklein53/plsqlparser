@@ -8,11 +8,20 @@ public sealed partial class SqlParser
     private List<SyntaxItem> ParseSyntaxItems(Func<bool> stop)
     {
         var list = new List<SyntaxItem>();
-        while (Cur.Type != TokenType.EOF && !IsOp(")") && !stop()) list.Add(ParseSyntaxItem());
+        int prog12 = -1;
+        while (Cur.Type != TokenType.EOF && !IsOp(")") && !stop() && Progress(ref prog12)) list.Add(ParseSyntaxItem());
         return list;
     }
 
     private SyntaxItem ParseSyntaxItem()
+    {
+        Enter();
+        var r = ParseSyntaxItemCore();
+        Leave();
+        return r;
+    }
+
+    private SyntaxItem ParseSyntaxItemCore()
     {
         var s = Cur;
         switch (s.Type)
@@ -45,7 +54,7 @@ public sealed partial class SqlParser
         List<Token> toks;
         try { toks = Lexer.Tokenize(tok.Value); }
         catch (ParseException) { return h; }
-        var sub = new SqlParser(toks, tok.Value);
+        var sub = new SqlParser(toks, tok.Value, new ParseOptions { MaxNestingDepth = _maxDepth });
         while (sub.Cur.Type != TokenType.EOF)
         {
             if (sub.Cur.Type == TokenType.Identifier)
@@ -71,7 +80,8 @@ public sealed partial class SqlParser
     private List<PhysicalAttribute> ParsePhysicalAttributes(Func<bool> stop)
     {
         var list = new List<PhysicalAttribute>();
-        while (Cur.Type != TokenType.EOF && !IsOp(")") && !IsOp(";") && !stop())
+        int prog13 = -1;
+        while (Cur.Type != TokenType.EOF && !IsOp(")") && !IsOp(";") && !stop() && Progress(ref prog13))
         {
             int before = _p;
             list.Add(ParsePhysicalAttribute(stop));
@@ -108,7 +118,8 @@ public sealed partial class SqlParser
                 {
                     Next(); Next();
                     var sa = new StorageAttribute();
-                    while (!IsOp(")") && Cur.Type != TokenType.EOF)
+                    int prog129 = -1;
+                    while (!IsOp(")") && Cur.Type != TokenType.EOF && Progress(ref prog129))
                     {
                         var os = Cur;
                         var opt = new StorageOption { Name = ParseIdentifier().Value };

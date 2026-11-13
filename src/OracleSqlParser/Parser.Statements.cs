@@ -75,7 +75,8 @@ public sealed partial class SqlParser
         {
             var ws = Next();
             var w = new CommitWrite();
-            while (true)
+            int prog14 = -1;
+            while (Progress(ref prog14))
             {
                 if (AcceptKw("WAIT")) w.Wait = WaitMode.Wait;
                 else if (AcceptKw("NOWAIT")) w.Wait = WaitMode.NoWait;
@@ -105,7 +106,8 @@ public sealed partial class SqlParser
     {
         var start = Next(); Next();
         var st = new SetTransactionStatement();
-        while (!AtStatementEnd())
+        int prog15 = -1;
+        while (!AtStatementEnd() && Progress(ref prog15))
         {
             if (IsKw("READ") && IsKwAt(1, "ONLY")) { Next(); Next(); st.Access = TransactionAccess.ReadOnly; }
             else if (IsKw("READ") && IsKwAt(1, "WRITE")) { Next(); Next(); st.Access = TransactionAccess.ReadWrite; }
@@ -202,7 +204,8 @@ public sealed partial class SqlParser
         var st = new TruncateStatement();
         if (AcceptKw("CLUSTER")) st.Target = TruncateTarget.Cluster; else ExpectKw("TABLE");
         st.Name = ParseDottedName();
-        while (!AtStatementEnd())
+        int prog16 = -1;
+        while (!AtStatementEnd() && Progress(ref prog16))
         {
             if (IsKw("PRESERVE") && IsKwAt(1, "MATERIALIZED")) { Next(); Next(); ExpectKw("VIEW"); ExpectKw("LOG"); st.MaterializedViewLog = MaterializedViewLogAction.Preserve; }
             else if (IsKw("PURGE") && IsKwAt(1, "MATERIALIZED")) { Next(); Next(); ExpectKw("VIEW"); ExpectKw("LOG"); st.MaterializedViewLog = MaterializedViewLogAction.Purge; }
@@ -301,7 +304,8 @@ public sealed partial class SqlParser
                 var ps = Cur;
                 var gp = new GrantPrivilege();
                 var words = new List<string>();
-                while (Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier && !IsKw("ON") && !IsKw("TO") && !IsKw("FROM"))
+                int prog17 = -1;
+                while (Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier && !IsKw("ON") && !IsKw("TO") && !IsKw("FROM") && Progress(ref prog17))
                     words.Add(Next().Value);
                 gp.Name = string.Join(" ", words);
                 if (IsOp("(")) { Next(); gp.Columns = ParseIdentifierList(); ExpectOp(")"); }
@@ -326,7 +330,8 @@ public sealed partial class SqlParser
             if (AcceptKw("PUBLIC")) g.Public = true; else g.Name = ParseIdentifier();
             st.Grantees.Add(Fin(g, gs));
         } while (AcceptOp(","));
-        while (!AtStatementEnd())
+        int prog18 = -1;
+        while (!AtStatementEnd() && Progress(ref prog18))
         {
             if (IsKw("WITH") && IsKwAt(1, "GRANT")) { Next(); Next(); ExpectKw("OPTION"); st.WithGrantOption = true; }
             else if (IsKw("WITH") && IsKwAt(1, "ADMIN")) { Next(); Next(); ExpectKw("OPTION"); st.WithAdminOption = true; }
@@ -400,7 +405,8 @@ public sealed partial class SqlParser
         st.IfExists = TryIfExists();
         if (kind == ObjectKind.MaterializedViewLog) { ExpectKw("ON"); st.OnTable = ParseDottedName(); }
         else if (ObjectKindHasName(kind)) st.Name = ParseDottedName();
-        while (!AtStatementEnd())
+        int prog19 = -1;
+        while (!AtStatementEnd() && Progress(ref prog19))
         {
             if (IsKw("CASCADE") && IsKwAt(1, "CONSTRAINTS")) { Next(); Next(); st.CascadeConstraints = true; }
             else if (AcceptKw("CASCADE")) st.Cascade = true;
@@ -435,7 +441,8 @@ public sealed partial class SqlParser
         if (AcceptKw("SET"))
         {
             st.Kind = AlterSessionKind.Set;
-            while (!AtStatementEnd())
+            int prog20 = -1;
+            while (!AtStatementEnd() && Progress(ref prog20))
             {
                 var s = Cur;
                 var ss = new SessionSetting { Name = ParseDottedName() };
@@ -458,7 +465,8 @@ public sealed partial class SqlParser
             else if (AcceptKw("RESUMABLE"))
             {
                 st.Feature = SessionFeature.Resumable;
-                while (!AtStatementEnd())
+                int prog21 = -1;
+                while (!AtStatementEnd() && Progress(ref prog21))
                 {
                     if (AcceptKw("TIMEOUT")) st.Timeout = ParseAdditive();
                     else if (AcceptKw("NAME")) st.ResumableName = ParseAdditive();
@@ -484,7 +492,8 @@ public sealed partial class SqlParser
         bool orReplace = false, unique = false, bitmap = false, pub = false, andResolve = false, andCompile = false, noForce = false;
         bool force = false, editioning = false, gtt = false, ptt = false, dup = false, imm = false, blk = false;
         EditionableKind? editionable = null;
-        while (true)
+        int prog22 = -1;
+        while (Progress(ref prog22))
         {
             if (IsKw("OR") && IsKwAt(1, "REPLACE")) { Next(); Next(); orReplace = true; }
             else if (IsKw("EDITIONABLE")) { Next(); editionable = EditionableKind.Editionable; }
@@ -608,7 +617,8 @@ public sealed partial class SqlParser
         var cd = new ColumnDefinition { Name = ParseIdentifier() };
         if (Cur.Type == TokenType.Identifier && !ColumnClauseWords.Contains(Cur.Value) && !AtStatementEnd())
             cd.Type = ParseDataType();
-        while (!IsOp(",") && !IsOp(")") && !AtStatementEnd() && !(stop?.Invoke() ?? false))
+        int prog130 = -1;
+        while (!IsOp(",") && !IsOp(")") && !AtStatementEnd() && !(stop?.Invoke() ?? false) && Progress(ref prog130))
         {
             if (IsKw("DEFAULT"))
             {
@@ -651,7 +661,8 @@ public sealed partial class SqlParser
             {
                 var es = Next();
                 var ec = new EncryptClause();
-                while (true)
+                int prog23 = -1;
+                while (Progress(ref prog23))
                 {
                     if (AcceptKw("USING")) ec.Algorithm = ParsePrimary();
                     else if (AcceptKw("IDENTIFIED")) { ExpectKw("BY"); ec.IdentifiedBy = ParsePrimary(); }
@@ -703,7 +714,8 @@ public sealed partial class SqlParser
         if (!(Cur.Type == TokenType.Identifier && (ConstraintStateWords.Contains(Cur.Value) || (IsKw("NOT") && IsKwAt(1, "DEFERRABLE"))))) return null;
         var s = Cur;
         var cs = new ConstraintState();
-        while (Cur.Type == TokenType.Identifier)
+        int prog24 = -1;
+        while (Cur.Type == TokenType.Identifier && Progress(ref prog24))
         {
             if (IsKw("NOT") && IsKwAt(1, "DEFERRABLE")) { Next(); Next(); cs.Deferrable = false; }
             else if (AcceptKw("DEFERRABLE")) cs.Deferrable = true;
@@ -783,7 +795,8 @@ public sealed partial class SqlParser
             } while (AcceptOp(","));
             ExpectOp(")");
         }
-        while (!AtStatementEnd())
+        int prog25 = -1;
+        while (!AtStatementEnd() && Progress(ref prog25))
         {
             if (IsKw("INDEXTYPE")) { Next(); ExpectKw("IS"); st.Indextype = ParseDottedName(); if (AcceptKw("PARAMETERS")) { ExpectOp("("); st.IndextypeParameters = ParseExpr(); ExpectOp(")"); } }
             else if (AcceptKw("VISIBLE")) st.Visible = true;
@@ -810,7 +823,8 @@ public sealed partial class SqlParser
             ExpectOp(")");
         }
         if (IsKw("BEQUEATH")) { Next(); st.Bequeath = AcceptKw("CURRENT_USER") ? ViewBequeath.CurrentUser : (AcceptKw("DEFINER") ? ViewBequeath.Definer : throw Fail("Expected CURRENT_USER or DEFINER")); }
-        while (!AtAsQuery())
+        int prog26 = -1;
+        while (!AtAsQuery() && Progress(ref prog26))
         {
             if (AtStatementEnd()) throw Fail($"Expected AS but found {Describe(Cur)}");
             if (IsKw("BUILD")) { Next(); st.BuildImmediate = AcceptKw("IMMEDIATE") ? true : (AcceptKw("DEFERRED") ? false : throw Fail("Expected IMMEDIATE or DEFERRED")); }
@@ -835,7 +849,8 @@ public sealed partial class SqlParser
         var rc = new RefreshClause();
         if (IsKw("NEVER")) { Next(); Next(); rc.Method = RefreshMethod.Never; return Fin(rc, s); }
         Next(); // REFRESH
-        while (true)
+        int prog27 = -1;
+        while (Progress(ref prog27))
         {
             if (AcceptKw("FAST")) rc.Method = RefreshMethod.Fast;
             else if (AcceptKw("COMPLETE")) rc.Method = RefreshMethod.Complete;
@@ -854,7 +869,8 @@ public sealed partial class SqlParser
     private List<SequenceOption> ParseSequenceOptions(Func<bool> stop)
     {
         var list = new List<SequenceOption>();
-        while (!AtStatementEnd() && !stop())
+        int prog131 = -1;
+        while (!AtStatementEnd() && !stop() && Progress(ref prog131))
         {
             var s = Cur;
             if (Cur.Type != TokenType.Identifier) throw Fail($"Unexpected {Describe(Cur)} in sequence options");
@@ -893,7 +909,8 @@ public sealed partial class SqlParser
     {
         var st = new AlterTableStatement { IfExists = TryIfExists() };
         st.Name = ParseDottedName();
-        while (!AtStatementEnd()) st.Actions.Add(ParseAlterTableAction());
+        int prog28 = -1;
+        while (!AtStatementEnd() && Progress(ref prog28)) st.Actions.Add(ParseAlterTableAction());
         return Fin(st, start);
     }
 
@@ -1011,7 +1028,8 @@ public sealed partial class SqlParser
 
     private void ParseDropColumnTail(AlterTableAction a)
     {
-        while (true)
+        int prog29 = -1;
+        while (Progress(ref prog29))
         {
             if (AcceptKw("CASCADE")) { AcceptKw("CONSTRAINTS"); a.Cascade = true; }
             else if (AcceptKw("ONLINE")) a.Online = true;

@@ -45,8 +45,27 @@ public static class AstPrinter
             case BindVariable b: sb.Append(':').Append(b.Name); return;
             case StarExpression s: sb.Append(s.Qualifier.Count == 0 ? "*" : string.Join(".", s.Qualifier.Select(q => q.Value)) + ".*"); return;
             case BinaryExpression be:
-                sb.Append('(').Append(be.Operator).Append(' '); Write(sb, be.Left); sb.Append(' '); Write(sb, be.Right); sb.Append(')');
+            {
+                // Iterate down the left spine: left-deep chains (a AND b AND c ...) must not recurse once per link.
+                var spine = new List<BinaryExpression>();
+                Expression cur = be;
+                while (cur is BinaryExpression b) { spine.Add(b); cur = b.Left; }
+                foreach (var b in spine) sb.Append('(').Append(b.Operator).Append(' ');
+                Write(sb, cur);
+                for (int i = spine.Count - 1; i >= 0; i--) { sb.Append(' '); Write(sb, spine[i].Right); sb.Append(')'); }
                 return;
+            }
+            case SetOperation or JoinTable:
+            {
+                // Left is the first printed property of both: iterate down the left spine.
+                var spine = new List<SqlNode>();
+                SqlNode? cur = (SqlNode)v;
+                while (cur is SetOperation or JoinTable) { spine.Add(cur); cur = cur is SetOperation so ? so.Left : ((JoinTable)cur).Left; }
+                foreach (var n in spine) sb.Append('(').Append(n.GetType().Name).Append(" left=");
+                Write(sb, cur);
+                for (int i = spine.Count - 1; i >= 0; i--) WriteProps(sb, spine[i], 1);
+                return;
+            }
             case UnaryExpression ue:
                 sb.Append('(').Append(ue.Operator).Append(' '); Write(sb, ue.Operand); sb.Append(')');
                 return;
@@ -75,9 +94,16 @@ public static class AstPrinter
     private static void WriteNode(StringBuilder sb, SqlNode n)
     {
         sb.Append('(').Append(n.GetType().Name);
-        foreach (var p in n.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        WriteProps(sb, n, 0);
+    }
+
+    /// <summary>Writes the members from index <paramref name="skip"/> on, then the closing parenthesis.</summary>
+    private static void WriteProps(StringBuilder sb, SqlNode n, int skip)
+    {
+        var props = SqlNode.NodeProperties(n.GetType());
+        for (int pi = skip; pi < props.Length; pi++)
         {
-            if (p.DeclaringType == typeof(SqlNode)) continue;
+            var p = props[pi];
             var v = p.GetValue(n);
             if (v == null) continue;
             if (v is bool bv)
