@@ -128,15 +128,84 @@ public class SourceEditorTests
         Assert.Equal("SELECT a., b FROM t", editor.Apply());
     }
 
-    [Fact]
-    public void Remove_TwoAdjacentItems_Throws_BecauseTheyShareTheComma()
+    /// <summary>Parses <paramref name="sql"/>, removes the select items at <paramref name="indexes"/> (in the given order), and returns the reparsed output.</summary>
+    private static string RemoveItems(string sql, params int[] indexes)
     {
+        var r = SqlParser.Parse(sql);
+        var editor = new SourceEditor(r);
+        var items = Find<QuerySpecification>(r).SelectList;
+        foreach (var i in indexes) editor.Remove(items[i]);
+        return Reparsed(editor.Apply());
+    }
+
+    [Fact]
+    public void Remove_AdjacentItems_BAndC_LeavesA()
+    {
+        Assert.Equal("SELECT a FROM t", RemoveItems("SELECT a, b, c FROM t", 1, 2));
+    }
+
+    [Fact]
+    public void Remove_AdjacentItems_AAndB_LeavesC()
+    {
+        Assert.Equal("SELECT c FROM t", RemoveItems("SELECT a, b, c FROM t", 0, 1));
+    }
+
+    [Fact]
+    public void Remove_NonAdjacentItems_AAndC_LeavesB()
+    {
+        Assert.Equal("SELECT b FROM t", RemoveItems("SELECT a, b, c FROM t", 0, 2));
+    }
+
+    [Fact]
+    public void Remove_NonAdjacentItems_BAndD_OfFour_LeavesACAndC()
+    {
+        Assert.Equal("SELECT a, c FROM t", RemoveItems("SELECT a, b, c, d FROM t", 1, 3));
+    }
+
+    [Fact]
+    public void Remove_AdjacentItems_TheOrderOfCallsDoesNotMatter()
+    {
+        Assert.Equal("SELECT a FROM t", RemoveItems("SELECT a, b, c FROM t", 2, 1));
+        Assert.Equal("SELECT c FROM t", RemoveItems("SELECT a, b, c FROM t", 1, 0));
+    }
+
+    [Fact]
+    public void Remove_RunOfThreeOfFour_LeavesTheLastItem()
+    {
+        Assert.Equal("SELECT d FROM t", RemoveItems("SELECT a, b, c, d FROM t", 0, 1, 2));
+    }
+
+    [Fact]
+    public void Remove_AllItemsOfAList_IsTheCallersProblem_TextIsNotValidSql()
+    {
+        // Removing every item is documented as the caller's problem: the output does not parse.
         var r = SqlParser.Parse("SELECT a, b, c FROM t");
         var editor = new SourceEditor(r);
         var items = Find<QuerySpecification>(r).SelectList;
-        editor.Remove(items[1]);
+        foreach (var item in items) editor.Remove(item);
 
-        Assert.Throws<InvalidOperationException>(() => editor.Remove(items[2]));
+        Assert.Equal("SELECT  FROM t", editor.Apply());
+        Assert.False(SqlParser.Parse("SELECT  FROM t").Success);
+    }
+
+    [Fact]
+    public void Remove_SameItemTwice_HasNoFurtherEffect()
+    {
+        Assert.Equal("SELECT b FROM t", RemoveItems("SELECT a, b FROM t", 0, 0));
+    }
+
+    [Fact]
+    public void Remove_AdjacentItemsAndInsertBeforeAnItemRemoved_Throws()
+    {
+        // The inserted text would sit inside the merged removal, so it cannot be kept.
+        var r = SqlParser.Parse("SELECT a, b, c FROM t");
+        var editor = new SourceEditor(r);
+        var items = Find<QuerySpecification>(r).SelectList;
+        editor.Remove(items[0]);
+        editor.Remove(items[1]);
+        editor.InsertBefore(items[1], "/*x*/ ");
+
+        Assert.Throws<InvalidOperationException>(() => editor.Apply());
     }
 
     [Fact]
@@ -274,13 +343,15 @@ public class SourceEditorTests
     }
 
     [Fact]
-    public void Remove_NodeContainingAnEarlierRemoval_Throws()
+    public void Remove_NodeContainingAnEarlierRemoval_AbsorbsIt()
     {
+        // Removals may overlap: the removal of the whole query covers the earlier removal of one of its items.
         var r = SqlParser.Parse("SELECT a, b FROM t");
         var editor = new SourceEditor(r);
         editor.Remove(Find<QuerySpecification>(r).SelectList[1]);
+        editor.Remove(Find<QuerySpecification>(r));
 
-        Assert.Throws<InvalidOperationException>(() => editor.Remove(Find<QuerySpecification>(r)));
+        Assert.Equal("", editor.Apply());
     }
 
     [Fact]

@@ -192,10 +192,12 @@ WHERE (x = 1) AND (o.active = 1)
   `InsertBefore`, `InsertAfter` and `Remove` work the same way. `Apply()` returns the edited text.
 - A node's range runs from its first to its last character. Comments before a node and after its last token stay in place.
 - `Remove` on an item of a comma-separated list also removes its comma (see the `Remove` remarks), so the list stays valid.
+  Removing several items of one list works in any order and combination: `a, b, c` minus `b` and `c` gives `a`, and minus `a`
+  and `c` gives `b`. Removals may overlap; they are merged when `Apply()` runs. Removing every item of a list is not valid SQL and is left to the caller.
 - A statement's range excludes its `;`, so `InsertAfter(statement, text)` puts `text` before the terminator.
   Include the terminator in the text to add a statement after another.
 - Nodes built in code, or produced by `ParseStatement`/`ParseExpression`, have no source position and throw
-  `InvalidOperationException`, as do edits whose ranges overlap. Two inserts at one offset are kept in the order they were added.
+  `InvalidOperationException`, as do replacements and inserts whose ranges overlap. Two inserts at one offset are kept in the order they were added.
 - `SourceEdits.AndWhere(query, predicate)` adds a condition with AND. An existing WHERE is wrapped in parentheses, so an `OR`
   stays grouped: `WHERE x = 1 OR z = 3` becomes `WHERE (x = 1 OR z = 3) AND (predicate)`. Without a WHERE, the condition is inserted after the FROM clause.
 
