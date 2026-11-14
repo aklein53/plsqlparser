@@ -52,6 +52,7 @@ public sealed partial class SqlParser
         {
             if (t is NamedTable nt)
             {
+                if (AtDualityWithClause()) { ParseDualityAnnotations(nt); continue; }
                 // SAMPLE is a clause only before "(" or BLOCK; otherwise it is an alias (checked below)
                 if (IsKw("SAMPLE") && (IsOpAt(1, "(") || IsKwAt(1, "BLOCK")) && nt.Sample == null) { nt.Sample = ParseSample(); continue; }
                 if (nt.Flashback == null && ((IsKw("VERSIONS") && IsKwAt(1, "BETWEEN")) || (IsKw("AS") && IsKwAt(1, "OF"))))
@@ -740,5 +741,102 @@ public sealed partial class SqlParser
             list.Add(Fin(ic, s));
         }
         return list;
+    }
+
+
+    // ---- JSON constructors and duality view annotations ----
+
+    /// <summary>JSON { 'k' : value, ... } or JSON {*}; the JSON keyword is the current token.</summary>
+    private Expression ParseJsonObject()
+    {
+        var start = Next();
+        ExpectOp("{");
+        var o = new JsonObjectConstructor();
+        if (AcceptOp("*")) o.Wildcard = true;
+        else if (!IsOp("}")) do o.Members.Add(ParseJsonMember()); while (AcceptOp(","));
+        ExpectOp("}");
+        return Fin(o, start);
+    }
+
+    private JsonMember ParseJsonMember()
+    {
+        var s = Cur;
+        var m = new JsonMember { Key = ParsePrimary() };
+        if (Cur.Type == TokenType.Bind && Cur.Text.Length > 1 && char.IsDigit(Cur.Text[1]))
+        {
+            // 'key':1 with no space lexes ':1' as a bind; here it is a colon and a number (as in JSON_OBJECT)
+            var bt = Next();
+            m.Value = Fin(new Literal { Kind = LiteralKind.Number, Value = bt.Text[1..] }, bt);
+        }
+        else
+        {
+            if (Cur.Text != ":") throw Fail($"Expected ':' in a JSON member but found {Describe(Cur)}");
+            Next();
+            m.Value = IsOp("[") ? ParseJsonArray(keyword: false) : ParseExpr();
+        }
+        if (IsKw("ABSENT") && IsKwAt(1, "ON") && IsKwAt(2, "NULL")) { Next(); Next(); Next(); m.NullHandling = JsonNullHandling.AbsentOnNull; }
+        else if (IsKw("NULL") && IsKwAt(1, "ON") && IsKwAt(2, "NULL")) { Next(); Next(); Next(); m.NullHandling = JsonNullHandling.NullOnNull; }
+        if (AcceptKw("RETURNING")) m.Returning = ParseDataType();
+        return Fin(m, s);
+    }
+
+    /// <summary>[ expr, ... ] or [ SELECT ... ]; keyword is true for the top-level JSON [ ... ] form.</summary>
+    private Expression ParseJsonArray(bool keyword)
+    {
+        var start = Cur;
+        if (keyword) Next();
+        ExpectOp("[");
+        var a = new JsonArrayConstructor();
+        if (IsKw("SELECT") || IsKw("WITH")) a.Query = ParseSelectStatement();
+        else if (!IsOp("]")) do a.Elements.Add(ParseExpr()); while (AcceptOp(","));
+        ExpectOp("]");
+        return Fin(a, start);
+    }
+
+    private bool AtDualityWord(int k) =>
+        IsKwAt(k, "INSERT") || IsKwAt(k, "UPDATE") || IsKwAt(k, "DELETE") || IsKwAt(k, "NOINSERT") || IsKwAt(k, "NOUPDATE") ||
+        IsKwAt(k, "NODELETE") || IsKwAt(k, "NOCHECK") || IsKwAt(k, "ETAG") || IsKwAt(k, "NOETAG") ||
+        (IsKwAt(k, "NO") && (IsKwAt(k + 1, "CHECK") || IsKwAt(k + 1, "ETAG")));
+
+    /// <summary>A WITH that opens duality annotations (rather than WITH CHECK OPTION or WITH READ ONLY).</summary>
+    private bool AtDualityWithClause() => IsKw("WITH") && AtDualityWord(1);
+
+    /// <summary>WITH word [word]... [WITH word...]: Oracle accepts repeated WITH groups (semantic checks reject conflicts).</summary>
+    private void ParseDualityAnnotations(NamedTable nt)
+    {
+        int prog = -1;
+        while (AtDualityWithClause() && Progress(ref prog))
+        {
+            Next();
+            while (AtDualityWord(0))
+            {
+                var s = Cur;
+                var kind = ParseDualityWord();
+                nt.DualityAnnotations.Add(Fin(new DualityAnnotationItem { Kind = kind }, s));
+            }
+        }
+    }
+
+    private DualityAnnotation ParseDualityWord()
+    {
+        var w = Next().Value;
+        if (w == "NO") return Next().Value == "CHECK" ? DualityAnnotation.NoCheck : DualityAnnotation.NoEtag;
+        return w switch
+        {
+            "INSERT" => DualityAnnotation.Insert, "UPDATE" => DualityAnnotation.Update, "DELETE" => DualityAnnotation.Delete,
+            "NOINSERT" => DualityAnnotation.NoInsert, "NOUPDATE" => DualityAnnotation.NoUpdate, "NODELETE" => DualityAnnotation.NoDelete,
+            "NOCHECK" => DualityAnnotation.NoCheck, "ETAG" => DualityAnnotation.Etag, _ => DualityAnnotation.NoEtag,
+        };
+    }
+
+    /// <summary>CREATE ... JSON [RELATIONAL] DUALITY VIEW name AS query; the header tokens are already consumed.</summary>
+    private Statement ParseCreateDualityView(Token start, bool orReplace, bool relational)
+    {
+        var st = new CreateDualityViewStatement { OrReplace = orReplace, Relational = relational };
+        st.Name = ParseDottedName();
+        ExpectKw("AS");
+        if (IsKw("SELECT") || IsKw("WITH") || IsOp("(")) st.Query = ParseSelectStatement();
+        else st.OtherClauses = ParseSyntaxItems(AtStatementEnd);
+        return Fin(st, start);
     }
 }

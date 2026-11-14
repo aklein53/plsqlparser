@@ -1,5 +1,52 @@
 namespace OracleSqlParser;
 
+// ---------- JSON constructors (23ai shorthand) and JSON relational duality views ----------
+
+/// <summary>JSON { 'k' : expr [ABSENT|NULL ON NULL] [RETURNING type], ... }; JSON {*} sets Wildcard.</summary>
+public sealed partial class JsonObjectConstructor : Expression
+{
+    public bool Wildcard { get; set; }
+    public List<JsonMember> Members { get; set; } = [];
+}
+
+/// <summary>One member of a JSON object constructor. The value is an expression, or a <see cref="JsonArrayConstructor"/>.</summary>
+public sealed partial class JsonMember : SqlNode
+{
+    public Expression Key { get; set; } = null!;
+    public Expression Value { get; set; } = null!;
+    public JsonNullHandling? NullHandling { get; set; }
+    public DataType? Returning { get; set; }
+}
+
+public enum JsonNullHandling { AbsentOnNull, NullOnNull }
+
+/// <summary>JSON [ expr, ... ] or JSON [ SELECT ... ]; as a member value the JSON keyword is omitted.</summary>
+public sealed partial class JsonArrayConstructor : Expression
+{
+    public List<Expression> Elements { get; set; } = [];
+    public SelectStatement? Query { get; set; }
+}
+
+/// <summary>Table annotations of a JSON relational duality view query.</summary>
+public enum DualityAnnotation { Insert, Update, Delete, NoInsert, NoUpdate, NoDelete, NoCheck, Etag, NoEtag }
+
+public sealed partial class DualityAnnotationItem : SqlNode
+{
+    public DualityAnnotation Kind { get; set; }
+}
+
+/// <summary>CREATE [OR REPLACE] JSON [RELATIONAL] DUALITY VIEW v AS SELECT JSON {...} FROM ... (SQL form; the GraphQL form is not modelled).</summary>
+public sealed partial class CreateDualityViewStatement : Statement
+{
+    public bool OrReplace { get; set; }
+    public bool Relational { get; set; }
+    public List<Identifier> Name { get; set; } = [];
+    /// <summary>The SQL form's query; null for the GraphQL form (kept in <see cref="OtherClauses"/>).</summary>
+    public SelectStatement Query { get; set; } = null!;
+    /// <summary>The GraphQL form (v AS t @insert @update { ... }), as a token tree.</summary>
+    public List<SyntaxItem> OtherClauses { get; set; } = [];
+}
+
 // ---------- Table reference modifiers ----------
 
 public sealed partial class SampleClause : SqlNode

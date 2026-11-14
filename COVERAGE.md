@@ -26,10 +26,11 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 | CREATE INDEX, VIEW, MATERIALIZED VIEW, SEQUENCE, SYNONYM | `CreateIndexStatement` … | typed | DdlShape |
 | CREATE [USECASE] DOMAIN [IF NOT EXISTS] (CHECK, DEFAULT, NOT NULL, DISPLAY, ORDER, ANNOTATIONS), ALTER DOMAIN (DISPLAY, ORDER, ANNOTATIONS), column `DOMAIN d` | `CreateDomainStatement`, `AlterDomainStatement`, `AnnotationsClause`, `ColumnDefinition.Domain` | typed; Oracle-verified (integration GraphAndDomainAcceptance); other ALTER DOMAIN actions (RENAME, ADD CONSTRAINT) kept as tokens | DomainShape |
 | CREATE [OR REPLACE] PROPERTY GRAPH (VERTEX/EDGE TABLES, KEY, SOURCE/DESTINATION, LABEL, PROPERTIES incl. AS aliases and PROPERTIES without LABEL) | `CreatePropertyGraphStatement` | typed | PropertyGraphShape |
+| CREATE [OR REPLACE] JSON [RELATIONAL] DUALITY VIEW ... AS SELECT JSON {...} FROM t [WITH INSERT|UPDATE|DELETE|NOINSERT|NOUPDATE|NODELETE|NOCHECK|ETAG|NO ETAG]; JSON { } / JSON [ ] constructors (incl. ABSENT/NULL ON NULL, RETURNING, nested subqueries) | `CreateDualityViewStatement`, `JsonObjectConstructor`, `JsonArrayConstructor`, `NamedTable.DualityAnnotations` | typed for the SQL form; the GraphQL form (`v AS t @insert ...`) is kept as tokens in `OtherClauses` | JsonConstructorShape, JsonDualityAcceptance |
 | ALTER TABLE | `AlterTableStatement` | typed (partition/other maintenance actions: `Syntax` token tree) | DdlShape |
 | DROP (any object kind) | `DropStatement` | typed | DdlShape |
 | CREATE PROCEDURE/FUNCTION/PACKAGE [BODY]/TRIGGER/TYPE [BODY]/LIBRARY/JAVA | `CreateProgramStatement` … | typed | PlsqlShape, DdlShape |
-| CREATE of any other object (USER, ROLE, PROFILE, TABLESPACE, DATABASE LINK, DIRECTORY, CLUSTER, CONTEXT, DIMENSION, EDITION, OPERATOR, INDEXTYPE, OUTLINE, JSON DUALITY VIEW, MV LOG, ZONEMAP, ANALYTIC VIEW, ...) | `CreateObjectStatement` | header+tree |
+| CREATE of any other object (USER, ROLE, PROFILE, TABLESPACE, DATABASE LINK, DIRECTORY, CLUSTER, CONTEXT, DIMENSION, EDITION, OPERATOR, INDEXTYPE, OUTLINE, MV LOG, ZONEMAP, ANALYTIC VIEW, ...) | `CreateObjectStatement` | header+tree |
 | ALTER of any object other than TABLE/SESSION (INDEX, VIEW, SEQUENCE, MV, TRIGGER, PROCEDURE, USER, SYSTEM, DATABASE, ...) | `AlterObjectStatement` | header+tree |
 | ANALYZE, AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE | `AdminStatement` | header+tree |
 

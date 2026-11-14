@@ -538,6 +538,7 @@ public sealed partial class SqlParser
             case ObjectKind.MaterializedView: return ParseCreateView(start, orReplace, force, noForce, editioning, true);
             case ObjectKind.Sequence: return ParseCreateSequence(start);
             case ObjectKind.PropertyGraph: return ParseCreatePropertyGraph(start, orReplace);
+            case ObjectKind.JsonRelationalDualityView: return ParseCreateDualityView(start, orReplace, _t[kindPos + 1].Value == "RELATIONAL");
             case ObjectKind.Domain: return ParseCreateDomain(start, orReplace, useCase);
             case ObjectKind.Synonym: return ParseCreateSynonym(start, orReplace, pub);
             case ObjectKind.Procedure: case ObjectKind.Function:

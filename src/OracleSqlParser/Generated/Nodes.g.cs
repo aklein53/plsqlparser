@@ -2264,6 +2264,61 @@ public partial class CreateDomainStatement
     }
 }
 
+public partial class CreateDualityViewStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Query is not null) yield return Query;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        Query?.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "CreateDualityViewStatement.Name");
+        Query = SqlNodeRewriter.RewriteRequired(rewriter, Query, "CreateDualityViewStatement.Query");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreateDualityViewStatement.OtherClauses");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateDualityViewStatement();
+        CopySpan(this, c);
+        c.OrReplace = OrReplace;
+        c.Relational = Relational;
+        c.Name = CloneList(Name);
+        c.Query = CloneChild(Query)!;
+        c.OtherClauses = CloneList(OtherClauses);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateDualityViewStatement)other;
+        return OrReplace == o.OrReplace
+            && Relational == o.Relational
+            && PairList(Name, o.Name, pending)
+            && Pair(Query, o.Query, pending)
+            && PairList(OtherClauses, o.OtherClauses, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class CreateIndexStatement
 {
     /// <inheritdoc/>
@@ -3734,6 +3789,28 @@ public partial class DropStatement
             && Invalidate == o.Invalidate
             && PairList(Rest, o.Rest, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class DualityAnnotationItem
+{
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new DualityAnnotationItem();
+        CopySpan(this, c);
+        c.Kind = Kind;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (DualityAnnotationItem)other;
+        return Kind == o.Kind;
     }
 }
 
@@ -6955,6 +7032,142 @@ public partial class JoinTable
     }
 }
 
+public partial class JsonArrayConstructor
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Elements is not null) foreach (var x in Elements) yield return x;
+        if (Query is not null) yield return Query;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Elements is not null) foreach (var x in Elements) x.Accept(visitor);
+        Query?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Elements, "JsonArrayConstructor.Elements");
+        Query = SqlNodeRewriter.RewriteOptional(rewriter, Query, "JsonArrayConstructor.Query");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new JsonArrayConstructor();
+        CopySpan(this, c);
+        c.Elements = CloneList(Elements);
+        c.Query = CloneChild(Query);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (JsonArrayConstructor)other;
+        return PairList(Elements, o.Elements, pending)
+            && Pair(Query, o.Query, pending);
+    }
+}
+
+public partial class JsonMember
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Key is not null) yield return Key;
+        if (Value is not null) yield return Value;
+        if (Returning is not null) yield return Returning;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Key?.Accept(visitor);
+        Value?.Accept(visitor);
+        Returning?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Key = SqlNodeRewriter.RewriteRequired(rewriter, Key, "JsonMember.Key");
+        Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "JsonMember.Value");
+        Returning = SqlNodeRewriter.RewriteOptional(rewriter, Returning, "JsonMember.Returning");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new JsonMember();
+        CopySpan(this, c);
+        c.Key = CloneChild(Key)!;
+        c.Value = CloneChild(Value)!;
+        c.NullHandling = NullHandling;
+        c.Returning = CloneChild(Returning);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (JsonMember)other;
+        return Pair(Key, o.Key, pending)
+            && Pair(Value, o.Value, pending)
+            && NullHandling == o.NullHandling
+            && Pair(Returning, o.Returning, pending);
+    }
+}
+
+public partial class JsonObjectConstructor
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Members is not null) foreach (var x in Members) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Members is not null) foreach (var x in Members) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Members, "JsonObjectConstructor.Members");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new JsonObjectConstructor();
+        CopySpan(this, c);
+        c.Wildcard = Wildcard;
+        c.Members = CloneList(Members);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (JsonObjectConstructor)other;
+        return Wildcard == o.Wildcard
+            && PairList(Members, o.Members, pending);
+    }
+}
+
 public partial class JsonTable
 {
     /// <inheritdoc/>
@@ -7956,6 +8169,7 @@ public partial class NamedTable
         if (Partition is not null) yield return Partition;
         if (Sample is not null) yield return Sample;
         if (Flashback is not null) yield return Flashback;
+        if (DualityAnnotations is not null) foreach (var x in DualityAnnotations) yield return x;
         if (Alias is not null) yield return Alias;
     }
 
@@ -7967,6 +8181,7 @@ public partial class NamedTable
         Partition?.Accept(visitor);
         Sample?.Accept(visitor);
         Flashback?.Accept(visitor);
+        if (DualityAnnotations is not null) foreach (var x in DualityAnnotations) x.Accept(visitor);
         Alias?.Accept(visitor);
     }
 
@@ -7977,6 +8192,7 @@ public partial class NamedTable
         Partition = SqlNodeRewriter.RewriteOptional(rewriter, Partition, "NamedTable.Partition");
         Sample = SqlNodeRewriter.RewriteOptional(rewriter, Sample, "NamedTable.Sample");
         Flashback = SqlNodeRewriter.RewriteOptional(rewriter, Flashback, "NamedTable.Flashback");
+        SqlNodeRewriter.RewriteList(rewriter, DualityAnnotations, "NamedTable.DualityAnnotations");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "NamedTable.Alias");
     }
 
@@ -7994,6 +8210,7 @@ public partial class NamedTable
         c.Partition = CloneChild(Partition);
         c.Sample = CloneChild(Sample);
         c.Flashback = CloneChild(Flashback);
+        c.DualityAnnotations = CloneList(DualityAnnotations);
         c.Alias = CloneChild(Alias);
         return c;
     }
@@ -8006,6 +8223,7 @@ public partial class NamedTable
             && Pair(Partition, o.Partition, pending)
             && Pair(Sample, o.Sample, pending)
             && Pair(Flashback, o.Flashback, pending)
+            && PairList(DualityAnnotations, o.DualityAnnotations, pending)
             && Pair(Alias, o.Alias, pending);
     }
 }

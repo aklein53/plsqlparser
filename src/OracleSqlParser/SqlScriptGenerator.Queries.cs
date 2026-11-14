@@ -194,6 +194,11 @@ public sealed partial class SqlScriptGenerator
                     }
                     if (nt.Flashback != null) { Add(" "); Flashback(nt.Flashback); }
                     Alias(nt);
+                    if (nt.DualityAnnotations.Count > 0)
+                    {
+                        Add(" WITH ");
+                        Sep(nt.DualityAnnotations, item => DualityWordDef(item.Kind), " ");
+                    }
                     break;
                 case SubqueryTable sq: if (sq.Lateral) Add("LATERAL "); ParenQuery(sq.Query); Alias(sq); break;
                 case TableFunction tf: Add("TABLE("); Expr(tf.Expression); Add(")"); Alias(tf); break;

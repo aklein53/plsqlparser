@@ -65,6 +65,7 @@ public sealed partial class SqlScriptGenerator
                 case CreateViewStatement cv: CreateView(cv); break;
                 case CreatePropertyGraphStatement pg: PropertyGraph(pg); break;
                 case CreateDomainStatement dm: CreateDomain(dm); break;
+                case CreateDualityViewStatement dv: DualityView(dv); break;
                 case AlterDomainStatement ad: AlterDomain(ad); break;
                 case CreateSequenceStatement cs:
                     Add("CREATE SEQUENCE");
@@ -202,6 +203,13 @@ public sealed partial class SqlScriptGenerator
                 });
             foreach (var a in t.Attributes) { Sp(); Attribute(a); }
             if (t.AsQuery != null) { Add(" AS "); Select(t.AsQuery); }
+        }
+
+        private void DualityView(CreateDualityViewStatement d)
+        {
+            Add("CREATE "); if (d.OrReplace) Add("OR REPLACE "); Add("JSON "); if (d.Relational) Add("RELATIONAL ");
+            Add("DUALITY VIEW "); Name(d.Name); Add(" AS ");
+            if (d.Query != null) Select(d.Query); else SyntaxList(d.OtherClauses);
         }
 
         private void CreateDomain(CreateDomainStatement d)
