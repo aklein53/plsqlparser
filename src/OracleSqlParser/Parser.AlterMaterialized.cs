@@ -9,7 +9,8 @@ public sealed partial class SqlParser
         IsKw("REFRESH") || IsKw("NEVER") || IsKw("COMPILE") || IsKw("CONSIDER") || IsKw("SHRINK") ||
         ((IsKw("ENABLE") || IsKw("DISABLE")) && IsKwAt(1, "QUERY"));
 
-    private Statement ParseAlterMaterializedView(Token start, List<Identifier> name)
+    /// <summary>Typed ALTER MATERIALIZED VIEW; null when a clause is not modeled (the caller rewinds to the generic node).</summary>
+    private Statement? ParseAlterMaterializedView(Token start, List<Identifier> name)
     {
         var st = new AlterMaterializedViewStatement { Name = name };
         int prog = -1;
@@ -17,21 +18,27 @@ public sealed partial class SqlParser
         {
             if (IsKw("REFRESH") || (IsKw("NEVER") && IsKwAt(1, "REFRESH"))) st.Refresh = ParseRefresh();
             else if (AcceptKw("COMPILE")) st.Compile = true;
-            else if (AcceptKw("CONSIDER")) { ExpectKw("FRESH"); st.ConsiderFresh = true; }
-            else if (AcceptKw("SHRINK"))
+            else if (IsKw("CONSIDER") && IsKwAt(1, "FRESH")) { Next(); Next(); st.ConsiderFresh = true; }
+            else if (IsKw("SHRINK") && IsKwAt(1, "SPACE"))
             {
-                ExpectKw("SPACE");
+                Next(); Next();
                 st.ShrinkSpace = true;
                 st.ShrinkCompact = AcceptKw("COMPACT");
                 st.ShrinkCascade = AcceptKw("CASCADE");
             }
-            else if (IsKw("ENABLE") || IsKw("DISABLE"))
+            else if ((IsKw("ENABLE") || IsKw("DISABLE")) && IsKwAt(1, "QUERY") && IsKwAt(2, "REWRITE"))
             {
                 bool enable = Next().Value == "ENABLE";
-                ExpectKw("QUERY"); ExpectKw("REWRITE");
+                Next(); Next();
                 st.QueryRewrite = enable;
             }
-            else st.Attributes.Add(ParsePhysicalAttribute(AtAlterMaterializedViewClauseStart));
+            else if (AtAlterMaterializedViewClauseStart()) return null;
+            else
+            {
+                var pa = ParsePhysicalAttribute(AtAlterMaterializedViewClauseStart);
+                if (pa is OtherAttribute) return null;
+                st.Attributes.Add(pa);
+            }
         }
         return Fin(st, start);
     }

@@ -576,6 +576,7 @@ public partial class AlterTableAction
         c.GlobalIndexes = GlobalIndexes;
         c.IncludingIndexes = IncludingIndexes;
         c.WithValidation = WithValidation;
+        c.Storage = Storage;
         c.Syntax = CloneList(Syntax);
         return c;
     }
@@ -601,6 +602,7 @@ public partial class AlterTableAction
             && GlobalIndexes == o.GlobalIndexes
             && IncludingIndexes == o.IncludingIndexes
             && WithValidation == o.WithValidation
+            && Storage == o.Storage
             && PairList(Syntax, o.Syntax, pending);
     }
 }

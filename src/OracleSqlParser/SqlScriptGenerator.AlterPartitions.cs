@@ -19,13 +19,18 @@ public sealed partial class SqlScriptGenerator
                     Add("DROP "); PartitionTargets(a, false); PartitionTail(a);
                     break;
                 case AlterTableActionKind.TruncatePartition:
-                    Add("TRUNCATE "); PartitionTargets(a, false); PartitionTail(a);
+                    Add("TRUNCATE "); PartitionTargets(a, false);
+                    if (a.Storage != null) Add(a.Storage == TruncateStorage.ReuseStorage ? " REUSE STORAGE" : " DROP STORAGE");
+                    PartitionTail(a);
                     break;
                 case AlterTableActionKind.SplitPartition:
                     Add("SPLIT "); PartitionTargets(a, false);
-                    Add(a.SplitByValues ? " VALUES (" : " AT (");
-                    Sep(a.Values, e => Expr(e));
-                    Add(")");
+                    if (a.Values.Count > 0)
+                    {
+                        Add(a.SplitByValues ? " VALUES (" : " AT (");
+                        Sep(a.Values, e => Expr(e));
+                        Add(")");
+                    }
                     if (a.Partitions.Count > 0) { Add(" INTO ("); Sep(a.Partitions, p => PartitionDef(p, false)); Add(")"); }
                     PartitionTail(a);
                     break;

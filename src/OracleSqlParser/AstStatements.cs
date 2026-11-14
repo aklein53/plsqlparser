@@ -587,6 +587,8 @@ public sealed partial class AlterTableAction : SqlNode
     public bool? IncludingIndexes { get; set; }
     /// <summary>EXCHANGE PARTITION ... WITH (true) or WITHOUT (false) VALIDATION.</summary>
     public bool? WithValidation { get; set; }
+    /// <summary>TRUNCATE PARTITION ... DROP STORAGE (DropStorage) or REUSE STORAGE (ReuseStorage).</summary>
+    public TruncateStorage? Storage { get; set; }
     /// <summary>Partition/other maintenance actions without a dedicated node, as a token tree.</summary>
     public List<SyntaxItem> Syntax { get; set; } = [];
 }

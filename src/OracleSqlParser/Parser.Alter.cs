@@ -4,13 +4,57 @@ public sealed partial class SqlParser
 {
     // ---- ALTER INDEX ----
 
-    private Statement ParseAlterIndex(Token start)
+    /// <summary>
+    /// Typed ALTER for the object kinds that have one, starting after the object kind. Returns null, with the cursor
+    /// unchanged, when a clause is not modeled, so the caller parses the statement as a generic AlterObjectStatement.
+    /// </summary>
+    private Statement? TryParseTypedAlter(Token start, ObjectKind kind)
+    {
+        int save = _p;
+        Statement? typed = kind switch
+        {
+            ObjectKind.Index => ParseAlterIndex(start),
+            ObjectKind.Sequence => ParseAlterSequence(start),
+            ObjectKind.MaterializedView => ParseAlterMaterializedViewIfModeled(start),
+            _ when IsAlterUnitKind(kind) => ParseAlterUnitIfModeled(start, kind),
+            _ => null,
+        };
+        if (typed == null) _p = save;
+        return typed;
+    }
+
+    private bool AtIdentifierName() => Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier;
+
+    private Statement? ParseAlterUnitIfModeled(Token start, ObjectKind kind) => AtIdentifierName() ? ParseAlterUnit(start, kind, ParseDottedName()) : null;
+
+    private Statement? ParseAlterMaterializedViewIfModeled(Token start)
+    {
+        if (!AtIdentifierName()) return null;
+        var name = ParseDottedName();
+        return AtAlterMaterializedViewClauseStart() || IsKw("LOGGING") || IsKw("NOLOGGING") || IsKw("CACHE") || IsKw("NOCACHE") || IsKw("PARALLEL") || IsKw("NOPARALLEL")
+            ? ParseAlterMaterializedView(start, name) : null;
+    }
+
+    private Statement? ParseAlterIndex(Token start)
     {
         var st = new AlterIndexStatement { Name = ParseDottedName() };
         int prog = -1;
-        while (!AtStatementEnd() && Progress(ref prog)) st.Actions.Add(ParseAlterIndexAction());
+        while (!AtStatementEnd() && Progress(ref prog))
+        {
+            if (!AtModeledAlterIndexActionStart()) return null;
+            st.Actions.Add(ParseAlterIndexAction());
+        }
+        if (st.Actions.Any(a => a.Attributes.Any(x => x is OtherAttribute))) return null;
         return Fin(st, start);
     }
+
+    /// <summary>Clause starts the typed ALTER INDEX model; anything else (RENAME PARTITION, MODIFY PARTITION, ...) is generic.</summary>
+    private bool AtModeledAlterIndexActionStart() =>
+        IsKw("REBUILD") || (IsKw("RENAME") && IsKwAt(1, "TO")) || IsKw("UNUSABLE") || IsKw("VISIBLE") || IsKw("INVISIBLE") ||
+        ((IsKw("MONITORING") || IsKw("NOMONITORING")) && IsKwAt(1, "USAGE")) || IsKw("COALESCE") || IsKw("ENABLE") || IsKw("DISABLE") ||
+        (IsKw("SHRINK") && IsKwAt(1, "SPACE")) || (IsKw("DEALLOCATE") && IsKwAt(1, "UNUSED")) ||
+        (Cur.Type == TokenType.Identifier && Cur.Value is "TABLESPACE" or "PCTFREE" or "PCTUSED" or "INITRANS" or "MAXTRANS" or
+            "LOGGING" or "NOLOGGING" or "PARALLEL" or "NOPARALLEL" or "COMPRESS" or "NOCOMPRESS" or "CACHE" or "NOCACHE");
 
     /// <summary>Words that begin an ALTER INDEX clause; they end the previous clause.</summary>
     private bool AtAlterIndexActionStart() => Cur.Type == TokenType.Identifier && Cur.Value is

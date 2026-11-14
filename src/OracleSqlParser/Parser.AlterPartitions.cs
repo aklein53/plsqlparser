@@ -37,16 +37,22 @@ public sealed partial class SqlParser
             case "TRUNCATE":
                 a.Kind = verb == "DROP" ? AlterTableActionKind.DropPartition : AlterTableActionKind.TruncatePartition;
                 a.PartitionRefs = ParsePartitionTargets();
+                if (verb == "TRUNCATE") ParseTruncateStorage(a);
                 ParseUpdateIndexesClause(a);
                 break;
             case "SPLIT":
                 a.Kind = AlterTableActionKind.SplitPartition;
                 a.PartitionRefs = ParsePartitionTargets();
-                if (AcceptKw("VALUES")) a.SplitByValues = true;
-                else ExpectKw("AT");
-                ExpectOp("(");
-                do a.Values.Add(ParseExpr()); while (AcceptOp(","));
-                ExpectOp(")");
+                // the multi-way split (INTO only) has no AT/VALUES boundary
+                bool boundary = false;
+                if (AcceptKw("VALUES")) { a.SplitByValues = true; boundary = true; }
+                else if (AcceptKw("AT")) boundary = true;
+                if (boundary)
+                {
+                    ExpectOp("(");
+                    do a.Values.Add(ParseExpr()); while (AcceptOp(","));
+                    ExpectOp(")");
+                }
                 if (AcceptKw("INTO"))
                 {
                     ExpectOp("(");
@@ -135,6 +141,13 @@ public sealed partial class SqlParser
             list.Add(Fin(r, s));
         } while (AcceptOp(","));
         return list;
+    }
+
+    /// <summary>Optional DROP STORAGE | REUSE STORAGE of TRUNCATE PARTITION.</summary>
+    private void ParseTruncateStorage(AlterTableAction a)
+    {
+        if (AcceptKw("REUSE")) { ExpectKw("STORAGE"); a.Storage = TruncateStorage.ReuseStorage; }
+        else if (IsKw("DROP") && IsKwAt(1, "STORAGE")) { Next(); Next(); a.Storage = TruncateStorage.DropStorage; }
     }
 
     /// <summary>Optional UPDATE [GLOBAL] INDEXES clause.</summary>

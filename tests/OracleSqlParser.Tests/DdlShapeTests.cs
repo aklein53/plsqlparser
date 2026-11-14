@@ -229,6 +229,21 @@ public class DdlShapeTests
     public void AlterMaterializedView(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
+    [InlineData("ALTER SEQUENCE IF EXISTS s INCREMENT BY 5", "(AlterObjectStatement kind=Sequence ifExists name=[S] body=[(WordItem value=INCREMENT) (WordItem value=BY) (LiteralItem kind=Number value=5)])")]
+    [InlineData("ALTER INDEX IF EXISTS ix REBUILD", "(AlterObjectStatement kind=Index ifExists name=[IX] body=[(WordItem value=REBUILD)])")]
+    [InlineData("ALTER INDEX ix RENAME PARTITION p1 TO p2", "(AlterObjectStatement kind=Index name=[IX] body=[(WordItem value=RENAME) (WordItem value=PARTITION) (WordItem value=P1) (WordItem value=TO) (WordItem value=P2)])")]
+    [InlineData("ALTER INDEX ix MODIFY PARTITION p2 UNUSABLE", "(AlterObjectStatement kind=Index name=[IX] body=[(WordItem value=MODIFY) (WordItem value=PARTITION) (WordItem value=P2) (WordItem value=UNUSABLE)])")]
+    [InlineData("ALTER MATERIALIZED VIEW mv MODIFY COLUMN c NULL", "(AlterObjectStatement kind=MaterializedView name=[MV] body=[(WordItem value=MODIFY) (WordItem value=COLUMN) (WordItem value=C) (WordItem value=NULL)])")]
+    [InlineData("ALTER TRIGGER tr COMPILE REUSE SETTINGS", "(AlterCompileStatement kind=Trigger name=[TR] compile reuseSettings)")]
+    [InlineData("ALTER TABLE t SPLIT PARTITION p INTO (PARTITION a VALUES LESS THAN (10), PARTITION b VALUES LESS THAN (20), PARTITION c)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=SplitPartition partitionRefs=[(PartitionReference name=P)] partitions=[(PartitionDefinition name=A lessThan values=[10]) (PartitionDefinition name=B lessThan values=[20]) (PartitionDefinition name=C)])])")]
+    [InlineData("ALTER TABLE t TRUNCATE PARTITION p1 DROP STORAGE UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=TruncatePartition partitionRefs=[(PartitionReference name=P1)] updateIndexes storage=DropStorage)])")]
+    [InlineData("ALTER TABLE t TRUNCATE PARTITION p1 REUSE STORAGE",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=TruncatePartition partitionRefs=[(PartitionReference name=P1)] storage=ReuseStorage)])")]
+    public void AlterFallbacksAndMultiWaySplit(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
     [InlineData("ALTER TABLE t ADD PARTITION p3 VALUES LESS THAN (30)",
         "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=AddPartition partitions=[(PartitionDefinition name=P3 lessThan values=[30])])])")]
     [InlineData("ALTER TABLE t ADD PARTITION p4 VALUES (1, 2) TABLESPACE ts",
