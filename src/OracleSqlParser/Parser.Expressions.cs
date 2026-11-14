@@ -86,7 +86,7 @@ public sealed partial class SqlParser
                 if (LooksLikeQuery())
                 {
                     ie.Subquery = ParseSelectStatement();
-                    if (IsOp(",")) throw Fail("Mixed subquery and list in IN is not supported");
+                    if (IsOp(",")) throw Fail("Mixed subquery and list in IN is not supported", ParseErrorCodes.UnsupportedForm);
                 }
                 else do ie.List.Add(ParseExpr()); while (AcceptOp(","));
                 ExpectOp(")");
@@ -161,7 +161,7 @@ public sealed partial class SqlParser
             } while (AcceptOp(","));
             ExpectOp(")");
         }
-        else throw Fail($"Expected NULL, NAN, INFINITE, EMPTY, PRESENT, A SET, JSON, OF, DANGLING, TRUE or FALSE after IS but found {Describe(Cur)}");
+        else throw FailExpected($"Expected NULL, NAN, INFINITE, EMPTY, PRESENT, A SET, JSON, OF, DANGLING, TRUE or FALSE after IS but found {Describe(Cur)}", "NULL", "NAN", "INFINITE", "EMPTY", "PRESENT", "A SET", "JSON", "OF", "DANGLING", "TRUE", "FALSE");
         return Fin(ie, start);
     }
 
@@ -230,7 +230,7 @@ public sealed partial class SqlParser
         int prog110 = -1;
         while (IsOp("**") && Progress(ref prog110))
         {
-            if (!_plsql) throw Fail("'**' is a PL/SQL operator and is not valid in SQL (use POWER)");
+            if (!_plsql) throw Fail("'**' is a PL/SQL operator and is not valid in SQL (use POWER)", ParseErrorCodes.InvalidCombination);
             Next();
             left = Fin(new BinaryExpression { Left = left, Operator = "**", Right = ParsePostfix() }, start);
         }
@@ -244,7 +244,7 @@ public sealed partial class SqlParser
         int prog7 = -1;
         while (Progress(ref prog7))
         {
-            if (IsOp("[")) { if (_plsql) throw Fail("Array steps are not valid in PL/SQL expressions (PLS-00103)"); e = ParseSubscripts(e, start); }
+            if (IsOp("[")) { if (_plsql) throw Fail("Array steps are not valid in PL/SQL expressions (PLS-00103)", ParseErrorCodes.InvalidCombination); e = ParseSubscripts(e, start); }
             else if (e is CellReference or ChainedCall && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier) e = ParseMemberChain(e, start);
             else if (e is FunctionCall or CellReference or ChainedCall && IsOp("(")) e = ParseChainedCall(e, start);
             else if (IsKw("AT") && (IsKwAt(1, "TIME") || IsKwAt(1, "LOCAL")))
@@ -380,7 +380,7 @@ public sealed partial class SqlParser
                     Next();
                     var e = ParseNameOrFunction();
                     if (e is FunctionCall f) { f.New = true; f.Start = start.Start; f.FirstTokenIndex = start.TokenIndex; return f; }
-                    throw Fail("Expected constructor call after NEW");
+                    throw FailExpected("Expected constructor call after NEW", "constructor call");
                 }
             }
             if (Reserved.Contains(Cur.Value) && !ExpressionKeywords.Contains(Cur.Value))
@@ -649,7 +649,7 @@ public sealed partial class SqlParser
         ExpectKw("ON");
         if (IsKw("CONVERSION")) { Next(); ExpectKw("ERROR"); b.Event = BehaviorEvent.ConversionError; }
         else if (Cur.Type == TokenType.Identifier && BehaviorEvents.TryGetValue(Cur.Value, out var ev)) { Next(); b.Event = ev; }
-        else throw Fail($"Expected ERROR, EMPTY, MISMATCH, NULL, MISSING, EXISTING or CONVERSION ERROR but found {Describe(Cur)}");
+        else throw FailExpected($"Expected ERROR, EMPTY, MISMATCH, NULL, MISSING, EXISTING or CONVERSION ERROR but found {Describe(Cur)}", "ERROR", "EMPTY", "MISMATCH", "NULL", "MISSING", "EXISTING", "CONVERSION ERROR");
         return Fin(b, s);
     }
 
@@ -791,7 +791,7 @@ public sealed partial class SqlParser
         {
             var s = Cur;
             if (Cur.Type != TokenType.Identifier || !JsonOps.TryGetValue(Cur.Value, out var op))
-                throw Fail($"Unsupported JSON_TRANSFORM operation {Describe(Cur)}");
+                throw Fail($"Unsupported JSON_TRANSFORM operation {Describe(Cur)}", ParseErrorCodes.UnsupportedForm);
             Next();
             var jo = new JsonTransformOperation { Op = op, Path = ParseAdditive() };
             if (op == JsonTransformOp.Rename) { ExpectKw("WITH"); jo.Value = ParseAdditive(); }
@@ -886,7 +886,7 @@ public sealed partial class SqlParser
             w.Then = ParseExpr();
             ce.Whens.Add(Fin(w, ws));
         }
-        if (ce.Whens.Count == 0) throw Fail("Expected WHEN in CASE expression");
+        if (ce.Whens.Count == 0) throw FailExpected("Expected WHEN in CASE expression", "WHEN");
         if (AcceptKw("ELSE")) ce.Else = ParseExpr();
         ExpectKw("END");
         return Fin(ce, start);
@@ -1069,7 +1069,7 @@ public sealed partial class SqlParser
         ExpectKw("TO");
         ie.To = ParseIntervalUnit();
         bool valid = ie.From == IntervalUnit.Day ? ie.To == IntervalUnit.Second : ie.From == IntervalUnit.Year && ie.To == IntervalUnit.Month;
-        if (!valid) throw Fail("Interval expressions are DAY TO SECOND or YEAR TO MONTH");
+        if (!valid) throw Fail("Interval expressions are DAY TO SECOND or YEAR TO MONTH", ParseErrorCodes.InvalidCombination);
         ie.ToPrecision = ParseIntervalPrecision();
         return Fin(ie, start);
     }
@@ -1077,7 +1077,7 @@ public sealed partial class SqlParser
     private IntervalUnit ParseIntervalUnit()
     {
         if (Cur.Type != TokenType.Identifier || !IntervalUnits.TryGetValue(Cur.Value, out var u))
-            throw Fail($"Expected interval unit but found {Describe(Cur)}");
+            throw FailExpected($"Expected interval unit but found {Describe(Cur)}", "interval unit");
         Next();
         return u;
     }
@@ -1086,7 +1086,7 @@ public sealed partial class SqlParser
     {
         if (!IsOp("(")) return null;
         Next();
-        if (Cur.Type != TokenType.Number) throw Fail($"Expected number but found {Describe(Cur)}");
+        if (Cur.Type != TokenType.Number) throw FailExpected($"Expected number but found {Describe(Cur)}", "number");
         var v = ParseSmallInt();
         ExpectOp(")");
         return v;
@@ -1095,9 +1095,9 @@ public sealed partial class SqlParser
     /// <summary>Consumes a Number token that must be a non-negative integer fitting in an int.</summary>
     private int ParseSmallInt()
     {
-        if (Cur.Type != TokenType.Number) throw Fail($"Expected integer but found {Describe(Cur)}");
+        if (Cur.Type != TokenType.Number) throw FailExpected($"Expected integer but found {Describe(Cur)}", "integer");
         if (!int.TryParse(Cur.Text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var v))
-            throw Fail($"Expected a small integer but found '{Cur.Text}'");
+            throw FailExpected($"Expected a small integer but found '{Cur.Text}'", "a small integer");
         Next();
         return v;
     }
@@ -1108,6 +1108,6 @@ public sealed partial class SqlParser
         var s = Cur;
         var item = ParseSelectItem();
         if (item is ExpressionSelectItem e) return e;
-        throw new ParseException(new ParseError("'*' is not allowed here", s.Start, s.Line, s.Column));
+        throw new ParseException(new ParseError("'*' is not allowed here", s.Start, s.Line, s.Column, s.End - s.Start, ParseErrorCodes.InvalidCombination));
     }
 }

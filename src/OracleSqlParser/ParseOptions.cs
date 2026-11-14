@@ -7,8 +7,13 @@ namespace OracleSqlParser;
 /// </summary>
 public enum OracleVersion
 {
+    /// <summary>Oracle Database 19c, the long-term-support release. Rejects every construct added in 21c or 23ai.</summary>
     Oracle19 = 19,
+
+    /// <summary>Oracle Database 21c.</summary>
     Oracle21 = 21,
+
+    /// <summary>Oracle Database 23ai, the default. Accepts every construct the parser knows.</summary>
     Oracle23 = 23,
 }
 
