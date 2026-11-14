@@ -217,9 +217,22 @@ public class QueryShapeTests
             "(ReferenceModel name=PRICES query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=P)] from=[(NamedTable name=[PR])])) dimensionBy=[(ExpressionSelectItem expression=P)] measures=[(ExpressionSelectItem expression=V)] nav=KeepNav)",
             Shape.Of<ReferenceModel>("SELECT * FROM s MODEL REFERENCE prices ON (SELECT p FROM pr) DIMENSION BY (p) MEASURES (v) KEEP NAV MAIN m DIMENSION BY (a) MEASURES (b) RULES (b[1] = 2)"));
 
-    [Fact]
-    public void GraphTable_TokenTree() =>
-        Assert.Equal(
-            "(GraphTable graph=[G] body=[(WordItem value=MATCH) (GroupItem items=[(WordItem value=A)]) (WordItem value=COLUMNS) (GroupItem items=[(WordItem value=A) (SymbolItem symbol=.) (WordItem value=NAME)])] alias=GT)",
-            Shape.Of<GraphTable>("SELECT * FROM GRAPH_TABLE(g MATCH (a) COLUMNS (a.name)) gt"));
+    [Theory]
+    [InlineData("SELECT * FROM GRAPH_TABLE(g MATCH (a) COLUMNS (a.name)) gt",
+        "(GraphTable graph=[G] match=[(GraphPathPattern elements=[(GraphVertexPattern variable=A)])] columns=[(GraphColumn value=A.NAME)] alias=GT)")]
+    [InlineData("SELECT * FROM GRAPH_TABLE(g MATCH (a IS person WHERE a.age > 1)-[e IS knows]->(b IS person|company) COLUMNS (a.name AS who, vertex_id(b)))",
+        "(GraphTable graph=[G] match=[(GraphPathPattern elements=[(GraphVertexPattern variable=A label=(GraphLabelExpression labels=[PERSON]) where=(> A.AGE 1)) (GraphEdgePattern direction=Right bracketed variable=E label=(GraphLabelExpression labels=[KNOWS])) (GraphVertexPattern variable=B label=(GraphLabelExpression labels=[PERSON COMPANY]))])] columns=[(GraphColumn value=A.NAME alias=WHO) (GraphColumn value=(FunctionCall name=[VERTEX_ID] arguments=[(Argument value=B)]))])")]
+    [InlineData("SELECT * FROM GRAPH_TABLE(g MATCH (a)<-[]-(b)-[]-(c)->(d)-(e)<-(f) COLUMNS (a.x))",
+        "(GraphTable graph=[G] match=[(GraphPathPattern elements=[(GraphVertexPattern variable=A) (GraphEdgePattern direction=Left bracketed) (GraphVertexPattern variable=B) (GraphEdgePattern direction=Any bracketed) (GraphVertexPattern variable=C) (GraphEdgePattern direction=Right) (GraphVertexPattern variable=D) (GraphEdgePattern direction=Any) (GraphVertexPattern variable=E) (GraphEdgePattern direction=Left) (GraphVertexPattern variable=F)])] columns=[(GraphColumn value=A.X)])")]
+    [InlineData("SELECT * FROM GRAPH_TABLE(g MATCH (a)-[e]->{1,3}(b) COLUMNS (a.x))",
+        "(GraphTable graph=[G] match=[(GraphPathPattern elements=[(GraphVertexPattern variable=A) (GraphEdgePattern direction=Right bracketed variable=E quantifier=(GraphQuantifier kind=Range min=1 max=3)) (GraphVertexPattern variable=B)])] columns=[(GraphColumn value=A.X)])")]
+    [InlineData("SELECT * FROM GRAPH_TABLE(g MATCH (a)-[e]-{2}(b) COLUMNS (a.x))",
+        "(GraphTable graph=[G] match=[(GraphPathPattern elements=[(GraphVertexPattern variable=A) (GraphEdgePattern direction=Any bracketed variable=E quantifier=(GraphQuantifier kind=Exact min=2)) (GraphVertexPattern variable=B)])] columns=[(GraphColumn value=A.X)])")]
+    [InlineData("SELECT * FROM GRAPH_TABLE(g MATCH (a)-[e]->*(b) COLUMNS (a.x))",
+        "(GraphTable graph=[G] match=[(GraphPathPattern elements=[(GraphVertexPattern variable=A) (GraphEdgePattern direction=Right bracketed variable=E quantifier=(GraphQuantifier kind=Star)) (GraphVertexPattern variable=B)])] columns=[(GraphColumn value=A.X)])")]
+    [InlineData("SELECT * FROM GRAPH_TABLE(g MATCH (a)-[e]->(b), (c) WHERE a.x = 1 ONE ROW PER VERTEX(a) COLUMNS (a.x))",
+        "(GraphTable graph=[G] match=[(GraphPathPattern elements=[(GraphVertexPattern variable=A) (GraphEdgePattern direction=Right bracketed variable=E) (GraphVertexPattern variable=B)]) (GraphPathPattern elements=[(GraphVertexPattern variable=C)])] where=(= A.X 1) rowsPer=Vertex rowsPerVariables=[A] columns=[(GraphColumn value=A.X)])")]
+    [InlineData("SELECT * FROM GRAPH_TABLE(g MATCH (a)-[e]->(b) COLUMNS (a.x))", "(GraphTable graph=[G] match=[(GraphPathPattern elements=[(GraphVertexPattern variable=A) (GraphEdgePattern direction=Right bracketed variable=E) (GraphVertexPattern variable=B)])] columns=[(GraphColumn value=A.X)])")]
+    [InlineData("SELECT * FROM GRAPH_TABLE(g MATCH (a)-[e]->(b) ONE ROW PER STEP(a, e, b) COLUMNS (a.x))", "(GraphTable graph=[G] match=[(GraphPathPattern elements=[(GraphVertexPattern variable=A) (GraphEdgePattern direction=Right bracketed variable=E) (GraphVertexPattern variable=B)])] rowsPer=Step rowsPerVariables=[A E B] columns=[(GraphColumn value=A.X)])")]
+    public void GraphTable_TypedPatterns(string sql, string expected) => Assert.Equal(expected, Shape.Of<GraphTable>(sql));
 }

@@ -210,11 +210,71 @@ public sealed partial class SqlScriptGenerator
                 case MatchRecognizeTable mr: Match(mr); break;
                 case XmlTable xt: Xml(xt); break;
                 case JsonTable jtb: Json(jtb); break;
-                case GraphTable gt:
-                    Add("GRAPH_TABLE("); Name(gt.Graph); Add(" "); SyntaxList(gt.Body); Add(")"); Alias(gt);
-                    break;
+                case GraphTable gt: GraphTableRef(gt); break;
                 default: throw Unsupported(t);
             }
+        }
+
+        private void GraphTableRef(GraphTable gt)
+        {
+            Add("GRAPH_TABLE("); Name(gt.Graph); Add(" MATCH "); Sep(gt.Match, GraphPath);
+            if (gt.Where != null) { Add(" WHERE "); Expr(gt.Where); }
+            if (gt.RowsPer is { } rp)
+            {
+                Add(rp switch { GraphRowsPer.Match => " ONE ROW PER MATCH", GraphRowsPer.Vertex => " ONE ROW PER VERTEX(", _ => " ONE ROW PER STEP(" });
+                if (rp != GraphRowsPer.Match) { Sep(gt.RowsPerVariables, Id); Add(")"); }
+            }
+            Add(" COLUMNS ("); Sep(gt.Columns, GraphColumnItem); Add("))"); Alias(gt);
+        }
+
+        private void GraphPath(GraphPathPattern p)
+        {
+            foreach (var el in p.Elements)
+            {
+                switch (el)
+                {
+                    case GraphVertexPattern v: Add("("); GraphElementBody(v.Variable, v.Label, v.Where); Add(")"); break;
+                    case GraphEdgePattern e: GraphEdge(e); break;
+                    default: throw Unsupported(el);
+                }
+            }
+        }
+
+        private void GraphEdge(GraphEdgePattern e)
+        {
+            if (!e.Bracketed) { Add(e.Direction switch { GraphEdgeDirection.Right => "->", GraphEdgeDirection.Left => "<-", _ => "-" }); return; }
+            Add(e.Direction == GraphEdgeDirection.Left ? "<-[" : "-[");
+            GraphElementBody(e.Variable, e.Label, e.Where);
+            Add("]");
+            Add(e.Direction == GraphEdgeDirection.Right ? "->" : "-");
+            if (e.Quantifier is { } q)
+            {
+                switch (q.Kind)
+                {
+                    case GraphQuantifierKind.Star: Add("*"); break;
+                    case GraphQuantifierKind.Plus: Add("+"); break;
+                    case GraphQuantifierKind.Exact: Add("{"); Expr(q.Min!); Add("}"); break;
+                    default:
+                        Add("{"); if (q.Min != null) Expr(q.Min);
+                        Add(","); if (q.Max != null) Expr(q.Max);
+                        Add("}"); break;
+                }
+            }
+        }
+
+        /// <summary>The variable, IS label list and WHERE of a vertex or edge pattern, separated by single spaces.</summary>
+        private void GraphElementBody(Identifier? variable, GraphLabelExpression? label, Expression? where)
+        {
+            bool sp = false;
+            if (variable != null) { Id(variable); sp = true; }
+            if (label != null) { if (sp) Add(" "); Add("IS "); Sep(label.Labels, Id, "|"); sp = true; }
+            if (where != null) { if (sp) Add(" "); Add("WHERE "); Expr(where); }
+        }
+
+        private void GraphColumnItem(GraphColumn c)
+        {
+            Expr(c.Value);
+            if (c.Alias != null) { Add(" AS "); Id(c.Alias); }
         }
 
         private void Flashback(FlashbackClause f)

@@ -4919,13 +4919,242 @@ public partial class Grantee
     }
 }
 
+public partial class GraphColumn
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Value is not null) yield return Value;
+        if (Alias is not null) yield return Alias;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Value?.Accept(visitor);
+        Alias?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "GraphColumn.Value");
+        Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphColumn.Alias");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new GraphColumn();
+        CopySpan(this, c);
+        c.Value = CloneChild(Value)!;
+        c.Alias = CloneChild(Alias);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (GraphColumn)other;
+        return Pair(Value, o.Value, pending)
+            && Pair(Alias, o.Alias, pending);
+    }
+}
+
+public partial class GraphEdgePattern
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Variable is not null) yield return Variable;
+        if (Label is not null) yield return Label;
+        if (Where is not null) yield return Where;
+        if (Quantifier is not null) yield return Quantifier;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Variable?.Accept(visitor);
+        Label?.Accept(visitor);
+        Where?.Accept(visitor);
+        Quantifier?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Variable = SqlNodeRewriter.RewriteOptional(rewriter, Variable, "GraphEdgePattern.Variable");
+        Label = SqlNodeRewriter.RewriteOptional(rewriter, Label, "GraphEdgePattern.Label");
+        Where = SqlNodeRewriter.RewriteOptional(rewriter, Where, "GraphEdgePattern.Where");
+        Quantifier = SqlNodeRewriter.RewriteOptional(rewriter, Quantifier, "GraphEdgePattern.Quantifier");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new GraphEdgePattern();
+        CopySpan(this, c);
+        c.Direction = Direction;
+        c.Bracketed = Bracketed;
+        c.Variable = CloneChild(Variable);
+        c.Label = CloneChild(Label);
+        c.Where = CloneChild(Where);
+        c.Quantifier = CloneChild(Quantifier);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (GraphEdgePattern)other;
+        return Direction == o.Direction
+            && Bracketed == o.Bracketed
+            && Pair(Variable, o.Variable, pending)
+            && Pair(Label, o.Label, pending)
+            && Pair(Where, o.Where, pending)
+            && Pair(Quantifier, o.Quantifier, pending);
+    }
+}
+
+public partial class GraphLabelExpression
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Labels is not null) foreach (var x in Labels) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Labels is not null) foreach (var x in Labels) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Labels, "GraphLabelExpression.Labels");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new GraphLabelExpression();
+        CopySpan(this, c);
+        c.Labels = CloneList(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (GraphLabelExpression)other;
+        return PairList(Labels, o.Labels, pending);
+    }
+}
+
+public partial class GraphPathPattern
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Elements is not null) foreach (var x in Elements) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Elements is not null) foreach (var x in Elements) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Elements, "GraphPathPattern.Elements");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new GraphPathPattern();
+        CopySpan(this, c);
+        c.Elements = CloneList(Elements);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (GraphPathPattern)other;
+        return PairList(Elements, o.Elements, pending);
+    }
+}
+
+public partial class GraphQuantifier
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Min is not null) yield return Min;
+        if (Max is not null) yield return Max;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Min?.Accept(visitor);
+        Max?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Min = SqlNodeRewriter.RewriteOptional(rewriter, Min, "GraphQuantifier.Min");
+        Max = SqlNodeRewriter.RewriteOptional(rewriter, Max, "GraphQuantifier.Max");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new GraphQuantifier();
+        CopySpan(this, c);
+        c.Kind = Kind;
+        c.Min = CloneChild(Min);
+        c.Max = CloneChild(Max);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (GraphQuantifier)other;
+        return Kind == o.Kind
+            && Pair(Min, o.Min, pending)
+            && Pair(Max, o.Max, pending);
+    }
+}
+
 public partial class GraphTable
 {
     /// <inheritdoc/>
     public override IEnumerable<SqlNode> GetChildren()
     {
         if (Graph is not null) foreach (var x in Graph) yield return x;
-        if (Body is not null) foreach (var x in Body) yield return x;
+        if (Match is not null) foreach (var x in Match) yield return x;
+        if (Where is not null) yield return Where;
+        if (RowsPerVariables is not null) foreach (var x in RowsPerVariables) yield return x;
+        if (Columns is not null) foreach (var x in Columns) yield return x;
         if (Alias is not null) yield return Alias;
     }
 
@@ -4933,14 +5162,20 @@ public partial class GraphTable
     public override void AcceptChildren(SqlNodeVisitor visitor)
     {
         if (Graph is not null) foreach (var x in Graph) x.Accept(visitor);
-        if (Body is not null) foreach (var x in Body) x.Accept(visitor);
+        if (Match is not null) foreach (var x in Match) x.Accept(visitor);
+        Where?.Accept(visitor);
+        if (RowsPerVariables is not null) foreach (var x in RowsPerVariables) x.Accept(visitor);
+        if (Columns is not null) foreach (var x in Columns) x.Accept(visitor);
         Alias?.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
     {
         SqlNodeRewriter.RewriteList(rewriter, Graph, "GraphTable.Graph");
-        SqlNodeRewriter.RewriteList(rewriter, Body, "GraphTable.Body");
+        SqlNodeRewriter.RewriteList(rewriter, Match, "GraphTable.Match");
+        Where = SqlNodeRewriter.RewriteOptional(rewriter, Where, "GraphTable.Where");
+        SqlNodeRewriter.RewriteList(rewriter, RowsPerVariables, "GraphTable.RowsPerVariables");
+        SqlNodeRewriter.RewriteList(rewriter, Columns, "GraphTable.Columns");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphTable.Alias");
     }
 
@@ -4954,7 +5189,11 @@ public partial class GraphTable
         var c = new GraphTable();
         CopySpan(this, c);
         c.Graph = CloneList(Graph);
-        c.Body = CloneList(Body);
+        c.Match = CloneList(Match);
+        c.Where = CloneChild(Where);
+        c.RowsPer = RowsPer;
+        c.RowsPerVariables = CloneList(RowsPerVariables);
+        c.Columns = CloneList(Columns);
         c.Alias = CloneChild(Alias);
         return c;
     }
@@ -4963,8 +5202,61 @@ public partial class GraphTable
     {
         var o = (GraphTable)other;
         return PairList(Graph, o.Graph, pending)
-            && PairList(Body, o.Body, pending)
+            && PairList(Match, o.Match, pending)
+            && Pair(Where, o.Where, pending)
+            && RowsPer == o.RowsPer
+            && PairList(RowsPerVariables, o.RowsPerVariables, pending)
+            && PairList(Columns, o.Columns, pending)
             && Pair(Alias, o.Alias, pending);
+    }
+}
+
+public partial class GraphVertexPattern
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Variable is not null) yield return Variable;
+        if (Label is not null) yield return Label;
+        if (Where is not null) yield return Where;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Variable?.Accept(visitor);
+        Label?.Accept(visitor);
+        Where?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Variable = SqlNodeRewriter.RewriteOptional(rewriter, Variable, "GraphVertexPattern.Variable");
+        Label = SqlNodeRewriter.RewriteOptional(rewriter, Label, "GraphVertexPattern.Label");
+        Where = SqlNodeRewriter.RewriteOptional(rewriter, Where, "GraphVertexPattern.Where");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new GraphVertexPattern();
+        CopySpan(this, c);
+        c.Variable = CloneChild(Variable);
+        c.Label = CloneChild(Label);
+        c.Where = CloneChild(Where);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (GraphVertexPattern)other;
+        return Pair(Variable, o.Variable, pending)
+            && Pair(Label, o.Label, pending)
+            && Pair(Where, o.Where, pending);
     }
 }
 

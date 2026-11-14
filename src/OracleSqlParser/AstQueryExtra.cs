@@ -159,11 +159,74 @@ public sealed partial class PatternDefine : SqlNode
     public Expression Condition { get; set; } = null!;
 }
 
-/// <summary>GRAPH_TABLE(graph MATCH ... COLUMNS (...)): body kept as a token tree (see COVERAGE.md).</summary>
+/// <summary>GRAPH_TABLE(graph MATCH path [, path] [WHERE cond] [ONE ROW PER ...] COLUMNS (expr [AS alias], ...)) (SQL/PGQ).</summary>
 public sealed partial class GraphTable : TableReference
 {
     public List<Identifier> Graph { get; set; } = [];
-    public List<SyntaxItem> Body { get; set; } = [];
+    public List<GraphPathPattern> Match { get; set; } = [];
+    public Expression? Where { get; set; }
+    public GraphRowsPer? RowsPer { get; set; }
+    /// <summary>The variables named in ONE ROW PER VERTEX(v) or STEP(v1, e, v2); empty for MATCH.</summary>
+    public List<Identifier> RowsPerVariables { get; set; } = [];
+    public List<GraphColumn> Columns { get; set; } = [];
+}
+
+public enum GraphRowsPer { Match, Vertex, Step }
+
+/// <summary>One comma-separated path pattern; Elements alternate vertex, edge, vertex, ...</summary>
+public sealed partial class GraphPathPattern : SqlNode
+{
+    public List<GraphPatternElement> Elements { get; set; } = [];
+}
+
+/// <summary>A vertex or edge pattern inside a path pattern.</summary>
+public abstract partial class GraphPatternElement : SqlNode
+{
+}
+
+/// <summary>(v IS label1|label2 WHERE cond)</summary>
+public sealed partial class GraphVertexPattern : GraphPatternElement
+{
+    public Identifier? Variable { get; set; }
+    public GraphLabelExpression? Label { get; set; }
+    public Expression? Where { get; set; }
+}
+
+public enum GraphEdgeDirection { Right, Left, Any }
+
+/// <summary>-[e IS lbl WHERE cond]-&gt;, &lt;-[...]-, -[...]-; abbreviated -&gt;, &lt;-, - when Bracketed is false.</summary>
+public sealed partial class GraphEdgePattern : GraphPatternElement
+{
+    public GraphEdgeDirection Direction { get; set; }
+    public bool Bracketed { get; set; }
+    public Identifier? Variable { get; set; }
+    public GraphLabelExpression? Label { get; set; }
+    public Expression? Where { get; set; }
+    public GraphQuantifier? Quantifier { get; set; }
+}
+
+/// <summary>Label expression: label1 | label2 | ...</summary>
+public sealed partial class GraphLabelExpression : SqlNode
+{
+    public List<Identifier> Labels { get; set; } = [];
+}
+
+public enum GraphQuantifierKind { Star, Plus, Exact, Range }
+
+/// <summary>Repetition of a bracketed edge: * (zero or more), + (one or more), {n} (exact), {n,m} / {n,} / {,m} (range).</summary>
+public sealed partial class GraphQuantifier : SqlNode
+{
+    public GraphQuantifierKind Kind { get; set; }
+    /// <summary>The count for Exact, or the lower bound for Range (null when omitted).</summary>
+    public Expression? Min { get; set; }
+    public Expression? Max { get; set; }
+}
+
+/// <summary>One COLUMNS item: expr [AS alias].</summary>
+public sealed partial class GraphColumn : SqlNode
+{
+    public Expression Value { get; set; } = null!;
+    public Identifier? Alias { get; set; }
 }
 
 // ---------- MODEL clause ----------

@@ -364,9 +364,113 @@ public sealed partial class SqlParser
         var start = Cur;
         Next(); Next();
         var gt = new GraphTable { Graph = ParseDottedName() };
-        gt.Body = ParseSyntaxItems(() => false);
+        ExpectKw("MATCH");
+        do gt.Match.Add(ParseGraphPathPattern()); while (AcceptOp(","));
+        if (AcceptKw("WHERE")) gt.Where = ParseExpr();
+        if (IsKw("ONE") && IsKwAt(1, "ROW"))
+        {
+            Next(); Next(); ExpectKw("PER");
+            if (AcceptKw("MATCH")) gt.RowsPer = GraphRowsPer.Match;
+            else
+            {
+                if (AcceptKw("VERTEX")) gt.RowsPer = GraphRowsPer.Vertex;
+                else { ExpectKw("STEP"); gt.RowsPer = GraphRowsPer.Step; }
+                ExpectOp("(");
+                gt.RowsPerVariables = ParseIdentifierList();
+                ExpectOp(")");
+            }
+        }
+        ExpectKw("COLUMNS");
+        ExpectOp("(");
+        do gt.Columns.Add(ParseGraphColumn()); while (AcceptOp(","));
+        ExpectOp(")");
         ExpectOp(")");
         return Fin(gt, start);
+    }
+
+    private GraphPathPattern ParseGraphPathPattern()
+    {
+        var s = Cur;
+        var p = new GraphPathPattern();
+        p.Elements.Add(ParseGraphVertexPattern());
+        while (IsOp("-") || IsOp("->") || IsOp("<"))
+        {
+            p.Elements.Add(ParseGraphEdgePattern());
+            p.Elements.Add(ParseGraphVertexPattern());
+        }
+        return Fin(p, s);
+    }
+
+    /// <summary>A variable name inside (...) or [...], i.e. an identifier that is not the start of IS or WHERE.</summary>
+    private bool AtGraphVariable() =>
+        (Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) && !IsKw("IS") && !IsKw("WHERE");
+
+    private GraphVertexPattern ParseGraphVertexPattern()
+    {
+        var s = Cur;
+        ExpectOp("(");
+        var v = new GraphVertexPattern();
+        if (AtGraphVariable()) v.Variable = ParseIdentifier();
+        v.Label = ParseGraphLabel();
+        if (AcceptKw("WHERE")) v.Where = ParseExpr();
+        ExpectOp(")");
+        return Fin(v, s);
+    }
+
+    private GraphEdgePattern ParseGraphEdgePattern()
+    {
+        var s = Cur;
+        var e = new GraphEdgePattern { Direction = GraphEdgeDirection.Any };
+        if (IsOp("<")) { Next(); ExpectOp("-"); e.Direction = GraphEdgeDirection.Left; }
+        else if (IsOp("->")) { Next(); e.Direction = GraphEdgeDirection.Right; return Fin(e, s); }
+        else ExpectOp("-");
+        if (AcceptOp("["))
+        {
+            e.Bracketed = true;
+            if (AtGraphVariable()) e.Variable = ParseIdentifier();
+            e.Label = ParseGraphLabel();
+            if (AcceptKw("WHERE")) e.Where = ParseExpr();
+            ExpectOp("]");
+            if (e.Direction == GraphEdgeDirection.Left) ExpectOp("-");
+            else if (AcceptOp("->")) e.Direction = GraphEdgeDirection.Right;
+            else ExpectOp("-");
+            e.Quantifier = ParseGraphQuantifier();
+        }
+        return Fin(e, s);
+    }
+
+    private GraphLabelExpression? ParseGraphLabel()
+    {
+        if (!AcceptKw("IS")) return null;
+        var l = new GraphLabelExpression();
+        do l.Labels.Add(ParseIdentifier()); while (AcceptOp("|"));
+        return l;
+    }
+
+    private GraphQuantifier? ParseGraphQuantifier()
+    {
+        var s = Cur;
+        if (AcceptOp("*")) return Fin(new GraphQuantifier { Kind = GraphQuantifierKind.Star }, s);
+        if (AcceptOp("+")) return Fin(new GraphQuantifier { Kind = GraphQuantifierKind.Plus }, s);
+        if (!AcceptOp("{")) return null;
+        var q = new GraphQuantifier { Kind = GraphQuantifierKind.Exact };
+        if (!IsOp(",")) q.Min = ParseExpr();
+        if (AcceptOp(","))
+        {
+            q.Kind = GraphQuantifierKind.Range;
+            if (!IsOp("}")) q.Max = ParseExpr();
+        }
+        else if (q.Min == null) throw Fail($"Expected a quantifier bound but found {Describe(Cur)}");
+        ExpectOp("}");
+        return Fin(q, s);
+    }
+
+    private GraphColumn ParseGraphColumn()
+    {
+        var s = Cur;
+        var c = new GraphColumn { Value = ParseExpr() };
+        if (AcceptKw("AS")) c.Alias = ParseIdentifier();
+        return Fin(c, s);
     }
 
     private bool AtPathColumnClause() =>
