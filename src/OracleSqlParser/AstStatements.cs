@@ -368,6 +368,8 @@ public sealed partial class CreateDatabaseLinkStatement : Statement
     public Identifier? AuthenticatedPassword { get; set; }
     /// <summary>USING 'connect_string'.</summary>
     public Expression? Using { get; set; }
+    /// <summary>Clauses this model does not cover (e.g. CONNECT WITH credential), as a token tree.</summary>
+    public List<SyntaxItem> OtherClauses { get; set; } = [];
 }
 
 public enum ContextInit { Externally, Globally }
@@ -415,6 +417,8 @@ public sealed partial class CreateTablespaceStatement : Statement
     public List<DatafileSpec> Files { get; set; } = [];
     /// <summary>LOGGING (true) or NOLOGGING (false).</summary>
     public bool? Logging { get; set; }
+    /// <summary>FORCE LOGGING (with Logging = true).</summary>
+    public bool ForceLogging { get; set; }
     /// <summary>ONLINE (true) or OFFLINE (false).</summary>
     public bool? Online { get; set; }
     /// <summary>EXTENT MANAGEMENT LOCAL [...].</summary>
@@ -494,6 +498,8 @@ public sealed partial class AuditStatement : Statement
     public List<Identifier> ByUsers { get; set; } = [];
     /// <summary>BY USERS WITH ROLES role, ... (unified).</summary>
     public List<Identifier> WithRoles { get; set; } = [];
+    /// <summary>BY USERS WITH GRANTED ROLES rather than WITH ROLES.</summary>
+    public bool GrantedRoles { get; set; }
     /// <summary>EXCEPT user, ... (unified policies).</summary>
     public List<Identifier> ExceptUsers { get; set; } = [];
     /// <summary>BY ACCESS or BY SESSION (traditional).</summary>

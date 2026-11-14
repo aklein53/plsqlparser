@@ -645,7 +645,7 @@ public sealed partial class SqlParser
         var st = new CreateDatabaseLinkStatement { OrReplace = orReplace, Public = pub, Shared = shared, IfNotExists = TryIfNotExists() };
         st.Name = ParseDottedName();
         if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
-        if (AcceptKw("CONNECT"))
+        if (IsKw("CONNECT") && IsKwAt(1, "TO") && AcceptKw("CONNECT"))
         {
             ExpectKw("TO");
             if (AcceptKw("CURRENT_USER")) st.CurrentUser = true;
@@ -664,6 +664,8 @@ public sealed partial class SqlParser
             st.AuthenticatedPassword = ParseIdentifier();
         }
         if (AcceptKw("USING")) st.Using = ParseAdditive();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog)) st.OtherClauses.Add(ParseSyntaxItem());
         return Fin(st, start);
     }
 
@@ -704,6 +706,7 @@ public sealed partial class SqlParser
             bool temp = Next().Value == "TEMPFILE";
             do st.Files.Add(ParseDatafileSpec(temp)); while (AcceptOp(","));
         }
+        else if (IsKw("FORCE") && IsKwAt(1, "LOGGING")) { Next(); Next(); st.Logging = true; st.ForceLogging = true; }
         else if (AcceptKw("LOGGING")) st.Logging = true;
         else if (AcceptKw("NOLOGGING")) st.Logging = false;
         else if (AcceptKw("ONLINE")) st.Online = true;
@@ -741,7 +744,7 @@ public sealed partial class SqlParser
     private DatafileSpec ParseDatafileSpec(bool tempfile)
     {
         var s = Cur;
-        var f = new DatafileSpec { Tempfile = tempfile, Path = ParseAdditive() };
+        var f = new DatafileSpec { Tempfile = tempfile, Path = Cur.Type == TokenType.String ? ParseAdditive() : null };
         int prog = -1;
         while (Progress(ref prog))
         {
@@ -799,6 +802,8 @@ public sealed partial class SqlParser
             else if (AcceptKw("ONLINE")) a.Kind = TablespaceActionKind.Online;
             else { ExpectKw("OFFLINE"); a.Kind = TablespaceActionKind.Offline; }
         }
+        else if (AcceptKw("RESIZE")) { a.Kind = TablespaceActionKind.Resize; a.Target = new DatafileSpec { Size = ParseAdditive() }; }
+        else if (IsKw("AUTOEXTEND")) { a.Kind = TablespaceActionKind.Autoextend; a.Target = new DatafileSpec(); ParseAutoextend(a.Target); }
         else if (AcceptKw("ONLINE")) a.Kind = TablespaceActionKind.Online;
         else if (AcceptKw("OFFLINE"))
         {
@@ -869,7 +874,7 @@ public sealed partial class SqlParser
             {
                 if (AcceptKw("ACCESS")) st.By = AuditBy.Access;
                 else if (AcceptKw("SESSION")) st.By = AuditBy.Session;
-                else if (IsKw("USERS") && IsKwAt(1, "WITH")) { Next(); Next(); ExpectKw("ROLES"); st.WithRoles = ParseIdentifierList(); }
+                else if (IsKw("USERS") && IsKwAt(1, "WITH")) { Next(); Next(); st.GrantedRoles = AcceptKw("GRANTED"); ExpectKw("ROLES"); st.WithRoles = ParseIdentifierList(); }
                 else st.ByUsers.AddRange(ParseIdentifierList());
             }
             else if (AcceptKw("WHENEVER"))
@@ -904,7 +909,7 @@ public sealed partial class SqlParser
         int prog = -1;
         while (!AtStatementEnd() && Progress(ref prog))
         {
-            if (IsKw("PRIVILEGES") || IsKw("ACTIONS") || IsKw("ROLES")) st.Lists.Add(ParseAuditPolicyList());
+            if (IsKw("PRIVILEGES") || IsKw("ACTIONS") || IsKw("ROLES")) st.Lists.Add(ParseAuditPolicyList(false));
             else if (AcceptKw("WHEN"))
             {
                 var (cond, ev) = ParseConditionEvaluate();
@@ -923,10 +928,11 @@ public sealed partial class SqlParser
         if (pub) throw Fail("PUBLIC does not apply to ALTER AUDIT POLICY");
         var st = new AlterAuditPolicyStatement { IfExists = TryIfExists() };
         st.Name = ParseIdentifier();
+        bool lastDrop = false;
         int prog = -1;
         while (!AtStatementEnd() && Progress(ref prog))
         {
-            if (AtAuditPolicyList()) st.Lists.Add(ParseAuditPolicyList());
+            if (AtAuditPolicyList()) { var list = ParseAuditPolicyList(lastDrop); st.Lists.Add(list); lastDrop = list.Drop; }
             else if (AcceptKw("CONDITION"))
             {
                 if (AcceptKw("DROP")) st.DropCondition = true;
@@ -949,12 +955,12 @@ public sealed partial class SqlParser
         return IsKw("PRIVILEGES") || IsKw("ACTIONS") || IsKw("ROLES");
     }
 
-    private AuditPolicyList ParseAuditPolicyList()
+    private AuditPolicyList ParseAuditPolicyList(bool inheritedDrop)
     {
         var s = Cur;
-        var l = new AuditPolicyList();
+        var l = new AuditPolicyList { Drop = inheritedDrop };
         if (AcceptKw("DROP")) l.Drop = true;
-        else AcceptKw("ADD");
+        else if (AcceptKw("ADD")) l.Drop = false;
         if (AcceptKw("PRIVILEGES")) l.Kind = AuditPolicyListKind.Privileges;
         else if (AcceptKw("ACTIONS")) l.Kind = AuditPolicyListKind.Actions;
         else { ExpectKw("ROLES"); l.Kind = AuditPolicyListKind.Roles; }

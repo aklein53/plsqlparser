@@ -968,6 +968,7 @@ public partial class AuditStatement
         c.On = CloneChild(On);
         c.ByUsers = CloneList(ByUsers);
         c.WithRoles = CloneList(WithRoles);
+        c.GrantedRoles = GrantedRoles;
         c.ExceptUsers = CloneList(ExceptUsers);
         c.By = By;
         c.Successful = Successful;
@@ -986,6 +987,7 @@ public partial class AuditStatement
             && Pair(On, o.On, pending)
             && PairList(ByUsers, o.ByUsers, pending)
             && PairList(WithRoles, o.WithRoles, pending)
+            && GrantedRoles == o.GrantedRoles
             && PairList(ExceptUsers, o.ExceptUsers, pending)
             && By == o.By
             && Successful == o.Successful
@@ -2518,6 +2520,7 @@ public partial class CreateDatabaseLinkStatement
         if (AuthenticatedUser is not null) yield return AuthenticatedUser;
         if (AuthenticatedPassword is not null) yield return AuthenticatedPassword;
         if (Using is not null) yield return Using;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
     }
 
     /// <inheritdoc/>
@@ -2529,6 +2532,7 @@ public partial class CreateDatabaseLinkStatement
         AuthenticatedUser?.Accept(visitor);
         AuthenticatedPassword?.Accept(visitor);
         Using?.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
@@ -2539,6 +2543,7 @@ public partial class CreateDatabaseLinkStatement
         AuthenticatedUser = SqlNodeRewriter.RewriteOptional(rewriter, AuthenticatedUser, "CreateDatabaseLinkStatement.AuthenticatedUser");
         AuthenticatedPassword = SqlNodeRewriter.RewriteOptional(rewriter, AuthenticatedPassword, "CreateDatabaseLinkStatement.AuthenticatedPassword");
         Using = SqlNodeRewriter.RewriteOptional(rewriter, Using, "CreateDatabaseLinkStatement.Using");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreateDatabaseLinkStatement.OtherClauses");
     }
 
     /// <inheritdoc/>
@@ -2561,6 +2566,7 @@ public partial class CreateDatabaseLinkStatement
         c.AuthenticatedUser = CloneChild(AuthenticatedUser);
         c.AuthenticatedPassword = CloneChild(AuthenticatedPassword);
         c.Using = CloneChild(Using);
+        c.OtherClauses = CloneList(OtherClauses);
         c.Labels = CloneStrings(Labels);
         return c;
     }
@@ -2579,6 +2585,7 @@ public partial class CreateDatabaseLinkStatement
             && Pair(AuthenticatedUser, o.AuthenticatedUser, pending)
             && Pair(AuthenticatedPassword, o.AuthenticatedPassword, pending)
             && Pair(Using, o.Using, pending)
+            && PairList(OtherClauses, o.OtherClauses, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -3443,6 +3450,7 @@ public partial class CreateTablespaceStatement
         c.Name = CloneChild(Name)!;
         c.Files = CloneList(Files);
         c.Logging = Logging;
+        c.ForceLogging = ForceLogging;
         c.Online = Online;
         c.ExtentManagementLocal = ExtentManagementLocal;
         c.ExtentPolicy = ExtentPolicy;
@@ -3465,6 +3473,7 @@ public partial class CreateTablespaceStatement
             && Pair(Name, o.Name, pending)
             && PairList(Files, o.Files, pending)
             && Logging == o.Logging
+            && ForceLogging == o.ForceLogging
             && Online == o.Online
             && ExtentManagementLocal == o.ExtentManagementLocal
             && ExtentPolicy == o.ExtentPolicy

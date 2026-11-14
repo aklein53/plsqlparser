@@ -339,6 +339,24 @@ public class SqlScriptGeneratorTests
     }
 
     [Fact]
+    public void AlterAuditPolicy_DropModeIsNotFlipped()
+    {
+        // ACTIONS inherits DROP from the list before it; the printer must not turn it into ADD.
+        Assert.Equal("ALTER AUDIT POLICY p DROP PRIVILEGES CREATE SESSION ACTIONS DELETE ON hr.emp",
+            Gen("ALTER AUDIT POLICY p DROP PRIVILEGES CREATE SESSION ACTIONS DELETE ON hr.emp"));
+        Assert.Equal("ALTER AUDIT POLICY p DROP PRIVILEGES CREATE SESSION ADD ACTIONS DELETE ON hr.emp",
+            Gen("ALTER AUDIT POLICY p DROP PRIVILEGES CREATE SESSION ADD ACTIONS DELETE ON hr.emp"));
+    }
+
+    [Fact]
+    public void Tablespace_OmfDatafileAndForceLogging_RoundTrip()
+    {
+        Assert.Equal("ALTER TABLESPACE ts ADD DATAFILE SIZE 10M", Gen("ALTER TABLESPACE ts ADD DATAFILE SIZE 10M"));
+        Assert.Equal("CREATE TABLESPACE ts DATAFILE 'f' SIZE 1M FORCE LOGGING", Gen("CREATE TABLESPACE ts DATAFILE 'f' SIZE 1M FORCE LOGGING"));
+        Assert.Equal("ALTER TABLESPACE ts RESIZE 80G", Gen("ALTER TABLESPACE ts RESIZE 80G"));
+    }
+
+    [Fact]
     public void CreateRole_RoundTripsIdentificationAndContainer()
     {
         const string sql = "create role Ops identified by Secret container = all";

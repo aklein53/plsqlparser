@@ -252,6 +252,20 @@ public class DdlShapeTests
     [InlineData("ALTER AUDIT POLICY pol CONDITION DROP", "(AlterAuditPolicyStatement name=POL dropCondition)")]
     public void AuditAndAuditPolicy(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
+    [Theory]
+    [InlineData("CREATE TABLESPACE ts DATAFILE SIZE 10M", "(CreateTablespaceStatement name=TS files=[(DatafileSpec size=10M)])")]
+    [InlineData("CREATE TABLESPACE ts DATAFILE 'x' SIZE 1M FORCE LOGGING", "(CreateTablespaceStatement name=TS files=[(DatafileSpec path='x' size=1M)] logging=true forceLogging)")]
+    [InlineData("ALTER TABLESPACE ts ADD DATAFILE;", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=AddDatafile files=[(DatafileSpec)])])")]
+    [InlineData("ALTER TABLESPACE ts RESIZE 80G", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=Resize target=(DatafileSpec size=80G))])")]
+    [InlineData("ALTER TABLESPACE ts AUTOEXTEND ON NEXT 1M", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=Autoextend target=(DatafileSpec autoextend=true nextSize=1M))])")]
+    [InlineData("ALTER TABLESPACE tbs_02 OFFLINE NORMAL", "(AlterTablespaceStatement name=TBS_02 actions=[(TablespaceAction kind=Offline mode=Normal)])")]
+    [InlineData("AUDIT POLICY p BY USERS WITH GRANTED ROLES r1", "(AuditStatement policy=P withRoles=[R1] grantedRoles)")]
+    [InlineData("ALTER AUDIT POLICY p DROP PRIVILEGES CREATE SESSION ACTIONS DELETE ON hr.emp",
+        "(AlterAuditPolicyStatement name=P lists=[(AuditPolicyList kind=Privileges drop items=[(AuditPolicyItem name=CREATE SESSION)]) (AuditPolicyList kind=Actions drop items=[(AuditPolicyItem name=DELETE on=(AuditObject name=[HR EMP]))])])")]
+    [InlineData("CREATE DATABASE LINK l CONNECT WITH cred USING 'x'",
+        "(CreateDatabaseLinkStatement name=[L] otherClauses=[(WordItem value=CONNECT) (WordItem value=WITH) (WordItem value=CRED) (WordItem value=USING) (LiteralItem kind=String value=x)])")]
+    public void FollowUpFixes(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
     [Fact]
     public void CreateJava_Source()
     {

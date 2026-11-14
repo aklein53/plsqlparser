@@ -88,7 +88,8 @@ public sealed partial class SqlScriptGenerator
                     Add("ALTER AUDIT POLICY");
                     if (aap.IfExists) Add(" IF EXISTS");
                     Sp(); Id(aap.Name);
-                    foreach (var pl in aap.Lists) { Sp(); AuditPolicyListText(pl, true); }
+                    bool? mode = null;
+                    foreach (var pl in aap.Lists) { Sp(); AuditPolicyListText(pl, mode != pl.Drop); mode = pl.Drop; }
                     if (aap.DropCondition) Add(" CONDITION DROP");
                     else if (aap.Condition != null) { Add(" CONDITION "); AuditEvaluationText(aap.Condition, aap.Evaluate!.Value); }
                     break;
@@ -132,6 +133,7 @@ public sealed partial class SqlScriptGenerator
                     }
                     if (dl.AuthenticatedUser != null) { Add(" AUTHENTICATED BY "); Id(dl.AuthenticatedUser); Add(" IDENTIFIED BY "); Verbatim(dl.AuthenticatedPassword!); }
                     if (dl.Using != null) { Add(" USING "); Expr(dl.Using); }
+                    if (dl.OtherClauses.Count > 0) { Sp(); SyntaxList(dl.OtherClauses); }
                     break;
                 case CreateContextStatement cx:
                     Add("CREATE");
@@ -252,19 +254,21 @@ public sealed partial class SqlScriptGenerator
 
         // ---------- CREATE / ALTER TABLESPACE ----------
 
-        /// <summary>'name' [SIZE n] [REUSE] [AUTOEXTEND ...]: the CREATE and ADD forms.</summary>
+        /// <summary>[name] [SIZE n] [REUSE] [AUTOEXTEND ...]: the CREATE and ADD forms. The file name is optional (Oracle Managed Files).</summary>
         private void DatafileSpecText(DatafileSpec f)
         {
-            Expr(f.Path!);
-            if (f.Size != null) { Add(" SIZE "); Expr(f.Size); }
-            if (f.Reuse) Add(" REUSE");
-            AutoextendText(f);
+            bool first = true;
+            void Part(Action part) { if (!first) Sp(); first = false; part(); }
+            if (f.Path != null) Part(() => Expr(f.Path!));
+            if (f.Size != null) Part(() => { Add("SIZE "); Expr(f.Size!); });
+            if (f.Reuse) Part(() => Add("REUSE"));
+            if (f.Autoextend != null) Part(() => AutoextendText(f));
         }
 
+        /// <summary>AUTOEXTEND ON|OFF [NEXT n] [MAXSIZE ...]; the caller writes the separator before it.</summary>
         private void AutoextendText(DatafileSpec f)
         {
-            if (f.Autoextend == null) return;
-            Add(f.Autoextend.Value ? " AUTOEXTEND ON" : " AUTOEXTEND OFF");
+            Add(f.Autoextend == true ? "AUTOEXTEND ON" : "AUTOEXTEND OFF");
             if (f.NextSize != null) { Add(" NEXT "); Expr(f.NextSize); }
             if (f.MaxSizeUnlimited) Add(" MAXSIZE UNLIMITED");
             else if (f.MaxSize != null) { Add(" MAXSIZE "); Expr(f.MaxSize); }
@@ -274,12 +278,16 @@ public sealed partial class SqlScriptGenerator
         {
             switch (a.Kind)
             {
-                case TablespaceActionKind.AddDatafile: Add("ADD DATAFILE "); Sep(a.Files, DatafileSpecText); break;
-                case TablespaceActionKind.AddTempfile: Add("ADD TEMPFILE "); Sep(a.Files, DatafileSpecText); break;
+                case TablespaceActionKind.AddDatafile: Add("ADD DATAFILE"); FileSpecs(a.Files); break;
+                case TablespaceActionKind.AddTempfile: Add("ADD TEMPFILE"); FileSpecs(a.Files); break;
                 case TablespaceActionKind.Resize:
-                    FileTarget(a.Target!); Add(" RESIZE "); Expr(a.Target!.Size!);
+                    if (a.Target!.Path != null) { FileTarget(a.Target!); Sp(); }
+                    Add("RESIZE "); Expr(a.Target!.Size!);
                     break;
-                case TablespaceActionKind.Autoextend: FileTarget(a.Target!); AutoextendText(a.Target!); break;
+                case TablespaceActionKind.Autoextend:
+                    if (a.Target!.Path != null) { FileTarget(a.Target!); Sp(); }
+                    AutoextendText(a.Target!);
+                    break;
                 case TablespaceActionKind.Online: if (a.Target != null) { FileTarget(a.Target); Add(" ONLINE"); } else Add("ONLINE"); break;
                 case TablespaceActionKind.Offline:
                     if (a.Target != null) { FileTarget(a.Target); Add(" OFFLINE"); break; }
@@ -297,6 +305,16 @@ public sealed partial class SqlScriptGenerator
             }
         }
 
+        private void FileSpecs(List<DatafileSpec> files)
+        {
+            for (int i = 0; i < files.Count; i++)
+            {
+                if (i > 0) Add(",");
+                Sp();
+                DatafileSpecText(files[i]);
+            }
+        }
+
         private void FileTarget(DatafileSpec f)
         {
             Add(f.Tempfile ? "TEMPFILE " : "DATAFILE ");
@@ -310,7 +328,7 @@ public sealed partial class SqlScriptGenerator
                 Add(ct.Files[0].Tempfile ? " TEMPFILE " : " DATAFILE ");
                 Sep(ct.Files, DatafileSpecText);
             }
-            if (ct.Logging != null) Add(ct.Logging.Value ? " LOGGING" : " NOLOGGING");
+            if (ct.Logging != null) Add(ct.Logging.Value ? (ct.ForceLogging ? " FORCE LOGGING" : " LOGGING") : " NOLOGGING");
             if (ct.Online != null) Add(ct.Online.Value ? " ONLINE" : " OFFLINE");
             if (ct.ExtentManagementLocal)
             {
@@ -346,7 +364,7 @@ public sealed partial class SqlScriptGenerator
             else if (au.Options.Count > 0) { Sp(); Sep(au.Options, AuditOptionText); }
             if (au.On != null) { Add(" ON "); AuditObjectText(au.On); }
             if (au.ByUsers.Count > 0) { Add(" BY "); IdList(au.ByUsers); }
-            if (au.WithRoles.Count > 0) { Add(" BY USERS WITH ROLES "); IdList(au.WithRoles); }
+            if (au.WithRoles.Count > 0) { Add(au.GrantedRoles ? " BY USERS WITH GRANTED ROLES " : " BY USERS WITH ROLES "); IdList(au.WithRoles); }
             if (au.ExceptUsers.Count > 0) { Add(" EXCEPT "); IdList(au.ExceptUsers); }
             if (au.By != null) Add(au.By == AuditBy.Access ? " BY ACCESS" : " BY SESSION");
             if (au.Successful != null) Add(au.Successful.Value ? " WHENEVER SUCCESSFUL" : " WHENEVER NOT SUCCESSFUL");
