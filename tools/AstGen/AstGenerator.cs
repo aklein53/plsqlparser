@@ -154,19 +154,26 @@ public static class AstGenerator
         sb.Append("    /// <inheritdoc/>\n    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);\n\n");
         sb.Append("    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);\n\n");
 
-        sb.Append($"    internal override SqlNode CloneCore()\n    {{\n        var c = new {n}();\n        CopySpan(this, c);\n");
-        foreach (var p in props)
+        // Every property goes into the object initializer, so the clone also compiles when a type has required members.
+        sb.Append($"    internal override SqlNode CloneCore()\n    {{\n");
+        if (props.Count == 0) sb.Append($"        var c = new {n}();\n");
+        else
         {
-            switch (p.Kind)
+            sb.Append($"        var c = new {n}\n        {{\n");
+            foreach (var p in props)
             {
-                case Kind.Scalar: sb.Append($"        c.{p.Name} = {p.Name};\n"); break;
-                case Kind.Strings: sb.Append($"        c.{p.Name} = CloneStrings({p.Name});\n"); break;
-                case Kind.Node: sb.Append($"        c.{p.Name} = CloneChild({p.Name}){(p.Nullable ? "" : "!")};\n"); break;
-                case Kind.List: sb.Append($"        c.{p.Name} = CloneList({p.Name});\n"); break;
-                case Kind.Nested: sb.Append($"        c.{p.Name} = CloneNested({p.Name});\n"); break;
+                switch (p.Kind)
+                {
+                    case Kind.Scalar: sb.Append($"            {p.Name} = {p.Name},\n"); break;
+                    case Kind.Strings: sb.Append($"            {p.Name} = CloneStrings({p.Name}),\n"); break;
+                    case Kind.Node: sb.Append($"            {p.Name} = CloneChild({p.Name}){(p.Nullable ? "" : "!")},\n"); break;
+                    case Kind.List: sb.Append($"            {p.Name} = CloneList({p.Name}),\n"); break;
+                    case Kind.Nested: sb.Append($"            {p.Name} = CloneNested({p.Name}),\n"); break;
+                }
             }
+            sb.Append("        };\n");
         }
-        sb.Append("        return c;\n    }\n");
+        sb.Append("        CopySpan(this, c);\n        return c;\n    }\n");
 
         var compared = props.Where(p => !p.SpellingOnly).ToList();
         if (compared.Count > 0)

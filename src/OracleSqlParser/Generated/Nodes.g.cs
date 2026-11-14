@@ -32,10 +32,12 @@ public partial class Accessor
 
     internal override SqlNode CloneCore()
     {
-        var c = new Accessor();
+        var c = new Accessor
+        {
+            Kind = Kind,
+            Name = CloneList(Name),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Name = CloneList(Name);
         return c;
     }
 
@@ -73,11 +75,13 @@ public partial class AdminStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AdminStatement();
+        var c = new AdminStatement
+        {
+            Verb = Verb,
+            Body = CloneList(Body),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Verb = Verb;
-        c.Body = CloneList(Body);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -122,13 +126,15 @@ public partial class AlterAnnotationsStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterAnnotationsStatement();
+        var c = new AlterAnnotationsStatement
+        {
+            Kind = Kind,
+            Name = CloneList(Name),
+            Annotations = CloneChild(Annotations),
+            ColumnAnnotations = CloneList(ColumnAnnotations),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Name = CloneList(Name);
-        c.Annotations = CloneChild(Annotations);
-        c.ColumnAnnotations = CloneList(ColumnAnnotations);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -175,15 +181,17 @@ public partial class AlterAuditPolicyStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterAuditPolicyStatement();
+        var c = new AlterAuditPolicyStatement
+        {
+            IfExists = IfExists,
+            Name = CloneChild(Name)!,
+            Lists = CloneList(Lists),
+            Condition = CloneChild(Condition),
+            Evaluate = Evaluate,
+            DropCondition = DropCondition,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.IfExists = IfExists;
-        c.Name = CloneChild(Name)!;
-        c.Lists = CloneList(Lists);
-        c.Condition = CloneChild(Condition);
-        c.Evaluate = Evaluate;
-        c.DropCondition = DropCondition;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -229,17 +237,19 @@ public partial class AlterCompileStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterCompileStatement();
+        var c = new AlterCompileStatement
+        {
+            Kind = Kind,
+            Name = CloneList(Name),
+            Editionable = Editionable,
+            Compile = Compile,
+            Debug = Debug,
+            Part = Part,
+            ReuseSettings = ReuseSettings,
+            Parameters = CloneList(Parameters),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Name = CloneList(Name);
-        c.Editionable = Editionable;
-        c.Compile = Compile;
-        c.Debug = Debug;
-        c.Part = Part;
-        c.ReuseSettings = ReuseSettings;
-        c.Parameters = CloneList(Parameters);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -284,10 +294,12 @@ public partial class AlterDomainAction
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterDomainAction();
+        var c = new AlterDomainAction
+        {
+            Kind = Kind,
+            Value = CloneChild(Value),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Value = CloneChild(Value);
         return c;
     }
 
@@ -334,13 +346,15 @@ public partial class AlterDomainStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterDomainStatement();
+        var c = new AlterDomainStatement
+        {
+            Name = CloneList(Name),
+            Action = CloneChild(Action),
+            Annotations = CloneChild(Annotations),
+            OtherClauses = CloneList(OtherClauses),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Name = CloneList(Name);
-        c.Action = CloneChild(Action);
-        c.Annotations = CloneChild(Annotations);
-        c.OtherClauses = CloneList(OtherClauses);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -390,23 +404,25 @@ public partial class AlterIndexAction
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterIndexAction();
+        var c = new AlterIndexAction
+        {
+            Kind = Kind,
+            Partition = CloneChild(Partition),
+            Subpartition = Subpartition,
+            Reverse = Reverse,
+            Online = Online,
+            NewName = CloneChild(NewName),
+            Visible = Visible,
+            Monitoring = Monitoring,
+            Cleanup = Cleanup,
+            Only = Only,
+            Enabled = Enabled,
+            Compact = Compact,
+            Cascade = Cascade,
+            Keep = CloneChild(Keep),
+            Attributes = CloneList(Attributes),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Partition = CloneChild(Partition);
-        c.Subpartition = Subpartition;
-        c.Reverse = Reverse;
-        c.Online = Online;
-        c.NewName = CloneChild(NewName);
-        c.Visible = Visible;
-        c.Monitoring = Monitoring;
-        c.Cleanup = Cleanup;
-        c.Only = Only;
-        c.Enabled = Enabled;
-        c.Compact = Compact;
-        c.Cascade = Cascade;
-        c.Keep = CloneChild(Keep);
-        c.Attributes = CloneList(Attributes);
         return c;
     }
 
@@ -460,11 +476,13 @@ public partial class AlterIndexStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterIndexStatement();
+        var c = new AlterIndexStatement
+        {
+            Name = CloneList(Name),
+            Actions = CloneList(Actions),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Name = CloneList(Name);
-        c.Actions = CloneList(Actions);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -509,18 +527,20 @@ public partial class AlterMaterializedViewStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterMaterializedViewStatement();
+        var c = new AlterMaterializedViewStatement
+        {
+            Name = CloneList(Name),
+            Refresh = CloneChild(Refresh),
+            QueryRewrite = QueryRewrite,
+            Compile = Compile,
+            ConsiderFresh = ConsiderFresh,
+            ShrinkSpace = ShrinkSpace,
+            ShrinkCompact = ShrinkCompact,
+            ShrinkCascade = ShrinkCascade,
+            Attributes = CloneList(Attributes),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Name = CloneList(Name);
-        c.Refresh = CloneChild(Refresh);
-        c.QueryRewrite = QueryRewrite;
-        c.Compile = Compile;
-        c.ConsiderFresh = ConsiderFresh;
-        c.ShrinkSpace = ShrinkSpace;
-        c.ShrinkCompact = ShrinkCompact;
-        c.ShrinkCascade = ShrinkCascade;
-        c.Attributes = CloneList(Attributes);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -569,14 +589,16 @@ public partial class AlterObjectStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterObjectStatement();
+        var c = new AlterObjectStatement
+        {
+            Kind = Kind,
+            Public = Public,
+            IfExists = IfExists,
+            Name = CloneList(Name),
+            Body = CloneList(Body),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Public = Public;
-        c.IfExists = IfExists;
-        c.Name = CloneList(Name);
-        c.Body = CloneList(Body);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -621,14 +643,16 @@ public partial class AlterProfileStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterProfileStatement();
+        var c = new AlterProfileStatement
+        {
+            IfExists = IfExists,
+            Name = CloneChild(Name)!,
+            Limits = CloneList(Limits),
+            Container = Container,
+            Cascade = Cascade,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.IfExists = IfExists;
-        c.Name = CloneChild(Name)!;
-        c.Limits = CloneList(Limits);
-        c.Container = Container;
-        c.Cascade = Cascade;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -676,15 +700,17 @@ public partial class AlterRoleStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterRoleStatement();
+        var c = new AlterRoleStatement
+        {
+            IfExists = IfExists,
+            Name = CloneChild(Name)!,
+            Authentication = Authentication,
+            Password = CloneChild(Password),
+            Package = CloneList(Package),
+            Container = Container,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.IfExists = IfExists;
-        c.Name = CloneChild(Name)!;
-        c.Authentication = Authentication;
-        c.Password = CloneChild(Password);
-        c.Package = CloneList(Package);
-        c.Container = Container;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -730,11 +756,13 @@ public partial class AlterSequenceStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterSequenceStatement();
+        var c = new AlterSequenceStatement
+        {
+            Name = CloneList(Name),
+            Options = CloneList(Options),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Name = CloneList(Name);
-        c.Options = CloneList(Options);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -788,18 +816,20 @@ public partial class AlterSessionStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterSessionStatement();
+        var c = new AlterSessionStatement
+        {
+            Kind = Kind,
+            Settings = CloneList(Settings),
+            Feature = Feature,
+            Parallel = CloneChild(Parallel),
+            Timeout = CloneChild(Timeout),
+            ResumableName = CloneChild(ResumableName),
+            DatabaseLink = CloneChild(DatabaseLink),
+            Advise = Advise,
+            FeatureSyntax = CloneList(FeatureSyntax),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Settings = CloneList(Settings);
-        c.Feature = Feature;
-        c.Parallel = CloneChild(Parallel);
-        c.Timeout = CloneChild(Timeout);
-        c.ResumableName = CloneChild(ResumableName);
-        c.DatabaseLink = CloneChild(DatabaseLink);
-        c.Advise = Advise;
-        c.FeatureSyntax = CloneList(FeatureSyntax);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -875,29 +905,31 @@ public partial class AlterTableAction
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterTableAction();
+        var c = new AlterTableAction
+        {
+            Kind = Kind,
+            Columns = CloneList(Columns),
+            Constraints = CloneList(Constraints),
+            Names = CloneList(Names),
+            NewName = CloneChild(NewName),
+            Cascade = Cascade,
+            Online = Online,
+            Attributes = CloneList(Attributes),
+            PartitionRefs = CloneList(PartitionRefs),
+            Annotations = CloneChild(Annotations),
+            Partitions = CloneList(Partitions),
+            Values = CloneList(Values),
+            SplitByValues = SplitByValues,
+            AddValues = AddValues,
+            Interval = CloneChild(Interval),
+            UpdateIndexes = UpdateIndexes,
+            GlobalIndexes = GlobalIndexes,
+            IncludingIndexes = IncludingIndexes,
+            WithValidation = WithValidation,
+            Storage = Storage,
+            Syntax = CloneList(Syntax),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Columns = CloneList(Columns);
-        c.Constraints = CloneList(Constraints);
-        c.Names = CloneList(Names);
-        c.NewName = CloneChild(NewName);
-        c.Cascade = Cascade;
-        c.Online = Online;
-        c.Attributes = CloneList(Attributes);
-        c.PartitionRefs = CloneList(PartitionRefs);
-        c.Annotations = CloneChild(Annotations);
-        c.Partitions = CloneList(Partitions);
-        c.Values = CloneList(Values);
-        c.SplitByValues = SplitByValues;
-        c.AddValues = AddValues;
-        c.Interval = CloneChild(Interval);
-        c.UpdateIndexes = UpdateIndexes;
-        c.GlobalIndexes = GlobalIndexes;
-        c.IncludingIndexes = IncludingIndexes;
-        c.WithValidation = WithValidation;
-        c.Storage = Storage;
-        c.Syntax = CloneList(Syntax);
         return c;
     }
 
@@ -957,12 +989,14 @@ public partial class AlterTableStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterTableStatement();
+        var c = new AlterTableStatement
+        {
+            Name = CloneList(Name),
+            IfExists = IfExists,
+            Actions = CloneList(Actions),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Name = CloneList(Name);
-        c.IfExists = IfExists;
-        c.Actions = CloneList(Actions);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -1005,12 +1039,14 @@ public partial class AlterTablespaceStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterTablespaceStatement();
+        var c = new AlterTablespaceStatement
+        {
+            IfExists = IfExists,
+            Name = CloneChild(Name)!,
+            Actions = CloneList(Actions),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.IfExists = IfExists;
-        c.Name = CloneChild(Name)!;
-        c.Actions = CloneList(Actions);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -1053,12 +1089,14 @@ public partial class AlterTriggerStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterTriggerStatement();
+        var c = new AlterTriggerStatement
+        {
+            Name = CloneList(Name),
+            Enable = Enable,
+            RenameTo = CloneChild(RenameTo),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Name = CloneList(Name);
-        c.Enable = Enable;
-        c.RenameTo = CloneChild(RenameTo);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -1101,12 +1139,14 @@ public partial class AlterUserStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterUserStatement();
+        var c = new AlterUserStatement
+        {
+            IfExists = IfExists,
+            Name = CloneChild(Name)!,
+            Clauses = CloneList(Clauses),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.IfExists = IfExists;
-        c.Name = CloneChild(Name)!;
-        c.Clauses = CloneList(Clauses);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -1149,12 +1189,14 @@ public partial class AlterViewStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AlterViewStatement();
+        var c = new AlterViewStatement
+        {
+            Name = CloneList(Name),
+            Actions = CloneList(Actions),
+            ReadOnly = ReadOnly,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Name = CloneList(Name);
-        c.Actions = CloneList(Actions);
-        c.ReadOnly = ReadOnly;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -1206,20 +1248,22 @@ public partial class AnalyzeStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AnalyzeStatement();
+        var c = new AnalyzeStatement
+        {
+            Target = Target,
+            Name = CloneList(Name),
+            Partition = CloneChild(Partition),
+            Action = Action,
+            SystemStatistics = SystemStatistics,
+            Sample = CloneChild(Sample),
+            SamplePercent = SamplePercent,
+            Cascade = Cascade,
+            Online = Online,
+            IntoTable = CloneList(IntoTable),
+            OtherClauses = CloneList(OtherClauses),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Target = Target;
-        c.Name = CloneList(Name);
-        c.Partition = CloneChild(Partition);
-        c.Action = Action;
-        c.SystemStatistics = SystemStatistics;
-        c.Sample = CloneChild(Sample);
-        c.SamplePercent = SamplePercent;
-        c.Cascade = Cascade;
-        c.Online = Online;
-        c.IntoTable = CloneList(IntoTable);
-        c.OtherClauses = CloneList(OtherClauses);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -1270,13 +1314,15 @@ public partial class AnnotationItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new AnnotationItem();
+        var c = new AnnotationItem
+        {
+            Action = Action,
+            IfNotExists = IfNotExists,
+            IfExists = IfExists,
+            Name = CloneChild(Name)!,
+            Value = CloneChild(Value),
+        };
         CopySpan(this, c);
-        c.Action = Action;
-        c.IfNotExists = IfNotExists;
-        c.IfExists = IfExists;
-        c.Name = CloneChild(Name)!;
-        c.Value = CloneChild(Value);
         return c;
     }
 
@@ -1317,9 +1363,11 @@ public partial class AnnotationsAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new AnnotationsAttribute();
+        var c = new AnnotationsAttribute
+        {
+            Clause = CloneChild(Clause)!,
+        };
         CopySpan(this, c);
-        c.Clause = CloneChild(Clause)!;
         return c;
     }
 
@@ -1356,9 +1404,11 @@ public partial class AnnotationsClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new AnnotationsClause();
+        var c = new AnnotationsClause
+        {
+            Items = CloneList(Items),
+        };
         CopySpan(this, c);
-        c.Items = CloneList(Items);
         return c;
     }
 
@@ -1410,15 +1460,17 @@ public partial class Argument
 
     internal override SqlNode CloneCore()
     {
-        var c = new Argument();
+        var c = new Argument
+        {
+            Name = CloneChild(Name),
+            Keyword = Keyword,
+            Value = CloneChild(Value)!,
+            MappedValue = CloneChild(MappedValue),
+            Alias = CloneChild(Alias),
+            Format = CloneChild(Format),
+            OnConversionError = CloneChild(OnConversionError),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name);
-        c.Keyword = Keyword;
-        c.Value = CloneChild(Value)!;
-        c.MappedValue = CloneChild(MappedValue);
-        c.Alias = CloneChild(Alias);
-        c.Format = CloneChild(Format);
-        c.OnConversionError = CloneChild(OnConversionError);
         return c;
     }
 
@@ -1464,11 +1516,13 @@ public partial class AssignmentStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AssignmentStatement();
+        var c = new AssignmentStatement
+        {
+            Target = CloneChild(Target)!,
+            Value = CloneChild(Value)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Target = CloneChild(Target)!;
-        c.Value = CloneChild(Value)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -1510,11 +1564,13 @@ public partial class AtTimeZoneExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new AtTimeZoneExpression();
+        var c = new AtTimeZoneExpression
+        {
+            Value = CloneChild(Value)!,
+            Local = Local,
+            Zone = CloneChild(Zone),
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.Local = Local;
-        c.Zone = CloneChild(Zone);
         return c;
     }
 
@@ -1553,11 +1609,13 @@ public partial class AuditObject
 
     internal override SqlNode CloneCore()
     {
-        var c = new AuditObject();
+        var c = new AuditObject
+        {
+            Default = Default,
+            Directory = Directory,
+            Name = CloneList(Name),
+        };
         CopySpan(this, c);
-        c.Default = Default;
-        c.Directory = Directory;
-        c.Name = CloneList(Name);
         return c;
     }
 
@@ -1579,9 +1637,11 @@ public partial class AuditOption
 
     internal override SqlNode CloneCore()
     {
-        var c = new AuditOption();
+        var c = new AuditOption
+        {
+            Name = Name,
+        };
         CopySpan(this, c);
-        c.Name = Name;
         return c;
     }
 
@@ -1621,11 +1681,13 @@ public partial class AuditPolicyItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new AuditPolicyItem();
+        var c = new AuditPolicyItem
+        {
+            Component = CloneChild(Component),
+            Name = Name,
+            On = CloneChild(On),
+        };
         CopySpan(this, c);
-        c.Component = CloneChild(Component);
-        c.Name = Name;
-        c.On = CloneChild(On);
         return c;
     }
 
@@ -1667,12 +1729,14 @@ public partial class AuditPolicyList
 
     internal override SqlNode CloneCore()
     {
-        var c = new AuditPolicyList();
+        var c = new AuditPolicyList
+        {
+            Kind = Kind,
+            Drop = Drop,
+            Items = CloneList(Items),
+            Roles = CloneList(Roles),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Drop = Drop;
-        c.Items = CloneList(Items);
-        c.Roles = CloneList(Roles);
         return c;
     }
 
@@ -1733,21 +1797,23 @@ public partial class AuditStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new AuditStatement();
+        var c = new AuditStatement
+        {
+            Noaudit = Noaudit,
+            Policy = CloneChild(Policy),
+            ContextNamespace = CloneChild(ContextNamespace),
+            ContextAttributes = CloneList(ContextAttributes),
+            Options = CloneList(Options),
+            On = CloneChild(On),
+            ByUsers = CloneList(ByUsers),
+            WithRoles = CloneList(WithRoles),
+            GrantedRoles = GrantedRoles,
+            ExceptUsers = CloneList(ExceptUsers),
+            By = By,
+            Successful = Successful,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Noaudit = Noaudit;
-        c.Policy = CloneChild(Policy);
-        c.ContextNamespace = CloneChild(ContextNamespace);
-        c.ContextAttributes = CloneList(ContextAttributes);
-        c.Options = CloneList(Options);
-        c.On = CloneChild(On);
-        c.ByUsers = CloneList(ByUsers);
-        c.WithRoles = CloneList(WithRoles);
-        c.GrantedRoles = GrantedRoles;
-        c.ExceptUsers = CloneList(ExceptUsers);
-        c.By = By;
-        c.Successful = Successful;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -1802,12 +1868,14 @@ public partial class BetweenExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new BetweenExpression();
+        var c = new BetweenExpression
+        {
+            Value = CloneChild(Value)!,
+            Not = Not,
+            Low = CloneChild(Low)!,
+            High = CloneChild(High)!,
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.Not = Not;
-        c.Low = CloneChild(Low)!;
-        c.High = CloneChild(High)!;
         return c;
     }
 
@@ -1850,11 +1918,13 @@ public partial class BinaryExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new BinaryExpression();
+        var c = new BinaryExpression
+        {
+            Left = CloneChild(Left)!,
+            Operator = Operator,
+            Right = CloneChild(Right)!,
+        };
         CopySpan(this, c);
-        c.Left = CloneChild(Left)!;
-        c.Operator = Operator;
-        c.Right = CloneChild(Right)!;
         return c;
     }
 
@@ -1876,9 +1946,11 @@ public partial class BindItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new BindItem();
+        var c = new BindItem
+        {
+            Name = Name,
+        };
         CopySpan(this, c);
-        c.Name = Name;
         return c;
     }
 
@@ -1898,10 +1970,12 @@ public partial class BindVariable
 
     internal override SqlNode CloneCore()
     {
-        var c = new BindVariable();
+        var c = new BindVariable
+        {
+            Name = Name,
+            Quoted = Quoted,
+        };
         CopySpan(this, c);
-        c.Name = Name;
-        c.Quoted = Quoted;
         return c;
     }
 
@@ -1948,14 +2022,16 @@ public partial class Block
 
     internal override SqlNode CloneCore()
     {
-        var c = new Block();
+        var c = new Block
+        {
+            HasDeclare = HasDeclare,
+            Declarations = CloneList(Declarations),
+            Statements = CloneList(Statements),
+            Handlers = CloneList(Handlers),
+            EndName = CloneChild(EndName),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.HasDeclare = HasDeclare;
-        c.Declarations = CloneList(Declarations);
-        c.Statements = CloneList(Statements);
-        c.Handlers = CloneList(Handlers);
-        c.EndName = CloneChild(EndName);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -1980,9 +2056,11 @@ public partial class CacheAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new CacheAttribute();
+        var c = new CacheAttribute
+        {
+            Cache = Cache,
+        };
         CopySpan(this, c);
-        c.Cache = Cache;
         return c;
     }
 
@@ -2022,11 +2100,13 @@ public partial class CallStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CallStatement();
+        var c = new CallStatement
+        {
+            Routine = CloneChild(Routine)!,
+            Into = CloneChild(Into),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Routine = CloneChild(Routine)!;
-        c.Into = CloneChild(Into);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -2071,11 +2151,13 @@ public partial class CaseExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new CaseExpression();
+        var c = new CaseExpression
+        {
+            Operand = CloneChild(Operand),
+            Whens = CloneList(Whens),
+            Else = CloneChild(Else),
+        };
         CopySpan(this, c);
-        c.Operand = CloneChild(Operand);
-        c.Whens = CloneList(Whens);
-        c.Else = CloneChild(Else);
         return c;
     }
 
@@ -2117,10 +2199,12 @@ public partial class CaseStatementWhen
 
     internal override SqlNode CloneCore()
     {
-        var c = new CaseStatementWhen();
+        var c = new CaseStatementWhen
+        {
+            When = CloneChild(When)!,
+            Statements = CloneList(Statements),
+        };
         CopySpan(this, c);
-        c.When = CloneChild(When)!;
-        c.Statements = CloneList(Statements);
         return c;
     }
 
@@ -2173,17 +2257,19 @@ public partial class CastExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new CastExpression();
+        var c = new CastExpression
+        {
+            Kind = Kind,
+            Multiset = Multiset,
+            Value = CloneChild(Value)!,
+            Ref = Ref,
+            Type = CloneChild(Type)!,
+            OnConversionError = CloneChild(OnConversionError),
+            Format = CloneChild(Format),
+            NlsParam = CloneChild(NlsParam),
+            Clauses = CloneList(Clauses),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Multiset = Multiset;
-        c.Value = CloneChild(Value)!;
-        c.Ref = Ref;
-        c.Type = CloneChild(Type)!;
-        c.OnConversionError = CloneChild(OnConversionError);
-        c.Format = CloneChild(Format);
-        c.NlsParam = CloneChild(NlsParam);
-        c.Clauses = CloneList(Clauses);
         return c;
     }
 
@@ -2231,10 +2317,12 @@ public partial class CellReference
 
     internal override SqlNode CloneCore()
     {
-        var c = new CellReference();
+        var c = new CellReference
+        {
+            Base = CloneChild(Base)!,
+            Subscripts = CloneList(Subscripts),
+        };
         CopySpan(this, c);
-        c.Base = CloneChild(Base)!;
-        c.Subscripts = CloneList(Subscripts);
         return c;
     }
 
@@ -2275,10 +2363,12 @@ public partial class ChainedCall
 
     internal override SqlNode CloneCore()
     {
-        var c = new ChainedCall();
+        var c = new ChainedCall
+        {
+            Target = CloneChild(Target)!,
+            Arguments = CloneList(Arguments),
+        };
         CopySpan(this, c);
-        c.Target = CloneChild(Target)!;
-        c.Arguments = CloneList(Arguments);
         return c;
     }
 
@@ -2316,10 +2406,12 @@ public partial class CloseStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CloseStatement();
+        var c = new CloseStatement
+        {
+            Cursor = CloneChild(Cursor)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Cursor = CloneChild(Cursor)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -2360,10 +2452,12 @@ public partial class CollateExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new CollateExpression();
+        var c = new CollateExpression
+        {
+            Value = CloneChild(Value)!,
+            Collation = CloneChild(Collation)!,
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.Collation = CloneChild(Collation)!;
         return c;
     }
 
@@ -2410,14 +2504,16 @@ public partial class CollectionTypeDeclaration
 
     internal override SqlNode CloneCore()
     {
-        var c = new CollectionTypeDeclaration();
+        var c = new CollectionTypeDeclaration
+        {
+            Name = CloneChild(Name)!,
+            Kind = Kind,
+            Limit = CloneChild(Limit),
+            ElementType = CloneChild(ElementType)!,
+            NotNull = NotNull,
+            IndexBy = CloneChild(IndexBy),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Kind = Kind;
-        c.Limit = CloneChild(Limit);
-        c.ElementType = CloneChild(ElementType)!;
-        c.NotNull = NotNull;
-        c.IndexBy = CloneChild(IndexBy);
         return c;
     }
 
@@ -2489,23 +2585,25 @@ public partial class ColumnDefinition
 
     internal override SqlNode CloneCore()
     {
-        var c = new ColumnDefinition();
+        var c = new ColumnDefinition
+        {
+            Name = CloneChild(Name)!,
+            Type = CloneChild(Type),
+            Default = CloneChild(Default),
+            DefaultOnNull = DefaultOnNull,
+            DefaultOnNullFor = DefaultOnNullFor,
+            Identity = CloneChild(Identity),
+            VirtualExpression = CloneChild(VirtualExpression),
+            Constraints = CloneList(Constraints),
+            Visible = Visible,
+            Collation = CloneChild(Collation),
+            Domain = CloneList(Domain),
+            Encrypt = CloneChild(Encrypt),
+            Sort = Sort,
+            Annotations = CloneChild(Annotations),
+            OtherProperties = CloneList(OtherProperties),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Type = CloneChild(Type);
-        c.Default = CloneChild(Default);
-        c.DefaultOnNull = DefaultOnNull;
-        c.DefaultOnNullFor = DefaultOnNullFor;
-        c.Identity = CloneChild(Identity);
-        c.VirtualExpression = CloneChild(VirtualExpression);
-        c.Constraints = CloneList(Constraints);
-        c.Visible = Visible;
-        c.Collation = CloneChild(Collation);
-        c.Domain = CloneList(Domain);
-        c.Encrypt = CloneChild(Encrypt);
-        c.Sort = Sort;
-        c.Annotations = CloneChild(Annotations);
-        c.OtherProperties = CloneList(OtherProperties);
         return c;
     }
 
@@ -2556,11 +2654,13 @@ public partial class ColumnReference
 
     internal override SqlNode CloneCore()
     {
-        var c = new ColumnReference();
+        var c = new ColumnReference
+        {
+            Parts = CloneList(Parts),
+            OuterJoin = OuterJoin,
+            Attribute = Attribute,
+        };
         CopySpan(this, c);
-        c.Parts = CloneList(Parts);
-        c.OuterJoin = OuterJoin;
-        c.Attribute = Attribute;
         return c;
     }
 
@@ -2599,12 +2699,14 @@ public partial class CommentStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CommentStatement();
+        var c = new CommentStatement
+        {
+            Target = Target,
+            Name = CloneList(Name),
+            Text = Text,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Target = Target;
-        c.Name = CloneList(Name);
-        c.Text = Text;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -2653,14 +2755,16 @@ public partial class CommitStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CommitStatement();
+        var c = new CommitStatement
+        {
+            Work = Work,
+            Comment = CloneChild(Comment),
+            Write = CloneChild(Write),
+            Force = CloneChild(Force),
+            ForceScn = CloneChild(ForceScn),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Work = Work;
-        c.Comment = CloneChild(Comment);
-        c.Write = CloneChild(Write);
-        c.Force = CloneChild(Force);
-        c.ForceScn = CloneChild(ForceScn);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -2685,10 +2789,12 @@ public partial class CommitWrite
 
     internal override SqlNode CloneCore()
     {
-        var c = new CommitWrite();
+        var c = new CommitWrite
+        {
+            Wait = Wait,
+            Mode = Mode,
+        };
         CopySpan(this, c);
-        c.Wait = Wait;
-        c.Mode = Mode;
         return c;
     }
 
@@ -2738,13 +2844,15 @@ public partial class CommonTableExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new CommonTableExpression();
+        var c = new CommonTableExpression
+        {
+            Name = CloneChild(Name)!,
+            Columns = CloneList(Columns),
+            Query = CloneChild(Query)!,
+            Search = CloneChild(Search),
+            Cycle = CloneChild(Cycle),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Columns = CloneList(Columns);
-        c.Query = CloneChild(Query)!;
-        c.Search = CloneChild(Search);
-        c.Cycle = CloneChild(Cycle);
         return c;
     }
 
@@ -2785,9 +2893,11 @@ public partial class CompilationErrorDeclaration
 
     internal override SqlNode CloneCore()
     {
-        var c = new CompilationErrorDeclaration();
+        var c = new CompilationErrorDeclaration
+        {
+            Message = CloneChild(Message)!,
+        };
         CopySpan(this, c);
-        c.Message = CloneChild(Message)!;
         return c;
     }
 
@@ -2824,10 +2934,12 @@ public partial class CompilationErrorStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CompilationErrorStatement();
+        var c = new CompilationErrorStatement
+        {
+            Message = CloneChild(Message)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Message = CloneChild(Message)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -2868,11 +2980,13 @@ public partial class CompressAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new CompressAttribute();
+        var c = new CompressAttribute
+        {
+            Compress = Compress,
+            PrefixLength = CloneChild(PrefixLength),
+            Method = CloneList(Method),
+        };
         CopySpan(this, c);
-        c.Compress = Compress;
-        c.PrefixLength = CloneChild(PrefixLength);
-        c.Method = CloneList(Method);
         return c;
     }
 
@@ -2920,12 +3034,14 @@ public partial class ConditionalDeclaration
 
     internal override SqlNode CloneCore()
     {
-        var c = new ConditionalDeclaration();
+        var c = new ConditionalDeclaration
+        {
+            Condition = CloneChild(Condition)!,
+            ThenDeclarations = CloneList(ThenDeclarations),
+            ElsifBranches = CloneList(ElsifBranches),
+            ElseDeclarations = CloneList(ElseDeclarations),
+        };
         CopySpan(this, c);
-        c.Condition = CloneChild(Condition)!;
-        c.ThenDeclarations = CloneList(ThenDeclarations);
-        c.ElsifBranches = CloneList(ElsifBranches);
-        c.ElseDeclarations = CloneList(ElseDeclarations);
         return c;
     }
 
@@ -2968,10 +3084,12 @@ public partial class ConditionalDeclarationBranch
 
     internal override SqlNode CloneCore()
     {
-        var c = new ConditionalDeclarationBranch();
+        var c = new ConditionalDeclarationBranch
+        {
+            Condition = CloneChild(Condition)!,
+            Declarations = CloneList(Declarations),
+        };
         CopySpan(this, c);
-        c.Condition = CloneChild(Condition)!;
-        c.Declarations = CloneList(Declarations);
         return c;
     }
 
@@ -3018,12 +3136,14 @@ public partial class ConditionalParameter
 
     internal override SqlNode CloneCore()
     {
-        var c = new ConditionalParameter();
+        var c = new ConditionalParameter
+        {
+            Condition = CloneChild(Condition)!,
+            ThenParameters = CloneList(ThenParameters),
+            ElsifBranches = CloneList(ElsifBranches),
+            ElseParameters = CloneList(ElseParameters),
+        };
         CopySpan(this, c);
-        c.Condition = CloneChild(Condition)!;
-        c.ThenParameters = CloneList(ThenParameters);
-        c.ElsifBranches = CloneList(ElsifBranches);
-        c.ElseParameters = CloneList(ElseParameters);
         return c;
     }
 
@@ -3066,10 +3186,12 @@ public partial class ConditionalParameterBranch
 
     internal override SqlNode CloneCore()
     {
-        var c = new ConditionalParameterBranch();
+        var c = new ConditionalParameterBranch
+        {
+            Condition = CloneChild(Condition)!,
+            Parameters = CloneList(Parameters),
+        };
         CopySpan(this, c);
-        c.Condition = CloneChild(Condition)!;
-        c.Parameters = CloneList(Parameters);
         return c;
     }
 
@@ -3116,13 +3238,15 @@ public partial class ConditionalStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new ConditionalStatement();
+        var c = new ConditionalStatement
+        {
+            Condition = CloneChild(Condition)!,
+            ThenStatements = CloneList(ThenStatements),
+            ElsifBranches = CloneList(ElsifBranches),
+            ElseStatements = CloneList(ElseStatements),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Condition = CloneChild(Condition)!;
-        c.ThenStatements = CloneList(ThenStatements);
-        c.ElsifBranches = CloneList(ElsifBranches);
-        c.ElseStatements = CloneList(ElseStatements);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3166,10 +3290,12 @@ public partial class ConditionalStatementBranch
 
     internal override SqlNode CloneCore()
     {
-        var c = new ConditionalStatementBranch();
+        var c = new ConditionalStatementBranch
+        {
+            Condition = CloneChild(Condition)!,
+            Statements = CloneList(Statements),
+        };
         CopySpan(this, c);
-        c.Condition = CloneChild(Condition)!;
-        c.Statements = CloneList(Statements);
         return c;
     }
 
@@ -3210,15 +3336,17 @@ public partial class ConstraintState
 
     internal override SqlNode CloneCore()
     {
-        var c = new ConstraintState();
+        var c = new ConstraintState
+        {
+            Deferrable = Deferrable,
+            InitiallyDeferred = InitiallyDeferred,
+            Enable = Enable,
+            Validate = Validate,
+            Rely = Rely,
+            UsingIndex = CloneChild(UsingIndex),
+            ExceptionsInto = CloneList(ExceptionsInto),
+        };
         CopySpan(this, c);
-        c.Deferrable = Deferrable;
-        c.InitiallyDeferred = InitiallyDeferred;
-        c.Enable = Enable;
-        c.Validate = Validate;
-        c.Rely = Rely;
-        c.UsingIndex = CloneChild(UsingIndex);
-        c.ExceptionsInto = CloneList(ExceptionsInto);
         return c;
     }
 
@@ -3264,11 +3392,13 @@ public partial class ContinueStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new ContinueStatement();
+        var c = new ContinueStatement
+        {
+            Label = CloneChild(Label),
+            When = CloneChild(When),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Label = CloneChild(Label);
-        c.When = CloneChild(When);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3313,16 +3443,18 @@ public partial class CreateAuditPolicyStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateAuditPolicyStatement();
+        var c = new CreateAuditPolicyStatement
+        {
+            IfNotExists = IfNotExists,
+            Name = CloneChild(Name)!,
+            Lists = CloneList(Lists),
+            Condition = CloneChild(Condition),
+            Evaluate = Evaluate,
+            OnlyToplevel = OnlyToplevel,
+            Container = Container,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.IfNotExists = IfNotExists;
-        c.Name = CloneChild(Name)!;
-        c.Lists = CloneList(Lists);
-        c.Condition = CloneChild(Condition);
-        c.Evaluate = Evaluate;
-        c.OnlyToplevel = OnlyToplevel;
-        c.Container = Container;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3369,15 +3501,17 @@ public partial class CreateContextStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateContextStatement();
+        var c = new CreateContextStatement
+        {
+            OrReplace = OrReplace,
+            IfNotExists = IfNotExists,
+            Name = CloneChild(Name)!,
+            Package = CloneList(Package),
+            Initialized = Initialized,
+            AccessedGlobally = AccessedGlobally,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.IfNotExists = IfNotExists;
-        c.Name = CloneChild(Name)!;
-        c.Package = CloneList(Package);
-        c.Initialized = Initialized;
-        c.AccessedGlobally = AccessedGlobally;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3438,21 +3572,23 @@ public partial class CreateDatabaseLinkStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateDatabaseLinkStatement();
+        var c = new CreateDatabaseLinkStatement
+        {
+            OrReplace = OrReplace,
+            IfNotExists = IfNotExists,
+            Public = Public,
+            Shared = Shared,
+            Name = CloneList(Name),
+            ConnectUser = CloneChild(ConnectUser),
+            ConnectPassword = CloneChild(ConnectPassword),
+            CurrentUser = CurrentUser,
+            AuthenticatedUser = CloneChild(AuthenticatedUser),
+            AuthenticatedPassword = CloneChild(AuthenticatedPassword),
+            Using = CloneChild(Using),
+            OtherClauses = CloneList(OtherClauses),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.IfNotExists = IfNotExists;
-        c.Public = Public;
-        c.Shared = Shared;
-        c.Name = CloneList(Name);
-        c.ConnectUser = CloneChild(ConnectUser);
-        c.ConnectPassword = CloneChild(ConnectPassword);
-        c.CurrentUser = CurrentUser;
-        c.AuthenticatedUser = CloneChild(AuthenticatedUser);
-        c.AuthenticatedPassword = CloneChild(AuthenticatedPassword);
-        c.Using = CloneChild(Using);
-        c.OtherClauses = CloneList(OtherClauses);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3504,14 +3640,16 @@ public partial class CreateDirectoryStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateDirectoryStatement();
+        var c = new CreateDirectoryStatement
+        {
+            OrReplace = OrReplace,
+            IfNotExists = IfNotExists,
+            Name = CloneChild(Name)!,
+            Sharing = Sharing,
+            Path = CloneChild(Path)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.IfNotExists = IfNotExists;
-        c.Name = CloneChild(Name)!;
-        c.Sharing = Sharing;
-        c.Path = CloneChild(Path)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3574,20 +3712,22 @@ public partial class CreateDomainStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateDomainStatement();
+        var c = new CreateDomainStatement
+        {
+            OrReplace = OrReplace,
+            UseCase = UseCase,
+            IfNotExists = IfNotExists,
+            Name = CloneList(Name),
+            Type = CloneChild(Type),
+            Default = CloneChild(Default),
+            Constraints = CloneList(Constraints),
+            Collation = CloneChild(Collation),
+            Display = CloneChild(Display),
+            Order = CloneChild(Order),
+            Annotations = CloneChild(Annotations),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.UseCase = UseCase;
-        c.IfNotExists = IfNotExists;
-        c.Name = CloneList(Name);
-        c.Type = CloneChild(Type);
-        c.Default = CloneChild(Default);
-        c.Constraints = CloneList(Constraints);
-        c.Collation = CloneChild(Collation);
-        c.Display = CloneChild(Display);
-        c.Order = CloneChild(Order);
-        c.Annotations = CloneChild(Annotations);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3641,14 +3781,16 @@ public partial class CreateDualityViewStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateDualityViewStatement();
+        var c = new CreateDualityViewStatement
+        {
+            OrReplace = OrReplace,
+            Relational = Relational,
+            Name = CloneList(Name),
+            Query = CloneChild(Query)!,
+            OtherClauses = CloneList(OtherClauses),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.Relational = Relational;
-        c.Name = CloneList(Name);
-        c.Query = CloneChild(Query)!;
-        c.OtherClauses = CloneList(OtherClauses);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3711,25 +3853,27 @@ public partial class CreateIndexStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateIndexStatement();
+        var c = new CreateIndexStatement
+        {
+            Unique = Unique,
+            Bitmap = Bitmap,
+            IfNotExists = IfNotExists,
+            Name = CloneList(Name),
+            Table = CloneList(Table),
+            Cluster = CloneList(Cluster),
+            TableAlias = CloneChild(TableAlias),
+            Columns = CloneList(Columns),
+            Indextype = CloneList(Indextype),
+            IndextypeParameters = CloneChild(IndextypeParameters),
+            Visible = Visible,
+            Online = Online,
+            Reverse = Reverse,
+            Local = Local,
+            Global = Global,
+            Attributes = CloneList(Attributes),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Unique = Unique;
-        c.Bitmap = Bitmap;
-        c.IfNotExists = IfNotExists;
-        c.Name = CloneList(Name);
-        c.Table = CloneList(Table);
-        c.Cluster = CloneList(Cluster);
-        c.TableAlias = CloneChild(TableAlias);
-        c.Columns = CloneList(Columns);
-        c.Indextype = CloneList(Indextype);
-        c.IndextypeParameters = CloneChild(IndextypeParameters);
-        c.Visible = Visible;
-        c.Online = Online;
-        c.Reverse = Reverse;
-        c.Local = Local;
-        c.Global = Global;
-        c.Attributes = CloneList(Attributes);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3797,24 +3941,26 @@ public partial class CreateJavaStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateJavaStatement();
+        var c = new CreateJavaStatement
+        {
+            OrReplace = OrReplace,
+            AndResolve = AndResolve,
+            AndCompile = AndCompile,
+            NoForce = NoForce,
+            Kind = Kind,
+            Name = CloneList(Name),
+            Sharing = Sharing,
+            Authid = Authid,
+            Resolver = CloneList(Resolver),
+            UsingKind = UsingKind,
+            UsingDirectory = CloneChild(UsingDirectory),
+            UsingFile = CloneChild(UsingFile),
+            UsingKey = CloneChild(UsingKey),
+            UsingQuery = CloneChild(UsingQuery),
+            SourceText = SourceText,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.AndResolve = AndResolve;
-        c.AndCompile = AndCompile;
-        c.NoForce = NoForce;
-        c.Kind = Kind;
-        c.Name = CloneList(Name);
-        c.Sharing = Sharing;
-        c.Authid = Authid;
-        c.Resolver = CloneList(Resolver);
-        c.UsingKind = UsingKind;
-        c.UsingDirectory = CloneChild(UsingDirectory);
-        c.UsingFile = CloneChild(UsingFile);
-        c.UsingKey = CloneChild(UsingKey);
-        c.UsingQuery = CloneChild(UsingQuery);
-        c.SourceText = SourceText;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3875,16 +4021,18 @@ public partial class CreateLibraryStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateLibraryStatement();
+        var c = new CreateLibraryStatement
+        {
+            OrReplace = OrReplace,
+            Editionable = Editionable,
+            Sharing = Sharing,
+            Name = CloneList(Name),
+            Path = CloneChild(Path)!,
+            Agent = CloneChild(Agent),
+            Credential = CloneChild(Credential),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.Editionable = Editionable;
-        c.Sharing = Sharing;
-        c.Name = CloneList(Name);
-        c.Path = CloneChild(Path)!;
-        c.Agent = CloneChild(Agent);
-        c.Credential = CloneChild(Credential);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3931,15 +4079,17 @@ public partial class CreateObjectStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateObjectStatement();
+        var c = new CreateObjectStatement
+        {
+            Kind = Kind,
+            OrReplace = OrReplace,
+            Public = Public,
+            IfNotExists = IfNotExists,
+            Name = CloneList(Name),
+            Body = CloneList(Body),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.OrReplace = OrReplace;
-        c.Public = Public;
-        c.IfNotExists = IfNotExists;
-        c.Name = CloneList(Name);
-        c.Body = CloneList(Body);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -3994,16 +4144,18 @@ public partial class CreatePackageBodyStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreatePackageBodyStatement();
+        var c = new CreatePackageBodyStatement
+        {
+            OrReplace = OrReplace,
+            Editionable = Editionable,
+            Name = CloneList(Name),
+            Declarations = CloneList(Declarations),
+            InitStatements = CloneList(InitStatements),
+            InitHandlers = CloneList(InitHandlers),
+            EndName = CloneChild(EndName),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.Editionable = Editionable;
-        c.Name = CloneList(Name);
-        c.Declarations = CloneList(Declarations);
-        c.InitStatements = CloneList(InitStatements);
-        c.InitHandlers = CloneList(InitHandlers);
-        c.EndName = CloneChild(EndName);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4056,15 +4208,17 @@ public partial class CreatePackageStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreatePackageStatement();
+        var c = new CreatePackageStatement
+        {
+            OrReplace = OrReplace,
+            Editionable = Editionable,
+            Name = CloneList(Name),
+            Options = CloneChild(Options),
+            Declarations = CloneList(Declarations),
+            EndName = CloneChild(EndName),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.Editionable = Editionable;
-        c.Name = CloneList(Name);
-        c.Options = CloneChild(Options);
-        c.Declarations = CloneList(Declarations);
-        c.EndName = CloneChild(EndName);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4110,13 +4264,15 @@ public partial class CreateProfileStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateProfileStatement();
+        var c = new CreateProfileStatement
+        {
+            IfNotExists = IfNotExists,
+            Name = CloneChild(Name)!,
+            Limits = CloneList(Limits),
+            Container = Container,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.IfNotExists = IfNotExists;
-        c.Name = CloneChild(Name)!;
-        c.Limits = CloneList(Limits);
-        c.Container = Container;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4157,12 +4313,14 @@ public partial class CreateProgramStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateProgramStatement();
+        var c = new CreateProgramStatement
+        {
+            OrReplace = OrReplace,
+            Editionable = Editionable,
+            Subprogram = CloneChild(Subprogram)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.Editionable = Editionable;
-        c.Subprogram = CloneChild(Subprogram)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4208,13 +4366,15 @@ public partial class CreatePropertyGraphStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreatePropertyGraphStatement();
+        var c = new CreatePropertyGraphStatement
+        {
+            OrReplace = OrReplace,
+            Name = CloneList(Name),
+            VertexTables = CloneList(VertexTables),
+            EdgeTables = CloneList(EdgeTables),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.Name = CloneList(Name);
-        c.VertexTables = CloneList(VertexTables);
-        c.EdgeTables = CloneList(EdgeTables);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4261,15 +4421,17 @@ public partial class CreateRoleStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateRoleStatement();
+        var c = new CreateRoleStatement
+        {
+            IfNotExists = IfNotExists,
+            Name = CloneChild(Name)!,
+            Authentication = Authentication,
+            Password = CloneChild(Password),
+            Package = CloneList(Package),
+            Container = Container,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.IfNotExists = IfNotExists;
-        c.Name = CloneChild(Name)!;
-        c.Authentication = Authentication;
-        c.Password = CloneChild(Password);
-        c.Package = CloneList(Package);
-        c.Container = Container;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4315,13 +4477,15 @@ public partial class CreateSequenceStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateSequenceStatement();
+        var c = new CreateSequenceStatement
+        {
+            Sharing = Sharing,
+            IfNotExists = IfNotExists,
+            Name = CloneList(Name),
+            Options = CloneList(Options),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Sharing = Sharing;
-        c.IfNotExists = IfNotExists;
-        c.Name = CloneList(Name);
-        c.Options = CloneList(Options);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4368,16 +4532,18 @@ public partial class CreateSynonymStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateSynonymStatement();
+        var c = new CreateSynonymStatement
+        {
+            Sharing = Sharing,
+            OrReplace = OrReplace,
+            IfNotExists = IfNotExists,
+            Public = Public,
+            Name = CloneList(Name),
+            Target = CloneList(Target),
+            DbLink = CloneList(DbLink),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Sharing = Sharing;
-        c.OrReplace = OrReplace;
-        c.IfNotExists = IfNotExists;
-        c.Public = Public;
-        c.Name = CloneList(Name);
-        c.Target = CloneList(Target);
-        c.DbLink = CloneList(DbLink);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4436,24 +4602,26 @@ public partial class CreateTableStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateTableStatement();
+        var c = new CreateTableStatement
+        {
+            Sharing = Sharing,
+            OrReplace = OrReplace,
+            IfNotExists = IfNotExists,
+            GlobalTemporary = GlobalTemporary,
+            PrivateTemporary = PrivateTemporary,
+            Duplicated = Duplicated,
+            Immutable = Immutable,
+            Blockchain = Blockchain,
+            Name = CloneList(Name),
+            Columns = CloneList(Columns),
+            Constraints = CloneList(Constraints),
+            OfType = CloneList(OfType),
+            OnCommit = OnCommit,
+            Attributes = CloneList(Attributes),
+            AsQuery = CloneChild(AsQuery),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Sharing = Sharing;
-        c.OrReplace = OrReplace;
-        c.IfNotExists = IfNotExists;
-        c.GlobalTemporary = GlobalTemporary;
-        c.PrivateTemporary = PrivateTemporary;
-        c.Duplicated = Duplicated;
-        c.Immutable = Immutable;
-        c.Blockchain = Blockchain;
-        c.Name = CloneList(Name);
-        c.Columns = CloneList(Columns);
-        c.Constraints = CloneList(Constraints);
-        c.OfType = CloneList(OfType);
-        c.OnCommit = OnCommit;
-        c.Attributes = CloneList(Attributes);
-        c.AsQuery = CloneChild(AsQuery);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4517,25 +4685,27 @@ public partial class CreateTablespaceStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateTablespaceStatement();
+        var c = new CreateTablespaceStatement
+        {
+            Bigfile = Bigfile,
+            Kind = Kind,
+            IfNotExists = IfNotExists,
+            Name = CloneChild(Name)!,
+            Files = CloneList(Files),
+            Logging = Logging,
+            ForceLogging = ForceLogging,
+            Online = Online,
+            ExtentManagementLocal = ExtentManagementLocal,
+            ExtentPolicy = ExtentPolicy,
+            UniformSize = CloneChild(UniformSize),
+            SegmentSpace = SegmentSpace,
+            Encryption = Encryption,
+            EncryptionUsing = CloneChild(EncryptionUsing),
+            DefaultStorageEncrypt = DefaultStorageEncrypt,
+            OtherClauses = CloneList(OtherClauses),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Bigfile = Bigfile;
-        c.Kind = Kind;
-        c.IfNotExists = IfNotExists;
-        c.Name = CloneChild(Name)!;
-        c.Files = CloneList(Files);
-        c.Logging = Logging;
-        c.ForceLogging = ForceLogging;
-        c.Online = Online;
-        c.ExtentManagementLocal = ExtentManagementLocal;
-        c.ExtentPolicy = ExtentPolicy;
-        c.UniformSize = CloneChild(UniformSize);
-        c.SegmentSpace = SegmentSpace;
-        c.Encryption = Encryption;
-        c.EncryptionUsing = CloneChild(EncryptionUsing);
-        c.DefaultStorageEncrypt = DefaultStorageEncrypt;
-        c.OtherClauses = CloneList(OtherClauses);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4618,30 +4788,32 @@ public partial class CreateTriggerStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateTriggerStatement();
+        var c = new CreateTriggerStatement
+        {
+            OrReplace = OrReplace,
+            Editionable = Editionable,
+            Sharing = Sharing,
+            Name = CloneList(Name),
+            Timing = Timing,
+            Events = CloneList(Events),
+            TargetKind = TargetKind,
+            Target = CloneList(Target),
+            NestedTableColumn = CloneChild(NestedTableColumn),
+            Referencing = CloneList(Referencing),
+            ForEachRow = ForEachRow,
+            CrossEdition = CrossEdition,
+            Ordering = Ordering,
+            OrderingTriggers = CloneNested(OrderingTriggers),
+            Enabled = Enabled,
+            When = CloneChild(When),
+            Body = CloneChild(Body),
+            Call = CloneChild(Call),
+            Compound = Compound,
+            CompoundDeclarations = CloneList(CompoundDeclarations),
+            Sections = CloneList(Sections),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.Editionable = Editionable;
-        c.Sharing = Sharing;
-        c.Name = CloneList(Name);
-        c.Timing = Timing;
-        c.Events = CloneList(Events);
-        c.TargetKind = TargetKind;
-        c.Target = CloneList(Target);
-        c.NestedTableColumn = CloneChild(NestedTableColumn);
-        c.Referencing = CloneList(Referencing);
-        c.ForEachRow = ForEachRow;
-        c.CrossEdition = CrossEdition;
-        c.Ordering = Ordering;
-        c.OrderingTriggers = CloneNested(OrderingTriggers);
-        c.Enabled = Enabled;
-        c.When = CloneChild(When);
-        c.Body = CloneChild(Body);
-        c.Call = CloneChild(Call);
-        c.Compound = Compound;
-        c.CompoundDeclarations = CloneList(CompoundDeclarations);
-        c.Sections = CloneList(Sections);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4702,12 +4874,14 @@ public partial class CreateTypeBodyStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateTypeBodyStatement();
+        var c = new CreateTypeBodyStatement
+        {
+            OrReplace = OrReplace,
+            Name = CloneList(Name),
+            Members = CloneList(Members),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.Name = CloneList(Name);
-        c.Members = CloneList(Members);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4768,24 +4942,26 @@ public partial class CreateTypeStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateTypeStatement();
+        var c = new CreateTypeStatement
+        {
+            OrReplace = OrReplace,
+            Editionable = Editionable,
+            Name = CloneList(Name),
+            Kind = Kind,
+            Options = CloneChild(Options),
+            Force = Force,
+            Oid = CloneChild(Oid),
+            Final = Final,
+            Instantiable = Instantiable,
+            Persistable = Persistable,
+            Attributes = CloneList(Attributes),
+            Members = CloneList(Members),
+            ElementType = CloneChild(ElementType),
+            Limit = CloneChild(Limit),
+            SuperType = CloneList(SuperType),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.OrReplace = OrReplace;
-        c.Editionable = Editionable;
-        c.Name = CloneList(Name);
-        c.Kind = Kind;
-        c.Options = CloneChild(Options);
-        c.Force = Force;
-        c.Oid = CloneChild(Oid);
-        c.Final = Final;
-        c.Instantiable = Instantiable;
-        c.Persistable = Persistable;
-        c.Attributes = CloneList(Attributes);
-        c.Members = CloneList(Members);
-        c.ElementType = CloneChild(ElementType);
-        c.Limit = CloneChild(Limit);
-        c.SuperType = CloneList(SuperType);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4840,12 +5016,14 @@ public partial class CreateUserStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateUserStatement();
+        var c = new CreateUserStatement
+        {
+            IfNotExists = IfNotExists,
+            Name = CloneChild(Name)!,
+            Clauses = CloneList(Clauses),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.IfNotExists = IfNotExists;
-        c.Name = CloneChild(Name)!;
-        c.Clauses = CloneList(Clauses);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4900,27 +5078,29 @@ public partial class CreateViewStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new CreateViewStatement();
+        var c = new CreateViewStatement
+        {
+            Sharing = Sharing,
+            OrReplace = OrReplace,
+            IfNotExists = IfNotExists,
+            Materialized = Materialized,
+            Force = Force,
+            NoForce = NoForce,
+            Editioning = Editioning,
+            Name = CloneList(Name),
+            Columns = CloneList(Columns),
+            Bequeath = Bequeath,
+            BuildImmediate = BuildImmediate,
+            Refresh = CloneChild(Refresh),
+            QueryRewrite = QueryRewrite,
+            Attributes = CloneList(Attributes),
+            Query = CloneChild(Query)!,
+            ReadOnly = ReadOnly,
+            CheckOption = CheckOption,
+            CheckOptionConstraint = CloneChild(CheckOptionConstraint),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Sharing = Sharing;
-        c.OrReplace = OrReplace;
-        c.IfNotExists = IfNotExists;
-        c.Materialized = Materialized;
-        c.Force = Force;
-        c.NoForce = NoForce;
-        c.Editioning = Editioning;
-        c.Name = CloneList(Name);
-        c.Columns = CloneList(Columns);
-        c.Bequeath = Bequeath;
-        c.BuildImmediate = BuildImmediate;
-        c.Refresh = CloneChild(Refresh);
-        c.QueryRewrite = QueryRewrite;
-        c.Attributes = CloneList(Attributes);
-        c.Query = CloneChild(Query)!;
-        c.ReadOnly = ReadOnly;
-        c.CheckOption = CheckOption;
-        c.CheckOptionConstraint = CloneChild(CheckOptionConstraint);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -4975,9 +5155,11 @@ public partial class CurrentOfExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new CurrentOfExpression();
+        var c = new CurrentOfExpression
+        {
+            Cursor = CloneChild(Cursor)!,
+        };
         CopySpan(this, c);
-        c.Cursor = CloneChild(Cursor)!;
         return c;
     }
 
@@ -5020,11 +5202,13 @@ public partial class CursorControl
 
     internal override SqlNode CloneCore()
     {
-        var c = new CursorControl();
+        var c = new CursorControl
+        {
+            Query = CloneChild(Query)!,
+            While = CloneChild(While),
+            When = CloneChild(When),
+        };
         CopySpan(this, c);
-        c.Query = CloneChild(Query)!;
-        c.While = CloneChild(While);
-        c.When = CloneChild(When);
         return c;
     }
 
@@ -5072,12 +5256,14 @@ public partial class CursorDeclaration
 
     internal override SqlNode CloneCore()
     {
-        var c = new CursorDeclaration();
+        var c = new CursorDeclaration
+        {
+            Name = CloneChild(Name)!,
+            Parameters = CloneList(Parameters),
+            ReturnType = CloneChild(ReturnType),
+            Query = CloneChild(Query),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Parameters = CloneList(Parameters);
-        c.ReturnType = CloneChild(ReturnType);
-        c.Query = CloneChild(Query);
         return c;
     }
 
@@ -5117,9 +5303,11 @@ public partial class CursorExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new CursorExpression();
+        var c = new CursorExpression
+        {
+            Query = CloneChild(Query)!,
+        };
         CopySpan(this, c);
-        c.Query = CloneChild(Query)!;
         return c;
     }
 
@@ -5165,12 +5353,14 @@ public partial class CycleClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new CycleClause();
+        var c = new CycleClause
+        {
+            Columns = CloneList(Columns),
+            SetColumn = CloneChild(SetColumn)!,
+            CycleValue = CloneChild(CycleValue),
+            DefaultValue = CloneChild(DefaultValue),
+        };
         CopySpan(this, c);
-        c.Columns = CloneList(Columns);
-        c.SetColumn = CloneChild(SetColumn)!;
-        c.CycleValue = CloneChild(CycleValue);
-        c.DefaultValue = CloneChild(DefaultValue);
         return c;
     }
 
@@ -5210,12 +5400,14 @@ public partial class DataType
 
     internal override SqlNode CloneCore()
     {
-        var c = new DataType();
+        var c = new DataType
+        {
+            Name = Name,
+            Arguments = CloneList(Arguments),
+            Semantics = Semantics,
+            Attribute = Attribute,
+        };
         CopySpan(this, c);
-        c.Name = Name;
-        c.Arguments = CloneList(Arguments);
-        c.Semantics = Semantics;
-        c.Attribute = Attribute;
         return c;
     }
 
@@ -5264,16 +5456,18 @@ public partial class DatafileSpec
 
     internal override SqlNode CloneCore()
     {
-        var c = new DatafileSpec();
+        var c = new DatafileSpec
+        {
+            Tempfile = Tempfile,
+            Path = CloneChild(Path),
+            Size = CloneChild(Size),
+            Reuse = Reuse,
+            Autoextend = Autoextend,
+            NextSize = CloneChild(NextSize),
+            MaxSize = CloneChild(MaxSize),
+            MaxSizeUnlimited = MaxSizeUnlimited,
+        };
         CopySpan(this, c);
-        c.Tempfile = Tempfile;
-        c.Path = CloneChild(Path);
-        c.Size = CloneChild(Size);
-        c.Reuse = Reuse;
-        c.Autoextend = Autoextend;
-        c.NextSize = CloneChild(NextSize);
-        c.MaxSize = CloneChild(MaxSize);
-        c.MaxSizeUnlimited = MaxSizeUnlimited;
         return c;
     }
 
@@ -5335,17 +5529,19 @@ public partial class DeleteStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new DeleteStatement();
+        var c = new DeleteStatement
+        {
+            Target = CloneChild(Target)!,
+            From = CloneList(From),
+            Where = CloneChild(Where),
+            Hint = CloneChild(Hint),
+            Returning = CloneList(Returning),
+            ReturningBulkCollect = ReturningBulkCollect,
+            ReturningInto = CloneList(ReturningInto),
+            ErrorLogging = CloneChild(ErrorLogging),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Target = CloneChild(Target)!;
-        c.From = CloneList(From);
-        c.Where = CloneChild(Where);
-        c.Hint = CloneChild(Hint);
-        c.Returning = CloneList(Returning);
-        c.ReturningBulkCollect = ReturningBulkCollect;
-        c.ReturningInto = CloneList(ReturningInto);
-        c.ErrorLogging = CloneChild(ErrorLogging);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -5396,23 +5592,25 @@ public partial class DropStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new DropStatement();
+        var c = new DropStatement
+        {
+            Kind = Kind,
+            Public = Public,
+            IfExists = IfExists,
+            Name = CloneList(Name),
+            OnTable = CloneList(OnTable),
+            CascadeConstraints = CascadeConstraints,
+            Cascade = Cascade,
+            Purge = Purge,
+            Force = Force,
+            IncludingContents = IncludingContents,
+            AndDatafiles = AndDatafiles,
+            Validate = Validate,
+            Invalidate = Invalidate,
+            Rest = CloneList(Rest),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Public = Public;
-        c.IfExists = IfExists;
-        c.Name = CloneList(Name);
-        c.OnTable = CloneList(OnTable);
-        c.CascadeConstraints = CascadeConstraints;
-        c.Cascade = Cascade;
-        c.Purge = Purge;
-        c.Force = Force;
-        c.IncludingContents = IncludingContents;
-        c.AndDatafiles = AndDatafiles;
-        c.Validate = Validate;
-        c.Invalidate = Invalidate;
-        c.Rest = CloneList(Rest);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -5446,9 +5644,11 @@ public partial class DualityAnnotationItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new DualityAnnotationItem();
+        var c = new DualityAnnotationItem
+        {
+            Kind = Kind,
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
         return c;
     }
 
@@ -5494,12 +5694,14 @@ public partial class DynamicSqlControl
 
     internal override SqlNode CloneCore()
     {
-        var c = new DynamicSqlControl();
+        var c = new DynamicSqlControl
+        {
+            Sql = CloneChild(Sql)!,
+            Using = CloneList(Using),
+            While = CloneChild(While),
+            When = CloneChild(When),
+        };
         CopySpan(this, c);
-        c.Sql = CloneChild(Sql)!;
-        c.Using = CloneList(Using);
-        c.While = CloneChild(While);
-        c.When = CloneChild(When);
         return c;
     }
 
@@ -5542,12 +5744,14 @@ public partial class EncryptClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new EncryptClause();
+        var c = new EncryptClause
+        {
+            Algorithm = CloneChild(Algorithm),
+            IdentifiedBy = CloneChild(IdentifiedBy),
+            NoSalt = NoSalt,
+            Salt = Salt,
+        };
         CopySpan(this, c);
-        c.Algorithm = CloneChild(Algorithm);
-        c.IdentifiedBy = CloneChild(IdentifiedBy);
-        c.NoSalt = NoSalt;
-        c.Salt = Salt;
         return c;
     }
 
@@ -5593,12 +5797,14 @@ public partial class ErrorLogging
 
     internal override SqlNode CloneCore()
     {
-        var c = new ErrorLogging();
+        var c = new ErrorLogging
+        {
+            Table = CloneList(Table),
+            Tag = CloneChild(Tag),
+            RejectLimit = CloneChild(RejectLimit),
+            RejectUnlimited = RejectUnlimited,
+        };
         CopySpan(this, c);
-        c.Table = CloneList(Table);
-        c.Tag = CloneChild(Tag);
-        c.RejectLimit = CloneChild(RejectLimit);
-        c.RejectUnlimited = RejectUnlimited;
         return c;
     }
 
@@ -5638,9 +5844,11 @@ public partial class ExceptionDeclaration
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExceptionDeclaration();
+        var c = new ExceptionDeclaration
+        {
+            Name = CloneChild(Name)!,
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
         return c;
     }
 
@@ -5680,11 +5888,13 @@ public partial class ExceptionHandler
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExceptionHandler();
+        var c = new ExceptionHandler
+        {
+            Exceptions = CloneNested(Exceptions),
+            Others = Others,
+            Statements = CloneList(Statements),
+        };
         CopySpan(this, c);
-        c.Exceptions = CloneNested(Exceptions);
-        c.Others = Others;
-        c.Statements = CloneList(Statements);
         return c;
     }
 
@@ -5723,10 +5933,12 @@ public partial class ExecStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExecStatement();
+        var c = new ExecStatement
+        {
+            Body = CloneChild(Body)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Body = CloneChild(Body)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -5773,15 +5985,17 @@ public partial class ExecuteImmediateStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExecuteImmediateStatement();
+        var c = new ExecuteImmediateStatement
+        {
+            Sql = CloneChild(Sql)!,
+            BulkCollect = BulkCollect,
+            Into = CloneList(Into),
+            Using = CloneList(Using),
+            ReturningInto = CloneList(ReturningInto),
+            ReturningBulkCollect = ReturningBulkCollect,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Sql = CloneChild(Sql)!;
-        c.BulkCollect = BulkCollect;
-        c.Into = CloneList(Into);
-        c.Using = CloneList(Using);
-        c.ReturningInto = CloneList(ReturningInto);
-        c.ReturningBulkCollect = ReturningBulkCollect;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -5824,9 +6038,11 @@ public partial class ExistsExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExistsExpression();
+        var c = new ExistsExpression
+        {
+            Subquery = CloneChild(Subquery)!,
+        };
         CopySpan(this, c);
-        c.Subquery = CloneChild(Subquery)!;
         return c;
     }
 
@@ -5866,11 +6082,13 @@ public partial class ExitStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExitStatement();
+        var c = new ExitStatement
+        {
+            Label = CloneChild(Label),
+            When = CloneChild(When),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Label = CloneChild(Label);
-        c.When = CloneChild(When);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -5915,12 +6133,14 @@ public partial class ExplainPlanStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExplainPlanStatement();
+        var c = new ExplainPlanStatement
+        {
+            StatementId = CloneChild(StatementId),
+            IntoTable = CloneList(IntoTable),
+            Statement = CloneChild(Statement)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.StatementId = CloneChild(StatementId);
-        c.IntoTable = CloneList(IntoTable);
-        c.Statement = CloneChild(Statement)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -5966,11 +6186,13 @@ public partial class ExpressionControl
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExpressionControl();
+        var c = new ExpressionControl
+        {
+            Value = CloneChild(Value)!,
+            While = CloneChild(While),
+            When = CloneChild(When),
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.While = CloneChild(While);
-        c.When = CloneChild(When);
         return c;
     }
 
@@ -6009,9 +6231,11 @@ public partial class ExpressionList
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExpressionList();
+        var c = new ExpressionList
+        {
+            Items = CloneList(Items),
+        };
         CopySpan(this, c);
-        c.Items = CloneList(Items);
         return c;
     }
 
@@ -6051,10 +6275,12 @@ public partial class ExpressionSelectItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExpressionSelectItem();
+        var c = new ExpressionSelectItem
+        {
+            Expression = CloneChild(Expression)!,
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Expression = CloneChild(Expression)!;
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -6110,18 +6336,20 @@ public partial class ExternalCall
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExternalCall();
+        var c = new ExternalCall
+        {
+            Language = Language,
+            Name = CloneChild(Name),
+            Library = CloneChild(Library),
+            AgentIn = CloneList(AgentIn),
+            WithContext = WithContext,
+            Pascal = Pascal,
+            Parameters = CloneList(Parameters),
+            MleModule = CloneList(MleModule),
+            MleEnv = CloneList(MleEnv),
+            Signature = CloneChild(Signature),
+        };
         CopySpan(this, c);
-        c.Language = Language;
-        c.Name = CloneChild(Name);
-        c.Library = CloneChild(Library);
-        c.AgentIn = CloneList(AgentIn);
-        c.WithContext = WithContext;
-        c.Pascal = Pascal;
-        c.Parameters = CloneList(Parameters);
-        c.MleModule = CloneList(MleModule);
-        c.MleEnv = CloneList(MleEnv);
-        c.Signature = CloneChild(Signature);
         return c;
     }
 
@@ -6170,13 +6398,15 @@ public partial class ExternalParameter
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExternalParameter();
+        var c = new ExternalParameter
+        {
+            Kind = Kind,
+            Name = CloneChild(Name),
+            Property = Property,
+            ByReference = ByReference,
+            Type = CloneChild(Type),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Name = CloneChild(Name);
-        c.Property = Property;
-        c.ByReference = ByReference;
-        c.Type = CloneChild(Type);
         return c;
     }
 
@@ -6217,10 +6447,12 @@ public partial class ExtractExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new ExtractExpression();
+        var c = new ExtractExpression
+        {
+            Field = Field,
+            Source = CloneChild(Source)!,
+        };
         CopySpan(this, c);
-        c.Field = Field;
-        c.Source = CloneChild(Source)!;
         return c;
     }
 
@@ -6261,14 +6493,16 @@ public partial class FetchClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new FetchClause();
+        var c = new FetchClause
+        {
+            Next = Next,
+            Count = CloneChild(Count),
+            Percent = Percent,
+            WithTies = WithTies,
+            Accuracy = Accuracy,
+            TargetAccuracy = CloneChild(TargetAccuracy),
+        };
         CopySpan(this, c);
-        c.Next = Next;
-        c.Count = CloneChild(Count);
-        c.Percent = Percent;
-        c.WithTies = WithTies;
-        c.Accuracy = Accuracy;
-        c.TargetAccuracy = CloneChild(TargetAccuracy);
         return c;
     }
 
@@ -6316,13 +6550,15 @@ public partial class FetchStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new FetchStatement();
+        var c = new FetchStatement
+        {
+            Cursor = CloneChild(Cursor)!,
+            BulkCollect = BulkCollect,
+            Into = CloneList(Into),
+            Limit = CloneChild(Limit),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Cursor = CloneChild(Cursor)!;
-        c.BulkCollect = BulkCollect;
-        c.Into = CloneList(Into);
-        c.Limit = CloneChild(Limit);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -6346,9 +6582,11 @@ public partial class FlagClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new FlagClause();
+        var c = new FlagClause
+        {
+            Flag = Flag,
+        };
         CopySpan(this, c);
-        c.Flag = Flag;
         return c;
     }
 
@@ -6391,13 +6629,15 @@ public partial class FlashbackClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new FlashbackClause();
+        var c = new FlashbackClause
+        {
+            Mode = Mode,
+            Unit = Unit,
+            Period = CloneChild(Period),
+            Value = CloneChild(Value)!,
+            ToValue = CloneChild(ToValue),
+        };
         CopySpan(this, c);
-        c.Mode = Mode;
-        c.Unit = Unit;
-        c.Period = CloneChild(Period);
-        c.Value = CloneChild(Value)!;
-        c.ToValue = CloneChild(ToValue);
         return c;
     }
 
@@ -6444,15 +6684,17 @@ public partial class FlashbackTableStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new FlashbackTableStatement();
+        var c = new FlashbackTableStatement
+        {
+            Tables = CloneNested(Tables),
+            Target = Target,
+            Point = CloneChild(Point),
+            RenameTo = CloneChild(RenameTo),
+            Before = Before,
+            EnableTriggers = EnableTriggers,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Tables = CloneNested(Tables);
-        c.Target = Target;
-        c.Point = CloneChild(Point);
-        c.RenameTo = CloneChild(RenameTo);
-        c.Before = Before;
-        c.EnableTriggers = EnableTriggers;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -6498,11 +6740,13 @@ public partial class ForIterand
 
     internal override SqlNode CloneCore()
     {
-        var c = new ForIterand();
+        var c = new ForIterand
+        {
+            Name = CloneChild(Name)!,
+            Type = CloneChild(Type),
+            Mutable = Mutable,
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Type = CloneChild(Type);
-        c.Mutable = Mutable;
         return c;
     }
 
@@ -6559,16 +6803,18 @@ public partial class ForIterationSubscript
 
     internal override SqlNode CloneCore()
     {
-        var c = new ForIterationSubscript();
+        var c = new ForIterationSubscript
+        {
+            Dimensions = CloneList(Dimensions),
+            InList = CloneList(InList),
+            InQuery = CloneChild(InQuery),
+            LikePattern = CloneChild(LikePattern),
+            From = CloneChild(From),
+            To = CloneChild(To),
+            Step = CloneChild(Step),
+            Decrement = Decrement,
+        };
         CopySpan(this, c);
-        c.Dimensions = CloneList(Dimensions);
-        c.InList = CloneList(InList);
-        c.InQuery = CloneChild(InQuery);
-        c.LikePattern = CloneChild(LikePattern);
-        c.From = CloneChild(From);
-        c.To = CloneChild(To);
-        c.Step = CloneChild(Step);
-        c.Decrement = Decrement;
         return c;
     }
 
@@ -6615,12 +6861,14 @@ public partial class ForUpdateClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new ForUpdateClause();
+        var c = new ForUpdateClause
+        {
+            Of = CloneList(Of),
+            NoWait = NoWait,
+            SkipLocked = SkipLocked,
+            Wait = CloneChild(Wait),
+        };
         CopySpan(this, c);
-        c.Of = CloneList(Of);
-        c.NoWait = NoWait;
-        c.SkipLocked = SkipLocked;
-        c.Wait = CloneChild(Wait);
         return c;
     }
 
@@ -6681,18 +6929,20 @@ public partial class ForallStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new ForallStatement();
+        var c = new ForallStatement
+        {
+            Index = CloneChild(Index)!,
+            Lower = CloneChild(Lower),
+            Upper = CloneChild(Upper),
+            IndicesOf = CloneChild(IndicesOf),
+            ValuesOf = CloneChild(ValuesOf),
+            BetweenLow = CloneChild(BetweenLow),
+            BetweenHigh = CloneChild(BetweenHigh),
+            SaveExceptions = SaveExceptions,
+            Body = CloneChild(Body)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Index = CloneChild(Index)!;
-        c.Lower = CloneChild(Lower);
-        c.Upper = CloneChild(Upper);
-        c.IndicesOf = CloneChild(IndicesOf);
-        c.ValuesOf = CloneChild(ValuesOf);
-        c.BetweenLow = CloneChild(BetweenLow);
-        c.BetweenHigh = CloneChild(BetweenHigh);
-        c.SaveExceptions = SaveExceptions;
-        c.Body = CloneChild(Body)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -6738,10 +6988,12 @@ public partial class FormatClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new FormatClause();
+        var c = new FormatClause
+        {
+            Kind = Kind,
+            Encoding = CloneChild(Encoding),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Encoding = CloneChild(Encoding);
         return c;
     }
 
@@ -6779,10 +7031,12 @@ public partial class FrameBound
 
     internal override SqlNode CloneCore()
     {
-        var c = new FrameBound();
+        var c = new FrameBound
+        {
+            Kind = Kind,
+            Offset = CloneChild(Offset),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Offset = CloneChild(Offset);
         return c;
     }
 
@@ -6841,21 +7095,23 @@ public partial class FunctionCall
 
     internal override SqlNode CloneCore()
     {
-        var c = new FunctionCall();
+        var c = new FunctionCall
+        {
+            Name = CloneList(Name),
+            New = New,
+            Attribute = Attribute,
+            Clauses = CloneList(Clauses),
+            Operations = CloneList(Operations),
+            Quantifier = Quantifier,
+            Arguments = CloneList(Arguments),
+            IgnoreNulls = IgnoreNulls,
+            RespectNulls = RespectNulls,
+            WithinGroup = CloneList(WithinGroup),
+            Keep = CloneChild(Keep),
+            Over = CloneChild(Over),
+            OrderBy = CloneList(OrderBy),
+        };
         CopySpan(this, c);
-        c.Name = CloneList(Name);
-        c.New = New;
-        c.Attribute = Attribute;
-        c.Clauses = CloneList(Clauses);
-        c.Operations = CloneList(Operations);
-        c.Quantifier = Quantifier;
-        c.Arguments = CloneList(Arguments);
-        c.IgnoreNulls = IgnoreNulls;
-        c.RespectNulls = RespectNulls;
-        c.WithinGroup = CloneList(WithinGroup);
-        c.Keep = CloneChild(Keep);
-        c.Over = CloneChild(Over);
-        c.OrderBy = CloneList(OrderBy);
         return c;
     }
 
@@ -6904,10 +7160,12 @@ public partial class GotoStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new GotoStatement();
+        var c = new GotoStatement
+        {
+            Target = CloneChild(Target)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Target = CloneChild(Target)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -6945,10 +7203,12 @@ public partial class GrantPrivilege
 
     internal override SqlNode CloneCore()
     {
-        var c = new GrantPrivilege();
+        var c = new GrantPrivilege
+        {
+            Name = Name,
+            Columns = CloneList(Columns),
+        };
         CopySpan(this, c);
-        c.Name = Name;
-        c.Columns = CloneList(Columns);
         return c;
     }
 
@@ -6992,21 +7252,23 @@ public partial class GrantStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new GrantStatement();
+        var c = new GrantStatement
+        {
+            Revoke = Revoke,
+            AllPrivileges = AllPrivileges,
+            Privileges = CloneList(Privileges),
+            ObjectKind = ObjectKind,
+            Object = CloneList(Object),
+            Grantees = CloneList(Grantees),
+            WithGrantOption = WithGrantOption,
+            WithAdminOption = WithAdminOption,
+            WithHierarchyOption = WithHierarchyOption,
+            CascadeConstraints = CascadeConstraints,
+            Force = Force,
+            Container = Container,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Revoke = Revoke;
-        c.AllPrivileges = AllPrivileges;
-        c.Privileges = CloneList(Privileges);
-        c.ObjectKind = ObjectKind;
-        c.Object = CloneList(Object);
-        c.Grantees = CloneList(Grantees);
-        c.WithGrantOption = WithGrantOption;
-        c.WithAdminOption = WithAdminOption;
-        c.WithHierarchyOption = WithHierarchyOption;
-        c.CascadeConstraints = CascadeConstraints;
-        c.Force = Force;
-        c.Container = Container;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -7055,10 +7317,12 @@ public partial class Grantee
 
     internal override SqlNode CloneCore()
     {
-        var c = new Grantee();
+        var c = new Grantee
+        {
+            Name = CloneChild(Name),
+            Public = Public,
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name);
-        c.Public = Public;
         return c;
     }
 
@@ -7099,10 +7363,12 @@ public partial class GraphColumn
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphColumn();
+        var c = new GraphColumn
+        {
+            Value = CloneChild(Value)!,
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -7146,11 +7412,13 @@ public partial class GraphEdgeEndpoint
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphEdgeEndpoint();
+        var c = new GraphEdgeEndpoint
+        {
+            Keys = CloneList(Keys),
+            Table = CloneList(Table),
+            Columns = CloneList(Columns),
+        };
         CopySpan(this, c);
-        c.Keys = CloneList(Keys);
-        c.Table = CloneList(Table);
-        c.Columns = CloneList(Columns);
         return c;
     }
 
@@ -7198,14 +7466,16 @@ public partial class GraphEdgePattern
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphEdgePattern();
+        var c = new GraphEdgePattern
+        {
+            Direction = Direction,
+            Bracketed = Bracketed,
+            Variable = CloneChild(Variable),
+            Label = CloneChild(Label),
+            Where = CloneChild(Where),
+            Quantifier = CloneChild(Quantifier),
+        };
         CopySpan(this, c);
-        c.Direction = Direction;
-        c.Bracketed = Bracketed;
-        c.Variable = CloneChild(Variable);
-        c.Label = CloneChild(Label);
-        c.Where = CloneChild(Where);
-        c.Quantifier = CloneChild(Quantifier);
         return c;
     }
 
@@ -7265,15 +7535,17 @@ public partial class GraphEdgeTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphEdgeTable();
+        var c = new GraphEdgeTable
+        {
+            Source = CloneChild(Source)!,
+            Destination = CloneChild(Destination)!,
+            Table = CloneList(Table),
+            Alias = CloneChild(Alias),
+            Key = CloneList(Key),
+            Properties = CloneChild(Properties),
+            Labels = CloneList(Labels),
+        };
         CopySpan(this, c);
-        c.Source = CloneChild(Source)!;
-        c.Destination = CloneChild(Destination)!;
-        c.Table = CloneList(Table);
-        c.Alias = CloneChild(Alias);
-        c.Key = CloneList(Key);
-        c.Properties = CloneChild(Properties);
-        c.Labels = CloneList(Labels);
         return c;
     }
 
@@ -7319,10 +7591,12 @@ public partial class GraphElementLabel
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphElementLabel();
+        var c = new GraphElementLabel
+        {
+            Name = CloneChild(Name)!,
+            Properties = CloneChild(Properties),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Properties = CloneChild(Properties);
         return c;
     }
 
@@ -7360,9 +7634,11 @@ public partial class GraphLabelExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphLabelExpression();
+        var c = new GraphLabelExpression
+        {
+            Labels = CloneList(Labels),
+        };
         CopySpan(this, c);
-        c.Labels = CloneList(Labels);
         return c;
     }
 
@@ -7399,9 +7675,11 @@ public partial class GraphPathPattern
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphPathPattern();
+        var c = new GraphPathPattern
+        {
+            Elements = CloneList(Elements),
+        };
         CopySpan(this, c);
-        c.Elements = CloneList(Elements);
         return c;
     }
 
@@ -7441,11 +7719,13 @@ public partial class GraphPropertiesClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphPropertiesClause();
+        var c = new GraphPropertiesClause
+        {
+            Kind = Kind,
+            Columns = CloneList(Columns),
+            Except = CloneList(Except),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Columns = CloneList(Columns);
-        c.Except = CloneList(Except);
         return c;
     }
 
@@ -7487,10 +7767,12 @@ public partial class GraphProperty
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphProperty();
+        var c = new GraphProperty
+        {
+            Property = CloneChild(Property)!,
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Property = CloneChild(Property)!;
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -7531,11 +7813,13 @@ public partial class GraphQuantifier
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphQuantifier();
+        var c = new GraphQuantifier
+        {
+            Kind = Kind,
+            Min = CloneChild(Min),
+            Max = CloneChild(Max),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Min = CloneChild(Min);
-        c.Max = CloneChild(Max);
         return c;
     }
 
@@ -7577,10 +7861,12 @@ public partial class GraphSubpatternElement
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphSubpatternElement();
+        var c = new GraphSubpatternElement
+        {
+            Path = CloneChild(Path)!,
+            Quantifier = CloneChild(Quantifier),
+        };
         CopySpan(this, c);
-        c.Path = CloneChild(Path)!;
-        c.Quantifier = CloneChild(Quantifier);
         return c;
     }
 
@@ -7633,15 +7919,17 @@ public partial class GraphTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphTable();
+        var c = new GraphTable
+        {
+            Graph = CloneList(Graph),
+            Match = CloneList(Match),
+            Where = CloneChild(Where),
+            RowsPer = RowsPer,
+            RowsPerVariables = CloneList(RowsPerVariables),
+            Columns = CloneList(Columns),
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Graph = CloneList(Graph);
-        c.Match = CloneList(Match);
-        c.Where = CloneChild(Where);
-        c.RowsPer = RowsPer;
-        c.RowsPerVariables = CloneList(RowsPerVariables);
-        c.Columns = CloneList(Columns);
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -7690,11 +7978,13 @@ public partial class GraphVertexPattern
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphVertexPattern();
+        var c = new GraphVertexPattern
+        {
+            Variable = CloneChild(Variable),
+            Label = CloneChild(Label),
+            Where = CloneChild(Where),
+        };
         CopySpan(this, c);
-        c.Variable = CloneChild(Variable);
-        c.Label = CloneChild(Label);
-        c.Where = CloneChild(Where);
         return c;
     }
 
@@ -7745,13 +8035,15 @@ public partial class GraphVertexTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new GraphVertexTable();
+        var c = new GraphVertexTable
+        {
+            Table = CloneList(Table),
+            Alias = CloneChild(Alias),
+            Key = CloneList(Key),
+            Properties = CloneChild(Properties),
+            Labels = CloneList(Labels),
+        };
         CopySpan(this, c);
-        c.Table = CloneList(Table);
-        c.Alias = CloneChild(Alias);
-        c.Key = CloneList(Key);
-        c.Properties = CloneChild(Properties);
-        c.Labels = CloneList(Labels);
         return c;
     }
 
@@ -7792,9 +8084,11 @@ public partial class GroupItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new GroupItem();
+        var c = new GroupItem
+        {
+            Items = CloneList(Items),
+        };
         CopySpan(this, c);
-        c.Items = CloneList(Items);
         return c;
     }
 
@@ -7831,10 +8125,12 @@ public partial class HintClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new HintClause();
+        var c = new HintClause
+        {
+            Text = Text,
+            Items = CloneList(Items),
+        };
         CopySpan(this, c);
-        c.Text = Text;
-        c.Items = CloneList(Items);
         return c;
     }
 
@@ -7872,10 +8168,12 @@ public partial class HintItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new HintItem();
+        var c = new HintItem
+        {
+            Name = Name,
+            Arguments = CloneList(Arguments),
+        };
         CopySpan(this, c);
-        c.Name = Name;
-        c.Arguments = CloneList(Arguments);
         return c;
     }
 
@@ -7896,11 +8194,13 @@ public partial class Identifier
 
     internal override SqlNode CloneCore()
     {
-        var c = new Identifier();
+        var c = new Identifier
+        {
+            Value = Value,
+            Quoted = Quoted,
+            Text = Text,
+        };
         CopySpan(this, c);
-        c.Value = Value;
-        c.Quoted = Quoted;
-        c.Text = Text;
         return c;
     }
 
@@ -7938,11 +8238,13 @@ public partial class IdentityClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new IdentityClause();
+        var c = new IdentityClause
+        {
+            Mode = Mode,
+            OnNull = OnNull,
+            Options = CloneList(Options),
+        };
         CopySpan(this, c);
-        c.Mode = Mode;
-        c.OnNull = OnNull;
-        c.Options = CloneList(Options);
         return c;
     }
 
@@ -7984,10 +8286,12 @@ public partial class IfBranch
 
     internal override SqlNode CloneCore()
     {
-        var c = new IfBranch();
+        var c = new IfBranch
+        {
+            Condition = CloneChild(Condition)!,
+            Statements = CloneList(Statements),
+        };
         CopySpan(this, c);
-        c.Condition = CloneChild(Condition)!;
-        c.Statements = CloneList(Statements);
         return c;
     }
 
@@ -8034,13 +8338,15 @@ public partial class IfStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new IfStatement();
+        var c = new IfStatement
+        {
+            Condition = CloneChild(Condition)!,
+            ThenStatements = CloneList(ThenStatements),
+            ElsifBranches = CloneList(ElsifBranches),
+            ElseStatements = CloneList(ElseStatements),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Condition = CloneChild(Condition)!;
-        c.ThenStatements = CloneList(ThenStatements);
-        c.ElsifBranches = CloneList(ElsifBranches);
-        c.ElseStatements = CloneList(ElseStatements);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -8087,12 +8393,14 @@ public partial class InExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new InExpression();
+        var c = new InExpression
+        {
+            Value = CloneChild(Value)!,
+            Not = Not,
+            List = CloneList(List),
+            Subquery = CloneChild(Subquery),
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.Not = Not;
-        c.List = CloneList(List);
-        c.Subquery = CloneChild(Subquery);
         return c;
     }
 
@@ -8132,10 +8440,12 @@ public partial class IndexColumn
 
     internal override SqlNode CloneCore()
     {
-        var c = new IndexColumn();
+        var c = new IndexColumn
+        {
+            Expression = CloneChild(Expression)!,
+            Descending = Descending,
+        };
         CopySpan(this, c);
-        c.Expression = CloneChild(Expression)!;
-        c.Descending = Descending;
         return c;
     }
 
@@ -8179,11 +8489,13 @@ public partial class IndexIterator
 
     internal override SqlNode CloneCore()
     {
-        var c = new IndexIterator();
+        var c = new IndexIterator
+        {
+            Variable = CloneChild(Variable)!,
+            Low = CloneChild(Low)!,
+            High = CloneChild(High)!,
+        };
         CopySpan(this, c);
-        c.Variable = CloneChild(Variable)!;
-        c.Low = CloneChild(Low)!;
-        c.High = CloneChild(High)!;
         return c;
     }
 
@@ -8228,11 +8540,13 @@ public partial class IndicesOfControl
 
     internal override SqlNode CloneCore()
     {
-        var c = new IndicesOfControl();
+        var c = new IndicesOfControl
+        {
+            Collection = CloneChild(Collection)!,
+            While = CloneChild(While),
+            When = CloneChild(When),
+        };
         CopySpan(this, c);
-        c.Collection = CloneChild(Collection)!;
-        c.While = CloneChild(While);
-        c.When = CloneChild(When);
         return c;
     }
 
@@ -8271,9 +8585,11 @@ public partial class InquiryDirective
 
     internal override SqlNode CloneCore()
     {
-        var c = new InquiryDirective();
+        var c = new InquiryDirective
+        {
+            Name = CloneChild(Name)!,
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
         return c;
     }
 
@@ -8316,11 +8632,13 @@ public partial class InsertIntoClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new InsertIntoClause();
+        var c = new InsertIntoClause
+        {
+            Table = CloneChild(Table)!,
+            Columns = CloneList(Columns),
+            Values = CloneList(Values),
+        };
         CopySpan(this, c);
-        c.Table = CloneChild(Table)!;
-        c.Columns = CloneList(Columns);
-        c.Values = CloneList(Values);
         return c;
     }
 
@@ -8383,19 +8701,21 @@ public partial class InsertStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new InsertStatement();
+        var c = new InsertStatement
+        {
+            Target = CloneChild(Target)!,
+            Columns = CloneList(Columns),
+            ValueRows = CloneNested(ValueRows),
+            RecordValue = CloneChild(RecordValue),
+            Query = CloneChild(Query),
+            Hint = CloneChild(Hint),
+            Returning = CloneList(Returning),
+            ReturningBulkCollect = ReturningBulkCollect,
+            ReturningInto = CloneList(ReturningInto),
+            ErrorLogging = CloneChild(ErrorLogging),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Target = CloneChild(Target)!;
-        c.Columns = CloneList(Columns);
-        c.ValueRows = CloneNested(ValueRows);
-        c.RecordValue = CloneChild(RecordValue);
-        c.Query = CloneChild(Query);
-        c.Hint = CloneChild(Hint);
-        c.Returning = CloneList(Returning);
-        c.ReturningBulkCollect = ReturningBulkCollect;
-        c.ReturningInto = CloneList(ReturningInto);
-        c.ErrorLogging = CloneChild(ErrorLogging);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -8442,13 +8762,15 @@ public partial class IntervalExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new IntervalExpression();
+        var c = new IntervalExpression
+        {
+            Value = CloneChild(Value)!,
+            From = From,
+            FromPrecision = FromPrecision,
+            To = To,
+            ToPrecision = ToPrecision,
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.From = From;
-        c.FromPrecision = FromPrecision;
-        c.To = To;
-        c.ToPrecision = ToPrecision;
         return c;
     }
 
@@ -8489,13 +8811,15 @@ public partial class IntervalLiteral
 
     internal override SqlNode CloneCore()
     {
-        var c = new IntervalLiteral();
+        var c = new IntervalLiteral
+        {
+            Value = CloneChild(Value)!,
+            From = From,
+            FromPrecision = FromPrecision,
+            To = To,
+            ToPrecision = ToPrecision,
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.From = From;
-        c.FromPrecision = FromPrecision;
-        c.To = To;
-        c.ToPrecision = ToPrecision;
         return c;
     }
 
@@ -8542,13 +8866,15 @@ public partial class IsExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new IsExpression();
+        var c = new IsExpression
+        {
+            Value = CloneChild(Value)!,
+            Not = Not,
+            Test = Test,
+            JsonClauses = CloneList(JsonClauses),
+            OfTypes = CloneList(OfTypes),
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.Not = Not;
-        c.Test = Test;
-        c.JsonClauses = CloneList(JsonClauses);
-        c.OfTypes = CloneList(OfTypes);
         return c;
     }
 
@@ -8589,10 +8915,12 @@ public partial class IsOfType
 
     internal override SqlNode CloneCore()
     {
-        var c = new IsOfType();
+        var c = new IsOfType
+        {
+            Only = Only,
+            Type = CloneChild(Type)!,
+        };
         CopySpan(this, c);
-        c.Only = Only;
-        c.Type = CloneChild(Type)!;
         return c;
     }
 
@@ -8648,17 +8976,19 @@ public partial class JoinTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new JoinTable();
+        var c = new JoinTable
+        {
+            Left = CloneChild(Left)!,
+            Kind = Kind,
+            Natural = Natural,
+            Right = CloneChild(Right)!,
+            On = CloneChild(On),
+            Using = CloneList(Using),
+            LeftPartitionBy = CloneList(LeftPartitionBy),
+            RightPartitionBy = CloneList(RightPartitionBy),
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Left = CloneChild(Left)!;
-        c.Kind = Kind;
-        c.Natural = Natural;
-        c.Right = CloneChild(Right)!;
-        c.On = CloneChild(On);
-        c.Using = CloneList(Using);
-        c.LeftPartitionBy = CloneList(LeftPartitionBy);
-        c.RightPartitionBy = CloneList(RightPartitionBy);
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -8706,10 +9036,12 @@ public partial class JsonArrayConstructor
 
     internal override SqlNode CloneCore()
     {
-        var c = new JsonArrayConstructor();
+        var c = new JsonArrayConstructor
+        {
+            Elements = CloneList(Elements),
+            Query = CloneChild(Query),
+        };
         CopySpan(this, c);
-        c.Elements = CloneList(Elements);
-        c.Query = CloneChild(Query);
         return c;
     }
 
@@ -8753,12 +9085,14 @@ public partial class JsonMember
 
     internal override SqlNode CloneCore()
     {
-        var c = new JsonMember();
+        var c = new JsonMember
+        {
+            Key = CloneChild(Key)!,
+            Value = CloneChild(Value)!,
+            NullHandling = NullHandling,
+            Returning = CloneChild(Returning),
+        };
         CopySpan(this, c);
-        c.Key = CloneChild(Key)!;
-        c.Value = CloneChild(Value)!;
-        c.NullHandling = NullHandling;
-        c.Returning = CloneChild(Returning);
         return c;
     }
 
@@ -8798,10 +9132,12 @@ public partial class JsonObjectConstructor
 
     internal override SqlNode CloneCore()
     {
-        var c = new JsonObjectConstructor();
+        var c = new JsonObjectConstructor
+        {
+            Wildcard = Wildcard,
+            Members = CloneList(Members),
+        };
         CopySpan(this, c);
-        c.Wildcard = Wildcard;
-        c.Members = CloneList(Members);
         return c;
     }
 
@@ -8854,14 +9190,16 @@ public partial class JsonTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new JsonTable();
+        var c = new JsonTable
+        {
+            Input = CloneChild(Input)!,
+            InputFormat = CloneChild(InputFormat),
+            Path = CloneChild(Path)!,
+            Clauses = CloneList(Clauses),
+            Columns = CloneList(Columns),
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Input = CloneChild(Input)!;
-        c.InputFormat = CloneChild(InputFormat);
-        c.Path = CloneChild(Path)!;
-        c.Clauses = CloneList(Clauses);
-        c.Columns = CloneList(Columns);
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -8912,14 +9250,16 @@ public partial class JsonTransformOperation
 
     internal override SqlNode CloneCore()
     {
-        var c = new JsonTransformOperation();
+        var c = new JsonTransformOperation
+        {
+            Op = Op,
+            Path = CloneChild(Path)!,
+            Value = CloneChild(Value),
+            Format = CloneChild(Format),
+            Descending = Descending,
+            Clauses = CloneList(Clauses),
+        };
         CopySpan(this, c);
-        c.Op = Op;
-        c.Path = CloneChild(Path)!;
-        c.Value = CloneChild(Value);
-        c.Format = CloneChild(Format);
-        c.Descending = Descending;
-        c.Clauses = CloneList(Clauses);
         return c;
     }
 
@@ -8961,10 +9301,12 @@ public partial class KeepClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new KeepClause();
+        var c = new KeepClause
+        {
+            First = First,
+            OrderBy = CloneList(OrderBy),
+        };
         CopySpan(this, c);
-        c.First = First;
-        c.OrderBy = CloneList(OrderBy);
         return c;
     }
 
@@ -9008,13 +9350,15 @@ public partial class LikeExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new LikeExpression();
+        var c = new LikeExpression
+        {
+            Value = CloneChild(Value)!,
+            Not = Not,
+            Kind = Kind,
+            Pattern = CloneChild(Pattern)!,
+            Escape = CloneChild(Escape),
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.Not = Not;
-        c.Kind = Kind;
-        c.Pattern = CloneChild(Pattern)!;
-        c.Escape = CloneChild(Escape);
         return c;
     }
 
@@ -9038,12 +9382,14 @@ public partial class Literal
 
     internal override SqlNode CloneCore()
     {
-        var c = new Literal();
+        var c = new Literal
+        {
+            Kind = Kind,
+            National = National,
+            QuoteDelimiter = QuoteDelimiter,
+            Value = Value,
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.National = National;
-        c.QuoteDelimiter = QuoteDelimiter;
-        c.Value = Value;
         return c;
     }
 
@@ -9065,10 +9411,12 @@ public partial class LiteralItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new LiteralItem();
+        var c = new LiteralItem
+        {
+            Kind = Kind,
+            Value = Value,
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Value = Value;
         return c;
     }
 
@@ -9109,13 +9457,15 @@ public partial class LockTableStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new LockTableStatement();
+        var c = new LockTableStatement
+        {
+            Tables = CloneList(Tables),
+            Mode = Mode,
+            NoWait = NoWait,
+            Wait = CloneChild(Wait),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Tables = CloneList(Tables);
-        c.Mode = Mode;
-        c.NoWait = NoWait;
-        c.Wait = CloneChild(Wait);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -9139,9 +9489,11 @@ public partial class LoggingAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new LoggingAttribute();
+        var c = new LoggingAttribute
+        {
+            Logging = Logging,
+        };
         CopySpan(this, c);
-        c.Logging = Logging;
         return c;
     }
 
@@ -9190,15 +9542,17 @@ public partial class LoopStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new LoopStatement();
+        var c = new LoopStatement
+        {
+            Kind = Kind,
+            Condition = CloneChild(Condition),
+            Iterands = CloneList(Iterands),
+            Controls = CloneList(Controls),
+            Body = CloneList(Body),
+            EndLabel = CloneChild(EndLabel),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Condition = CloneChild(Condition);
-        c.Iterands = CloneList(Iterands);
-        c.Controls = CloneList(Controls);
-        c.Body = CloneList(Body);
-        c.EndLabel = CloneChild(EndLabel);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -9265,21 +9619,23 @@ public partial class MatchRecognizeTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new MatchRecognizeTable();
+        var c = new MatchRecognizeTable
+        {
+            Source = CloneChild(Source)!,
+            PartitionBy = CloneList(PartitionBy),
+            OrderBy = CloneList(OrderBy),
+            Measures = CloneList(Measures),
+            RowsPerMatch = RowsPerMatch,
+            AllRowsMode = AllRowsMode,
+            Skip = Skip,
+            SkipVariable = CloneChild(SkipVariable),
+            Seek = Seek,
+            Pattern = CloneChild(Pattern)!,
+            Subsets = CloneList(Subsets),
+            Define = CloneList(Define),
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Source = CloneChild(Source)!;
-        c.PartitionBy = CloneList(PartitionBy);
-        c.OrderBy = CloneList(OrderBy);
-        c.Measures = CloneList(Measures);
-        c.RowsPerMatch = RowsPerMatch;
-        c.AllRowsMode = AllRowsMode;
-        c.Skip = Skip;
-        c.SkipVariable = CloneChild(SkipVariable);
-        c.Seek = Seek;
-        c.Pattern = CloneChild(Pattern)!;
-        c.Subsets = CloneList(Subsets);
-        c.Define = CloneList(Define);
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -9331,10 +9687,12 @@ public partial class MemberAccess
 
     internal override SqlNode CloneCore()
     {
-        var c = new MemberAccess();
+        var c = new MemberAccess
+        {
+            Target = CloneChild(Target)!,
+            Member = CloneChild(Member)!,
+        };
         CopySpan(this, c);
-        c.Target = CloneChild(Target)!;
-        c.Member = CloneChild(Member)!;
         return c;
     }
 
@@ -9390,16 +9748,18 @@ public partial class MergeClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new MergeClause();
+        var c = new MergeClause
+        {
+            Matched = Matched,
+            AndCondition = CloneChild(AndCondition),
+            Set = CloneList(Set),
+            UpdateWhere = CloneChild(UpdateWhere),
+            DeleteWhere = CloneChild(DeleteWhere),
+            InsertColumns = CloneList(InsertColumns),
+            InsertValues = CloneList(InsertValues),
+            InsertWhere = CloneChild(InsertWhere),
+        };
         CopySpan(this, c);
-        c.Matched = Matched;
-        c.AndCondition = CloneChild(AndCondition);
-        c.Set = CloneList(Set);
-        c.UpdateWhere = CloneChild(UpdateWhere);
-        c.DeleteWhere = CloneChild(DeleteWhere);
-        c.InsertColumns = CloneList(InsertColumns);
-        c.InsertValues = CloneList(InsertValues);
-        c.InsertWhere = CloneChild(InsertWhere);
         return c;
     }
 
@@ -9464,18 +9824,20 @@ public partial class MergeStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new MergeStatement();
+        var c = new MergeStatement
+        {
+            Target = CloneChild(Target)!,
+            Source = CloneChild(Source)!,
+            On = CloneChild(On)!,
+            Clauses = CloneList(Clauses),
+            Hint = CloneChild(Hint),
+            Returning = CloneList(Returning),
+            ReturningBulkCollect = ReturningBulkCollect,
+            ReturningInto = CloneList(ReturningInto),
+            ErrorLogging = CloneChild(ErrorLogging),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Target = CloneChild(Target)!;
-        c.Source = CloneChild(Source)!;
-        c.On = CloneChild(On)!;
-        c.Clauses = CloneList(Clauses);
-        c.Hint = CloneChild(Hint);
-        c.Returning = CloneList(Returning);
-        c.ReturningBulkCollect = ReturningBulkCollect;
-        c.ReturningInto = CloneList(ReturningInto);
-        c.ErrorLogging = CloneChild(ErrorLogging);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -9527,11 +9889,13 @@ public partial class MethodCall
 
     internal override SqlNode CloneCore()
     {
-        var c = new MethodCall();
+        var c = new MethodCall
+        {
+            Target = CloneChild(Target)!,
+            Name = CloneChild(Name)!,
+            Arguments = CloneList(Arguments),
+        };
         CopySpan(this, c);
-        c.Target = CloneChild(Target)!;
-        c.Name = CloneChild(Name)!;
-        c.Arguments = CloneList(Arguments);
         return c;
     }
 
@@ -9591,23 +9955,25 @@ public partial class ModelClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new ModelClause();
+        var c = new ModelClause
+        {
+            Nav = Nav,
+            Uniqueness = Uniqueness,
+            Return = Return,
+            References = CloneList(References),
+            MainName = CloneChild(MainName),
+            PartitionBy = CloneList(PartitionBy),
+            DimensionBy = CloneList(DimensionBy),
+            Measures = CloneList(Measures),
+            MainNav = MainNav,
+            MainUniqueness = MainUniqueness,
+            RulesMode = RulesMode,
+            RulesOrder = RulesOrder,
+            Iterate = CloneChild(Iterate),
+            IterateUntil = CloneChild(IterateUntil),
+            Rules = CloneList(Rules),
+        };
         CopySpan(this, c);
-        c.Nav = Nav;
-        c.Uniqueness = Uniqueness;
-        c.Return = Return;
-        c.References = CloneList(References);
-        c.MainName = CloneChild(MainName);
-        c.PartitionBy = CloneList(PartitionBy);
-        c.DimensionBy = CloneList(DimensionBy);
-        c.Measures = CloneList(Measures);
-        c.MainNav = MainNav;
-        c.MainUniqueness = MainUniqueness;
-        c.RulesMode = RulesMode;
-        c.RulesOrder = RulesOrder;
-        c.Iterate = CloneChild(Iterate);
-        c.IterateUntil = CloneChild(IterateUntil);
-        c.Rules = CloneList(Rules);
         return c;
     }
 
@@ -9664,12 +10030,14 @@ public partial class ModelRule
 
     internal override SqlNode CloneCore()
     {
-        var c = new ModelRule();
+        var c = new ModelRule
+        {
+            Mode = Mode,
+            Target = CloneChild(Target)!,
+            OrderBy = CloneList(OrderBy),
+            Value = CloneChild(Value)!,
+        };
         CopySpan(this, c);
-        c.Mode = Mode;
-        c.Target = CloneChild(Target)!;
-        c.OrderBy = CloneList(OrderBy);
-        c.Value = CloneChild(Value)!;
         return c;
     }
 
@@ -9712,10 +10080,12 @@ public partial class MultiInsertBranch
 
     internal override SqlNode CloneCore()
     {
-        var c = new MultiInsertBranch();
+        var c = new MultiInsertBranch
+        {
+            When = CloneChild(When),
+            Targets = CloneList(Targets),
+        };
         CopySpan(this, c);
-        c.When = CloneChild(When);
-        c.Targets = CloneList(Targets);
         return c;
     }
 
@@ -9771,19 +10141,21 @@ public partial class MultiTableInsertStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new MultiTableInsertStatement();
+        var c = new MultiTableInsertStatement
+        {
+            First = First,
+            Conditional = Conditional,
+            Branches = CloneList(Branches),
+            Else = CloneChild(Else),
+            Query = CloneChild(Query)!,
+            Hint = CloneChild(Hint),
+            Returning = CloneList(Returning),
+            ReturningBulkCollect = ReturningBulkCollect,
+            ReturningInto = CloneList(ReturningInto),
+            ErrorLogging = CloneChild(ErrorLogging),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.First = First;
-        c.Conditional = Conditional;
-        c.Branches = CloneList(Branches);
-        c.Else = CloneChild(Else);
-        c.Query = CloneChild(Query)!;
-        c.Hint = CloneChild(Hint);
-        c.Returning = CloneList(Returning);
-        c.ReturningBulkCollect = ReturningBulkCollect;
-        c.ReturningInto = CloneList(ReturningInto);
-        c.ErrorLogging = CloneChild(ErrorLogging);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -9848,15 +10220,17 @@ public partial class NamedTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new NamedTable();
+        var c = new NamedTable
+        {
+            Name = CloneList(Name),
+            DbLink = CloneList(DbLink),
+            Partition = CloneChild(Partition),
+            Sample = CloneChild(Sample),
+            Flashback = CloneChild(Flashback),
+            DualityAnnotations = CloneList(DualityAnnotations),
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Name = CloneList(Name);
-        c.DbLink = CloneList(DbLink);
-        c.Partition = CloneChild(Partition);
-        c.Sample = CloneChild(Sample);
-        c.Flashback = CloneChild(Flashback);
-        c.DualityAnnotations = CloneList(DualityAnnotations);
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -9882,9 +10256,11 @@ public partial class NullOnClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new NullOnClause();
+        var c = new NullOnClause
+        {
+            Absent = Absent,
+        };
         CopySpan(this, c);
-        c.Absent = Absent;
         return c;
     }
 
@@ -9904,9 +10280,11 @@ public partial class NullStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new NullStatement();
+        var c = new NullStatement
+        {
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -9943,10 +10321,12 @@ public partial class NumericAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new NumericAttribute();
+        var c = new NumericAttribute
+        {
+            Kind = Kind,
+            Value = CloneChild(Value)!,
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Value = CloneChild(Value)!;
         return c;
     }
 
@@ -9984,11 +10364,13 @@ public partial class OnBehaviorClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new OnBehaviorClause();
+        var c = new OnBehaviorClause
+        {
+            Behavior = Behavior,
+            Value = CloneChild(Value),
+            Event = Event,
+        };
         CopySpan(this, c);
-        c.Behavior = Behavior;
-        c.Value = CloneChild(Value);
-        c.Event = Event;
         return c;
     }
 
@@ -10036,13 +10418,15 @@ public partial class OpenStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new OpenStatement();
+        var c = new OpenStatement
+        {
+            Cursor = CloneChild(Cursor)!,
+            ForQuery = CloneChild(ForQuery),
+            ForExpression = CloneChild(ForExpression),
+            Using = CloneList(Using),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Cursor = CloneChild(Cursor)!;
-        c.ForQuery = CloneChild(ForQuery);
-        c.ForExpression = CloneChild(ForExpression);
-        c.Using = CloneList(Using);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -10083,11 +10467,13 @@ public partial class OrderByItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new OrderByItem();
+        var c = new OrderByItem
+        {
+            Expression = CloneChild(Expression)!,
+            Descending = Descending,
+            Nulls = Nulls,
+        };
         CopySpan(this, c);
-        c.Expression = CloneChild(Expression)!;
-        c.Descending = Descending;
-        c.Nulls = Nulls;
         return c;
     }
 
@@ -10126,10 +10512,12 @@ public partial class OrganizationAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new OrganizationAttribute();
+        var c = new OrganizationAttribute
+        {
+            Organization = Organization,
+            Details = CloneList(Details),
+        };
         CopySpan(this, c);
-        c.Organization = Organization;
-        c.Details = CloneList(Details);
         return c;
     }
 
@@ -10167,9 +10555,11 @@ public partial class OtherAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new OtherAttribute();
+        var c = new OtherAttribute
+        {
+            Items = CloneList(Items),
+        };
         CopySpan(this, c);
-        c.Items = CloneList(Items);
         return c;
     }
 
@@ -10206,11 +10596,13 @@ public partial class OverflowClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new OverflowClause();
+        var c = new OverflowClause
+        {
+            Truncate = Truncate,
+            Indicator = CloneChild(Indicator),
+            WithCount = WithCount,
+        };
         CopySpan(this, c);
-        c.Truncate = Truncate;
-        c.Indicator = CloneChild(Indicator);
-        c.WithCount = WithCount;
         return c;
     }
 
@@ -10255,11 +10647,13 @@ public partial class PairsOfControl
 
     internal override SqlNode CloneCore()
     {
-        var c = new PairsOfControl();
+        var c = new PairsOfControl
+        {
+            Collection = CloneChild(Collection)!,
+            While = CloneChild(While),
+            When = CloneChild(When),
+        };
         CopySpan(this, c);
-        c.Collection = CloneChild(Collection)!;
-        c.While = CloneChild(While);
-        c.When = CloneChild(When);
         return c;
     }
 
@@ -10298,10 +10692,12 @@ public partial class ParallelAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new ParallelAttribute();
+        var c = new ParallelAttribute
+        {
+            NoParallel = NoParallel,
+            Degree = CloneChild(Degree),
+        };
         CopySpan(this, c);
-        c.NoParallel = NoParallel;
-        c.Degree = CloneChild(Degree);
         return c;
     }
 
@@ -10345,14 +10741,16 @@ public partial class ParallelEnableClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new ParallelEnableClause();
+        var c = new ParallelEnableClause
+        {
+            PartitionArgument = CloneChild(PartitionArgument),
+            Method = Method,
+            MethodColumns = CloneList(MethodColumns),
+            Cluster = Cluster,
+            Order = Order,
+            StreamingColumns = CloneList(StreamingColumns),
+        };
         CopySpan(this, c);
-        c.PartitionArgument = CloneChild(PartitionArgument);
-        c.Method = Method;
-        c.MethodColumns = CloneList(MethodColumns);
-        c.Cluster = Cluster;
-        c.Order = Order;
-        c.StreamingColumns = CloneList(StreamingColumns);
         return c;
     }
 
@@ -10400,13 +10798,15 @@ public partial class Parameter
 
     internal override SqlNode CloneCore()
     {
-        var c = new Parameter();
+        var c = new Parameter
+        {
+            Name = CloneChild(Name)!,
+            Mode = Mode,
+            NoCopy = NoCopy,
+            Type = CloneChild(Type),
+            Default = CloneChild(Default),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Mode = Mode;
-        c.NoCopy = NoCopy;
-        c.Type = CloneChild(Type);
-        c.Default = CloneChild(Default);
         return c;
     }
 
@@ -10447,9 +10847,11 @@ public partial class ParenthesizedExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new ParenthesizedExpression();
+        var c = new ParenthesizedExpression
+        {
+            Inner = CloneChild(Inner)!,
+        };
         CopySpan(this, c);
-        c.Inner = CloneChild(Inner)!;
         return c;
     }
 
@@ -10486,9 +10888,11 @@ public partial class ParenthesizedQuery
 
     internal override SqlNode CloneCore()
     {
-        var c = new ParenthesizedQuery();
+        var c = new ParenthesizedQuery
+        {
+            Query = CloneChild(Query)!,
+        };
         CopySpan(this, c);
-        c.Query = CloneChild(Query)!;
         return c;
     }
 
@@ -10528,10 +10932,12 @@ public partial class ParenthesizedTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new ParenthesizedTable();
+        var c = new ParenthesizedTable
+        {
+            Inner = CloneChild(Inner)!,
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Inner = CloneChild(Inner)!;
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -10584,16 +10990,18 @@ public partial class PartitionByAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new PartitionByAttribute();
+        var c = new PartitionByAttribute
+        {
+            Method = Method,
+            Columns = CloneList(Columns),
+            ReferenceConstraint = CloneChild(ReferenceConstraint),
+            Interval = CloneChild(Interval),
+            PartitionCount = CloneChild(PartitionCount),
+            Partitions = CloneList(Partitions),
+            SubpartitionMethod = SubpartitionMethod,
+            SubpartitionColumns = CloneList(SubpartitionColumns),
+        };
         CopySpan(this, c);
-        c.Method = Method;
-        c.Columns = CloneList(Columns);
-        c.ReferenceConstraint = CloneChild(ReferenceConstraint);
-        c.Interval = CloneChild(Interval);
-        c.PartitionCount = CloneChild(PartitionCount);
-        c.Partitions = CloneList(Partitions);
-        c.SubpartitionMethod = SubpartitionMethod;
-        c.SubpartitionColumns = CloneList(SubpartitionColumns);
         return c;
     }
 
@@ -10646,14 +11054,16 @@ public partial class PartitionDefinition
 
     internal override SqlNode CloneCore()
     {
-        var c = new PartitionDefinition();
+        var c = new PartitionDefinition
+        {
+            Name = CloneChild(Name),
+            LessThan = LessThan,
+            ValuesDefault = ValuesDefault,
+            Values = CloneList(Values),
+            Attributes = CloneList(Attributes),
+            Subpartitions = CloneList(Subpartitions),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name);
-        c.LessThan = LessThan;
-        c.ValuesDefault = ValuesDefault;
-        c.Values = CloneList(Values);
-        c.Attributes = CloneList(Attributes);
-        c.Subpartitions = CloneList(Subpartitions);
         return c;
     }
 
@@ -10698,11 +11108,13 @@ public partial class PartitionReference
 
     internal override SqlNode CloneCore()
     {
-        var c = new PartitionReference();
+        var c = new PartitionReference
+        {
+            Subpartition = Subpartition,
+            Name = CloneChild(Name),
+            ForValues = CloneList(ForValues),
+        };
         CopySpan(this, c);
-        c.Subpartition = Subpartition;
-        c.Name = CloneChild(Name);
-        c.ForValues = CloneList(ForValues);
         return c;
     }
 
@@ -10741,10 +11153,12 @@ public partial class PassingClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new PassingClause();
+        var c = new PassingClause
+        {
+            ByValue = ByValue,
+            Items = CloneList(Items),
+        };
         CopySpan(this, c);
-        c.ByValue = ByValue;
-        c.Items = CloneList(Items);
         return c;
     }
 
@@ -10797,17 +11211,19 @@ public partial class PathColumn
 
     internal override SqlNode CloneCore()
     {
-        var c = new PathColumn();
+        var c = new PathColumn
+        {
+            Name = CloneChild(Name),
+            ForOrdinality = ForOrdinality,
+            Type = CloneChild(Type),
+            Exists = Exists,
+            Clauses = CloneList(Clauses),
+            Path = CloneChild(Path),
+            Default = CloneChild(Default),
+            Nested = Nested,
+            Columns = CloneList(Columns),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name);
-        c.ForOrdinality = ForOrdinality;
-        c.Type = CloneChild(Type);
-        c.Exists = Exists;
-        c.Clauses = CloneList(Clauses);
-        c.Path = CloneChild(Path);
-        c.Default = CloneChild(Default);
-        c.Nested = Nested;
-        c.Columns = CloneList(Columns);
         return c;
     }
 
@@ -10852,9 +11268,11 @@ public partial class PatternAlternation
 
     internal override SqlNode CloneCore()
     {
-        var c = new PatternAlternation();
+        var c = new PatternAlternation
+        {
+            Items = CloneList(Items),
+        };
         CopySpan(this, c);
-        c.Items = CloneList(Items);
         return c;
     }
 
@@ -10874,9 +11292,11 @@ public partial class PatternAnchor
 
     internal override SqlNode CloneCore()
     {
-        var c = new PatternAnchor();
+        var c = new PatternAnchor
+        {
+            IsStart = IsStart,
+        };
         CopySpan(this, c);
-        c.IsStart = IsStart;
         return c;
     }
 
@@ -10913,9 +11333,11 @@ public partial class PatternConcat
 
     internal override SqlNode CloneCore()
     {
-        var c = new PatternConcat();
+        var c = new PatternConcat
+        {
+            Items = CloneList(Items),
+        };
         CopySpan(this, c);
-        c.Items = CloneList(Items);
         return c;
     }
 
@@ -10955,10 +11377,12 @@ public partial class PatternDefine
 
     internal override SqlNode CloneCore()
     {
-        var c = new PatternDefine();
+        var c = new PatternDefine
+        {
+            Variable = CloneChild(Variable)!,
+            Condition = CloneChild(Condition)!,
+        };
         CopySpan(this, c);
-        c.Variable = CloneChild(Variable)!;
-        c.Condition = CloneChild(Condition)!;
         return c;
     }
 
@@ -10996,9 +11420,11 @@ public partial class PatternExclusion
 
     internal override SqlNode CloneCore()
     {
-        var c = new PatternExclusion();
+        var c = new PatternExclusion
+        {
+            Inner = CloneChild(Inner)!,
+        };
         CopySpan(this, c);
-        c.Inner = CloneChild(Inner)!;
         return c;
     }
 
@@ -11035,9 +11461,11 @@ public partial class PatternGroup
 
     internal override SqlNode CloneCore()
     {
-        var c = new PatternGroup();
+        var c = new PatternGroup
+        {
+            Inner = CloneChild(Inner)!,
+        };
         CopySpan(this, c);
-        c.Inner = CloneChild(Inner)!;
         return c;
     }
 
@@ -11074,9 +11502,11 @@ public partial class PatternPermute
 
     internal override SqlNode CloneCore()
     {
-        var c = new PatternPermute();
+        var c = new PatternPermute
+        {
+            Items = CloneList(Items),
+        };
         CopySpan(this, c);
-        c.Items = CloneList(Items);
         return c;
     }
 
@@ -11113,12 +11543,14 @@ public partial class PatternQuantified
 
     internal override SqlNode CloneCore()
     {
-        var c = new PatternQuantified();
+        var c = new PatternQuantified
+        {
+            Inner = CloneChild(Inner)!,
+            Min = Min,
+            Max = Max,
+            Reluctant = Reluctant,
+        };
         CopySpan(this, c);
-        c.Inner = CloneChild(Inner)!;
-        c.Min = Min;
-        c.Max = Max;
-        c.Reluctant = Reluctant;
         return c;
     }
 
@@ -11161,10 +11593,12 @@ public partial class PatternSubset
 
     internal override SqlNode CloneCore()
     {
-        var c = new PatternSubset();
+        var c = new PatternSubset
+        {
+            Name = CloneChild(Name)!,
+            Members = CloneList(Members),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Members = CloneList(Members);
         return c;
     }
 
@@ -11202,9 +11636,11 @@ public partial class PatternVariable
 
     internal override SqlNode CloneCore()
     {
-        var c = new PatternVariable();
+        var c = new PatternVariable
+        {
+            Name = CloneChild(Name)!,
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
         return c;
     }
 
@@ -11241,10 +11677,12 @@ public partial class PipeRowStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new PipeRowStatement();
+        var c = new PipeRowStatement
+        {
+            Value = CloneChild(Value)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -11285,10 +11723,12 @@ public partial class PivotAggregate
 
     internal override SqlNode CloneCore()
     {
-        var c = new PivotAggregate();
+        var c = new PivotAggregate
+        {
+            Function = CloneChild(Function)!,
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Function = CloneChild(Function)!;
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -11329,10 +11769,12 @@ public partial class PivotInItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new PivotInItem();
+        var c = new PivotInItem
+        {
+            Value = CloneChild(Value)!,
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -11385,16 +11827,18 @@ public partial class PivotTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new PivotTable();
+        var c = new PivotTable
+        {
+            Source = CloneChild(Source)!,
+            Xml = Xml,
+            Aggregates = CloneList(Aggregates),
+            ForColumns = CloneList(ForColumns),
+            InItems = CloneList(InItems),
+            InAny = InAny,
+            InSubquery = CloneChild(InSubquery),
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Source = CloneChild(Source)!;
-        c.Xml = Xml;
-        c.Aggregates = CloneList(Aggregates);
-        c.ForColumns = CloneList(ForColumns);
-        c.InItems = CloneList(InItems);
-        c.InAny = InAny;
-        c.InSubquery = CloneChild(InSubquery);
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -11444,12 +11888,14 @@ public partial class PlsqlCaseStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new PlsqlCaseStatement();
+        var c = new PlsqlCaseStatement
+        {
+            Operand = CloneChild(Operand),
+            Whens = CloneList(Whens),
+            ElseStatements = CloneList(ElseStatements),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Operand = CloneChild(Operand);
-        c.Whens = CloneList(Whens);
-        c.ElseStatements = CloneList(ElseStatements);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -11492,10 +11938,12 @@ public partial class PragmaDeclaration
 
     internal override SqlNode CloneCore()
     {
-        var c = new PragmaDeclaration();
+        var c = new PragmaDeclaration
+        {
+            Name = CloneChild(Name)!,
+            Arguments = CloneList(Arguments),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Arguments = CloneList(Arguments);
         return c;
     }
 
@@ -11533,10 +11981,12 @@ public partial class ProcedureCallStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new ProcedureCallStatement();
+        var c = new ProcedureCallStatement
+        {
+            Call = CloneChild(Call)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Call = CloneChild(Call)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -11580,12 +12030,14 @@ public partial class ProfileLimit
 
     internal override SqlNode CloneCore()
     {
-        var c = new ProfileLimit();
+        var c = new ProfileLimit
+        {
+            Name = CloneChild(Name)!,
+            Value = CloneChild(Value),
+            Keyword = Keyword,
+            Function = CloneList(Function),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Value = CloneChild(Value);
-        c.Keyword = Keyword;
-        c.Function = CloneList(Function);
         return c;
     }
 
@@ -11643,22 +12095,24 @@ public partial class ProgramOptions
 
     internal override SqlNode CloneCore()
     {
-        var c = new ProgramOptions();
+        var c = new ProgramOptions
+        {
+            Authid = Authid,
+            Sharing = Sharing,
+            Deterministic = Deterministic,
+            Pipelined = Pipelined,
+            PipelinedUsing = CloneList(PipelinedUsing),
+            ParallelEnable = CloneChild(ParallelEnable),
+            ResultCache = ResultCache,
+            RelyOn = CloneNested(RelyOn),
+            AggregateUsing = CloneList(AggregateUsing),
+            SqlMacro = SqlMacro,
+            AccessibleBy = CloneList(AccessibleBy),
+            Deprecate = Deprecate,
+            DeprecateMessage = CloneChild(DeprecateMessage),
+            DefaultCollation = CloneChild(DefaultCollation),
+        };
         CopySpan(this, c);
-        c.Authid = Authid;
-        c.Sharing = Sharing;
-        c.Deterministic = Deterministic;
-        c.Pipelined = Pipelined;
-        c.PipelinedUsing = CloneList(PipelinedUsing);
-        c.ParallelEnable = CloneChild(ParallelEnable);
-        c.ResultCache = ResultCache;
-        c.RelyOn = CloneNested(RelyOn);
-        c.AggregateUsing = CloneList(AggregateUsing);
-        c.SqlMacro = SqlMacro;
-        c.AccessibleBy = CloneList(AccessibleBy);
-        c.Deprecate = Deprecate;
-        c.DeprecateMessage = CloneChild(DeprecateMessage);
-        c.DefaultCollation = CloneChild(DefaultCollation);
         return c;
     }
 
@@ -11711,12 +12165,14 @@ public partial class PurgeStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new PurgeStatement();
+        var c = new PurgeStatement
+        {
+            Target = Target,
+            Name = CloneList(Name),
+            User = CloneChild(User),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Target = Target;
-        c.Name = CloneList(Name);
-        c.User = CloneChild(User);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -11762,12 +12218,14 @@ public partial class QualifiedExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new QualifiedExpression();
+        var c = new QualifiedExpression
+        {
+            Choice = CloneChild(Choice),
+            Others = Others,
+            Iterator = CloneChild(Iterator),
+            Value = CloneChild(Value)!,
+        };
         CopySpan(this, c);
-        c.Choice = CloneChild(Choice);
-        c.Others = Others;
-        c.Iterator = CloneChild(Iterator);
-        c.Value = CloneChild(Value)!;
         return c;
     }
 
@@ -11810,12 +12268,14 @@ public partial class QuantifiedComparison
 
     internal override SqlNode CloneCore()
     {
-        var c = new QuantifiedComparison();
+        var c = new QuantifiedComparison
+        {
+            Left = CloneChild(Left)!,
+            Operator = Operator,
+            Quantifier = Quantifier,
+            Right = CloneChild(Right)!,
+        };
         CopySpan(this, c);
-        c.Left = CloneChild(Left)!;
-        c.Operator = Operator;
-        c.Quantifier = Quantifier;
-        c.Right = CloneChild(Right)!;
         return c;
     }
 
@@ -11882,21 +12342,23 @@ public partial class QuerySpecification
 
     internal override SqlNode CloneCore()
     {
-        var c = new QuerySpecification();
+        var c = new QuerySpecification
+        {
+            Hint = CloneChild(Hint),
+            Quantifier = Quantifier,
+            SelectList = CloneList(SelectList),
+            From = CloneList(From),
+            Where = CloneChild(Where),
+            StartWith = CloneChild(StartWith),
+            ConnectBy = CloneChild(ConnectBy),
+            NoCycle = NoCycle,
+            GroupBy = CloneList(GroupBy),
+            Having = CloneChild(Having),
+            Into = CloneList(Into),
+            IntoBulkCollect = IntoBulkCollect,
+            Model = CloneChild(Model),
+        };
         CopySpan(this, c);
-        c.Hint = CloneChild(Hint);
-        c.Quantifier = Quantifier;
-        c.SelectList = CloneList(SelectList);
-        c.From = CloneList(From);
-        c.Where = CloneChild(Where);
-        c.StartWith = CloneChild(StartWith);
-        c.ConnectBy = CloneChild(ConnectBy);
-        c.NoCycle = NoCycle;
-        c.GroupBy = CloneList(GroupBy);
-        c.Having = CloneChild(Having);
-        c.Into = CloneList(Into);
-        c.IntoBulkCollect = IntoBulkCollect;
-        c.Model = CloneChild(Model);
         return c;
     }
 
@@ -11928,10 +12390,12 @@ public partial class QuotesClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new QuotesClause();
+        var c = new QuotesClause
+        {
+            Keep = Keep,
+            OnScalarString = OnScalarString,
+        };
         CopySpan(this, c);
-        c.Keep = Keep;
-        c.OnScalarString = OnScalarString;
         return c;
     }
 
@@ -11969,10 +12433,12 @@ public partial class RaiseStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new RaiseStatement();
+        var c = new RaiseStatement
+        {
+            Exception = CloneList(Exception),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Exception = CloneList(Exception);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -12022,14 +12488,16 @@ public partial class RangeControl
 
     internal override SqlNode CloneCore()
     {
-        var c = new RangeControl();
+        var c = new RangeControl
+        {
+            Reverse = Reverse,
+            Lower = CloneChild(Lower)!,
+            Upper = CloneChild(Upper)!,
+            By = CloneChild(By),
+            While = CloneChild(While),
+            When = CloneChild(When),
+        };
         CopySpan(this, c);
-        c.Reverse = Reverse;
-        c.Lower = CloneChild(Lower)!;
-        c.Upper = CloneChild(Upper)!;
-        c.By = CloneChild(By);
-        c.While = CloneChild(While);
-        c.When = CloneChild(When);
         return c;
     }
 
@@ -12074,10 +12542,12 @@ public partial class RecordTypeDeclaration
 
     internal override SqlNode CloneCore()
     {
-        var c = new RecordTypeDeclaration();
+        var c = new RecordTypeDeclaration
+        {
+            Name = CloneChild(Name)!,
+            Fields = CloneList(Fields),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Fields = CloneList(Fields);
         return c;
     }
 
@@ -12118,10 +12588,12 @@ public partial class RefCursorTypeDeclaration
 
     internal override SqlNode CloneCore()
     {
-        var c = new RefCursorTypeDeclaration();
+        var c = new RefCursorTypeDeclaration
+        {
+            Name = CloneChild(Name)!,
+            ReturnType = CloneChild(ReturnType),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.ReturnType = CloneChild(ReturnType);
         return c;
     }
 
@@ -12168,14 +12640,16 @@ public partial class ReferenceModel
 
     internal override SqlNode CloneCore()
     {
-        var c = new ReferenceModel();
+        var c = new ReferenceModel
+        {
+            Name = CloneChild(Name)!,
+            Query = CloneChild(Query)!,
+            DimensionBy = CloneList(DimensionBy),
+            Measures = CloneList(Measures),
+            Nav = Nav,
+            Uniqueness = Uniqueness,
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Query = CloneChild(Query)!;
-        c.DimensionBy = CloneList(DimensionBy);
-        c.Measures = CloneList(Measures);
-        c.Nav = Nav;
-        c.Uniqueness = Uniqueness;
         return c;
     }
 
@@ -12217,10 +12691,12 @@ public partial class ReferencingItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new ReferencingItem();
+        var c = new ReferencingItem
+        {
+            Kind = Kind,
+            Alias = CloneChild(Alias)!,
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Alias = CloneChild(Alias)!;
         return c;
     }
 
@@ -12261,14 +12737,16 @@ public partial class RefreshClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new RefreshClause();
+        var c = new RefreshClause
+        {
+            Method = Method,
+            Mode = Mode,
+            StartWith = CloneChild(StartWith),
+            Next = CloneChild(Next),
+            WithPrimaryKey = WithPrimaryKey,
+            WithRowId = WithRowId,
+        };
         CopySpan(this, c);
-        c.Method = Method;
-        c.Mode = Mode;
-        c.StartWith = CloneChild(StartWith);
-        c.Next = CloneChild(Next);
-        c.WithPrimaryKey = WithPrimaryKey;
-        c.WithRowId = WithRowId;
         return c;
     }
 
@@ -12313,11 +12791,13 @@ public partial class RenameStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new RenameStatement();
+        var c = new RenameStatement
+        {
+            From = CloneList(From),
+            To = CloneList(To),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.From = CloneList(From);
-        c.To = CloneList(To);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -12362,11 +12842,13 @@ public partial class RepeatControl
 
     internal override SqlNode CloneCore()
     {
-        var c = new RepeatControl();
+        var c = new RepeatControl
+        {
+            Value = CloneChild(Value)!,
+            While = CloneChild(While),
+            When = CloneChild(When),
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value)!;
-        c.While = CloneChild(While);
-        c.When = CloneChild(When);
         return c;
     }
 
@@ -12405,10 +12887,12 @@ public partial class ReturnStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new ReturnStatement();
+        var c = new ReturnStatement
+        {
+            Value = CloneChild(Value),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Value = CloneChild(Value);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -12446,10 +12930,12 @@ public partial class ReturningClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new ReturningClause();
+        var c = new ReturningClause
+        {
+            Type = CloneChild(Type),
+            Content = Content,
+        };
         CopySpan(this, c);
-        c.Type = CloneChild(Type);
-        c.Content = Content;
         return c;
     }
 
@@ -12487,10 +12973,12 @@ public partial class ReturningItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new ReturningItem();
+        var c = new ReturningItem
+        {
+            Image = Image,
+            Expression = CloneChild(Expression)!,
+        };
         CopySpan(this, c);
-        c.Image = Image;
-        c.Expression = CloneChild(Expression)!;
         return c;
     }
 
@@ -12531,10 +13019,12 @@ public partial class RoleSpec
 
     internal override SqlNode CloneCore()
     {
-        var c = new RoleSpec();
+        var c = new RoleSpec
+        {
+            Name = CloneChild(Name)!,
+            IdentifiedBy = CloneChild(IdentifiedBy),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.IdentifiedBy = CloneChild(IdentifiedBy);
         return c;
     }
 
@@ -12575,12 +13065,14 @@ public partial class RollbackStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new RollbackStatement();
+        var c = new RollbackStatement
+        {
+            Work = Work,
+            ToSavepoint = CloneChild(ToSavepoint),
+            Force = CloneChild(Force),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Work = Work;
-        c.ToSavepoint = CloneChild(ToSavepoint);
-        c.Force = CloneChild(Force);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -12603,9 +13095,11 @@ public partial class RowMovementAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new RowMovementAttribute();
+        var c = new RowMovementAttribute
+        {
+            Enabled = Enabled,
+        };
         CopySpan(this, c);
-        c.Enabled = Enabled;
         return c;
     }
 
@@ -12645,11 +13139,13 @@ public partial class SampleClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new SampleClause();
+        var c = new SampleClause
+        {
+            Block = Block,
+            Percent = CloneChild(Percent)!,
+            Seed = CloneChild(Seed),
+        };
         CopySpan(this, c);
-        c.Block = Block;
-        c.Percent = CloneChild(Percent)!;
-        c.Seed = CloneChild(Seed);
         return c;
     }
 
@@ -12688,10 +13184,12 @@ public partial class SavepointStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new SavepointStatement();
+        var c = new SavepointStatement
+        {
+            Name = CloneChild(Name)!,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -12732,11 +13230,13 @@ public partial class SearchClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new SearchClause();
+        var c = new SearchClause
+        {
+            DepthFirst = DepthFirst,
+            By = CloneList(By),
+            SetColumn = CloneChild(SetColumn)!,
+        };
         CopySpan(this, c);
-        c.DepthFirst = DepthFirst;
-        c.By = CloneList(By);
-        c.SetColumn = CloneChild(SetColumn)!;
         return c;
     }
 
@@ -12793,17 +13293,19 @@ public partial class SelectStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new SelectStatement();
+        var c = new SelectStatement
+        {
+            With = CloneList(With),
+            Body = CloneChild(Body)!,
+            OrderSiblings = OrderSiblings,
+            OrderBy = CloneList(OrderBy),
+            Offset = CloneChild(Offset),
+            Fetch = CloneChild(Fetch),
+            ForUpdate = CloneChild(ForUpdate),
+            WithDeclarations = CloneList(WithDeclarations),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.With = CloneList(With);
-        c.Body = CloneChild(Body)!;
-        c.OrderSiblings = OrderSiblings;
-        c.OrderBy = CloneList(OrderBy);
-        c.Offset = CloneChild(Offset);
-        c.Fetch = CloneChild(Fetch);
-        c.ForUpdate = CloneChild(ForUpdate);
-        c.WithDeclarations = CloneList(WithDeclarations);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -12848,10 +13350,12 @@ public partial class SequenceOption
 
     internal override SqlNode CloneCore()
     {
-        var c = new SequenceOption();
+        var c = new SequenceOption
+        {
+            Name = Name,
+            Value = CloneChild(Value),
+        };
         CopySpan(this, c);
-        c.Name = Name;
-        c.Value = CloneChild(Value);
         return c;
     }
 
@@ -12892,10 +13396,12 @@ public partial class SessionSetting
 
     internal override SqlNode CloneCore()
     {
-        var c = new SessionSetting();
+        var c = new SessionSetting
+        {
+            Name = CloneList(Name),
+            Value = CloneChild(Value)!,
+        };
         CopySpan(this, c);
-        c.Name = CloneList(Name);
-        c.Value = CloneChild(Value)!;
         return c;
     }
 
@@ -12936,11 +13442,13 @@ public partial class SetClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new SetClause();
+        var c = new SetClause
+        {
+            Row = Row,
+            Columns = CloneList(Columns),
+            Value = CloneChild(Value)!,
+        };
         CopySpan(this, c);
-        c.Row = Row;
-        c.Columns = CloneList(Columns);
-        c.Value = CloneChild(Value)!;
         return c;
     }
 
@@ -12979,12 +13487,14 @@ public partial class SetConstraintsStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new SetConstraintsStatement();
+        var c = new SetConstraintsStatement
+        {
+            All = All,
+            Constraints = CloneNested(Constraints),
+            Deferred = Deferred,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.All = All;
-        c.Constraints = CloneNested(Constraints);
-        c.Deferred = Deferred;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -13027,12 +13537,14 @@ public partial class SetOperation
 
     internal override SqlNode CloneCore()
     {
-        var c = new SetOperation();
+        var c = new SetOperation
+        {
+            Left = CloneChild(Left)!,
+            Operator = Operator,
+            All = All,
+            Right = CloneChild(Right)!,
+        };
         CopySpan(this, c);
-        c.Left = CloneChild(Left)!;
-        c.Operator = Operator;
-        c.All = All;
-        c.Right = CloneChild(Right)!;
         return c;
     }
 
@@ -13075,13 +13587,15 @@ public partial class SetRoleStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new SetRoleStatement();
+        var c = new SetRoleStatement
+        {
+            None = None,
+            All = All,
+            Except = CloneList(Except),
+            Roles = CloneList(Roles),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.None = None;
-        c.All = All;
-        c.Except = CloneList(Except);
-        c.Roles = CloneList(Roles);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -13125,13 +13639,15 @@ public partial class SetTransactionStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new SetTransactionStatement();
+        var c = new SetTransactionStatement
+        {
+            Access = Access,
+            Isolation = Isolation,
+            RollbackSegment = CloneChild(RollbackSegment),
+            Name = CloneChild(Name),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Access = Access;
-        c.Isolation = Isolation;
-        c.RollbackSegment = CloneChild(RollbackSegment);
-        c.Name = CloneChild(Name);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -13172,11 +13688,13 @@ public partial class SqlPlusCommand
 
     internal override SqlNode CloneCore()
     {
-        var c = new SqlPlusCommand();
+        var c = new SqlPlusCommand
+        {
+            Command = Command,
+            Arguments = CloneList(Arguments),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Command = Command;
-        c.Arguments = CloneList(Arguments);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -13215,9 +13733,11 @@ public partial class SqlScript
 
     internal override SqlNode CloneCore()
     {
-        var c = new SqlScript();
+        var c = new SqlScript
+        {
+            Statements = CloneList(Statements),
+        };
         CopySpan(this, c);
-        c.Statements = CloneList(Statements);
         return c;
     }
 
@@ -13254,9 +13774,11 @@ public partial class StarExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new StarExpression();
+        var c = new StarExpression
+        {
+            Qualifier = CloneList(Qualifier),
+        };
         CopySpan(this, c);
-        c.Qualifier = CloneList(Qualifier);
         return c;
     }
 
@@ -13293,9 +13815,11 @@ public partial class StarSelectItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new StarSelectItem();
+        var c = new StarSelectItem
+        {
+            Qualifier = CloneList(Qualifier),
+        };
         CopySpan(this, c);
-        c.Qualifier = CloneList(Qualifier);
         return c;
     }
 
@@ -13332,9 +13856,11 @@ public partial class StorageAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new StorageAttribute();
+        var c = new StorageAttribute
+        {
+            Options = CloneList(Options),
+        };
         CopySpan(this, c);
-        c.Options = CloneList(Options);
         return c;
     }
 
@@ -13371,10 +13897,12 @@ public partial class StorageOption
 
     internal override SqlNode CloneCore()
     {
-        var c = new StorageOption();
+        var c = new StorageOption
+        {
+            Name = Name,
+            Value = CloneChild(Value),
+        };
         CopySpan(this, c);
-        c.Name = Name;
-        c.Value = CloneChild(Value);
         return c;
     }
 
@@ -13427,17 +13955,19 @@ public partial class SubprogramDeclaration
 
     internal override SqlNode CloneCore()
     {
-        var c = new SubprogramDeclaration();
+        var c = new SubprogramDeclaration
+        {
+            IsFunction = IsFunction,
+            Modifiers = Modifiers,
+            Name = CloneList(Name),
+            Parameters = CloneList(Parameters),
+            ReturnType = CloneChild(ReturnType),
+            ReturnSelfAsResult = ReturnSelfAsResult,
+            Options = CloneChild(Options),
+            Body = CloneChild(Body),
+            External = CloneChild(External),
+        };
         CopySpan(this, c);
-        c.IsFunction = IsFunction;
-        c.Modifiers = Modifiers;
-        c.Name = CloneList(Name);
-        c.Parameters = CloneList(Parameters);
-        c.ReturnType = CloneChild(ReturnType);
-        c.ReturnSelfAsResult = ReturnSelfAsResult;
-        c.Options = CloneChild(Options);
-        c.Body = CloneChild(Body);
-        c.External = CloneChild(External);
         return c;
     }
 
@@ -13482,9 +14012,11 @@ public partial class SubqueryExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new SubqueryExpression();
+        var c = new SubqueryExpression
+        {
+            Query = CloneChild(Query)!,
+        };
         CopySpan(this, c);
-        c.Query = CloneChild(Query)!;
         return c;
     }
 
@@ -13524,11 +14056,13 @@ public partial class SubqueryTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new SubqueryTable();
+        var c = new SubqueryTable
+        {
+            Lateral = Lateral,
+            Query = CloneChild(Query)!,
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Lateral = Lateral;
-        c.Query = CloneChild(Query)!;
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -13570,10 +14104,12 @@ public partial class SubscriptRange
 
     internal override SqlNode CloneCore()
     {
-        var c = new SubscriptRange();
+        var c = new SubscriptRange
+        {
+            From = CloneChild(From)!,
+            To = CloneChild(To)!,
+        };
         CopySpan(this, c);
-        c.From = CloneChild(From)!;
-        c.To = CloneChild(To)!;
         return c;
     }
 
@@ -13594,11 +14130,13 @@ public partial class SubstitutionVariable
 
     internal override SqlNode CloneCore()
     {
-        var c = new SubstitutionVariable();
+        var c = new SubstitutionVariable
+        {
+            Name = Name,
+            Persistent = Persistent,
+            Prefix = Prefix,
+        };
         CopySpan(this, c);
-        c.Name = Name;
-        c.Persistent = Persistent;
-        c.Prefix = Prefix;
         return c;
     }
 
@@ -13645,13 +14183,15 @@ public partial class SubtypeDeclaration
 
     internal override SqlNode CloneCore()
     {
-        var c = new SubtypeDeclaration();
+        var c = new SubtypeDeclaration
+        {
+            Name = CloneChild(Name)!,
+            BaseType = CloneChild(BaseType)!,
+            RangeLow = CloneChild(RangeLow),
+            RangeHigh = CloneChild(RangeHigh),
+            NotNull = NotNull,
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.BaseType = CloneChild(BaseType)!;
-        c.RangeLow = CloneChild(RangeLow);
-        c.RangeHigh = CloneChild(RangeHigh);
-        c.NotNull = NotNull;
         return c;
     }
 
@@ -13675,9 +14215,11 @@ public partial class SymbolItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new SymbolItem();
+        var c = new SymbolItem
+        {
+            Symbol = Symbol,
+        };
         CopySpan(this, c);
-        c.Symbol = Symbol;
         return c;
     }
 
@@ -13729,16 +14271,18 @@ public partial class TableConstraint
 
     internal override SqlNode CloneCore()
     {
-        var c = new TableConstraint();
+        var c = new TableConstraint
+        {
+            Name = CloneChild(Name),
+            Kind = Kind,
+            Columns = CloneList(Columns),
+            Check = CloneChild(Check),
+            RefTable = CloneList(RefTable),
+            RefColumns = CloneList(RefColumns),
+            OnDelete = OnDelete,
+            State = CloneChild(State),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name);
-        c.Kind = Kind;
-        c.Columns = CloneList(Columns);
-        c.Check = CloneChild(Check);
-        c.RefTable = CloneList(RefTable);
-        c.RefColumns = CloneList(RefColumns);
-        c.OnDelete = OnDelete;
-        c.State = CloneChild(State);
         return c;
     }
 
@@ -13785,10 +14329,12 @@ public partial class TableFunction
 
     internal override SqlNode CloneCore()
     {
-        var c = new TableFunction();
+        var c = new TableFunction
+        {
+            Expression = CloneChild(Expression)!,
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Expression = CloneChild(Expression)!;
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -13835,14 +14381,16 @@ public partial class TablespaceAction
 
     internal override SqlNode CloneCore()
     {
-        var c = new TablespaceAction();
+        var c = new TablespaceAction
+        {
+            Kind = Kind,
+            Files = CloneList(Files),
+            Target = CloneChild(Target),
+            Mode = Mode,
+            NewName = CloneChild(NewName),
+            Syntax = CloneList(Syntax),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Files = CloneList(Files);
-        c.Target = CloneChild(Target);
-        c.Mode = Mode;
-        c.NewName = CloneChild(NewName);
-        c.Syntax = CloneList(Syntax);
         return c;
     }
 
@@ -13884,10 +14432,12 @@ public partial class TablespaceAttribute
 
     internal override SqlNode CloneCore()
     {
-        var c = new TablespaceAttribute();
+        var c = new TablespaceAttribute
+        {
+            Name = CloneChild(Name)!,
+            Default = Default,
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Default = Default;
         return c;
     }
 
@@ -13928,11 +14478,13 @@ public partial class TimingPointSection
 
     internal override SqlNode CloneCore()
     {
-        var c = new TimingPointSection();
+        var c = new TimingPointSection
+        {
+            Point = Point,
+            Statements = CloneList(Statements),
+            Handlers = CloneList(Handlers),
+        };
         CopySpan(this, c);
-        c.Point = Point;
-        c.Statements = CloneList(Statements);
-        c.Handlers = CloneList(Handlers);
         return c;
     }
 
@@ -13971,11 +14523,13 @@ public partial class TriggerEvent
 
     internal override SqlNode CloneCore()
     {
-        var c = new TriggerEvent();
+        var c = new TriggerEvent
+        {
+            Kind = Kind,
+            Columns = CloneList(Columns),
+            EventName = EventName,
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Columns = CloneList(Columns);
-        c.EventName = EventName;
         return c;
     }
 
@@ -14017,11 +14571,13 @@ public partial class TrimExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new TrimExpression();
+        var c = new TrimExpression
+        {
+            Spec = Spec,
+            Characters = CloneChild(Characters),
+            Source = CloneChild(Source)!,
+        };
         CopySpan(this, c);
-        c.Spec = Spec;
-        c.Characters = CloneChild(Characters);
-        c.Source = CloneChild(Source)!;
         return c;
     }
 
@@ -14060,14 +14616,16 @@ public partial class TruncateStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new TruncateStatement();
+        var c = new TruncateStatement
+        {
+            Target = Target,
+            Name = CloneList(Name),
+            MaterializedViewLog = MaterializedViewLog,
+            Storage = Storage,
+            Cascade = Cascade,
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Target = Target;
-        c.Name = CloneList(Name);
-        c.MaterializedViewLog = MaterializedViewLog;
-        c.Storage = Storage;
-        c.Cascade = Cascade;
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -14109,10 +14667,12 @@ public partial class UnaryExpression
 
     internal override SqlNode CloneCore()
     {
-        var c = new UnaryExpression();
+        var c = new UnaryExpression
+        {
+            Operator = Operator,
+            Operand = CloneChild(Operand)!,
+        };
         CopySpan(this, c);
-        c.Operator = Operator;
-        c.Operand = CloneChild(Operand)!;
         return c;
     }
 
@@ -14153,10 +14713,12 @@ public partial class UnpivotInItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new UnpivotInItem();
+        var c = new UnpivotInItem
+        {
+            Columns = CloneList(Columns),
+            AliasValue = CloneChild(AliasValue),
+        };
         CopySpan(this, c);
-        c.Columns = CloneList(Columns);
-        c.AliasValue = CloneChild(AliasValue);
         return c;
     }
 
@@ -14206,14 +14768,16 @@ public partial class UnpivotTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new UnpivotTable();
+        var c = new UnpivotTable
+        {
+            Source = CloneChild(Source)!,
+            IncludeNulls = IncludeNulls,
+            ValueColumns = CloneList(ValueColumns),
+            ForColumns = CloneList(ForColumns),
+            InItems = CloneList(InItems),
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Source = CloneChild(Source)!;
-        c.IncludeNulls = IncludeNulls;
-        c.ValueColumns = CloneList(ValueColumns);
-        c.ForColumns = CloneList(ForColumns);
-        c.InItems = CloneList(InItems);
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -14276,18 +14840,20 @@ public partial class UpdateStatement
 
     internal override SqlNode CloneCore()
     {
-        var c = new UpdateStatement();
+        var c = new UpdateStatement
+        {
+            Target = CloneChild(Target)!,
+            Set = CloneList(Set),
+            From = CloneList(From),
+            Where = CloneChild(Where),
+            Hint = CloneChild(Hint),
+            Returning = CloneList(Returning),
+            ReturningBulkCollect = ReturningBulkCollect,
+            ReturningInto = CloneList(ReturningInto),
+            ErrorLogging = CloneChild(ErrorLogging),
+            Labels = CloneStrings(Labels),
+        };
         CopySpan(this, c);
-        c.Target = CloneChild(Target)!;
-        c.Set = CloneList(Set);
-        c.From = CloneList(From);
-        c.Where = CloneChild(Where);
-        c.Hint = CloneChild(Hint);
-        c.Returning = CloneList(Returning);
-        c.ReturningBulkCollect = ReturningBulkCollect;
-        c.ReturningInto = CloneList(ReturningInto);
-        c.ErrorLogging = CloneChild(ErrorLogging);
-        c.Labels = CloneStrings(Labels);
         return c;
     }
 
@@ -14360,26 +14926,28 @@ public partial class UserClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new UserClause();
+        var c = new UserClause
+        {
+            Kind = Kind,
+            Password = CloneChild(Password),
+            ReplacePassword = CloneChild(ReplacePassword),
+            ExternalName = CloneChild(ExternalName),
+            Local = Local,
+            Tablespace = CloneChild(Tablespace),
+            Quota = CloneChild(Quota),
+            Unlimited = Unlimited,
+            Profile = CloneChild(Profile),
+            Proxy = CloneChild(Proxy),
+            EnterpriseUsers = EnterpriseUsers,
+            RoleSet = RoleSet,
+            Roles = CloneList(Roles),
+            ExceptRoles = CloneList(ExceptRoles),
+            AuthenticationRequired = AuthenticationRequired,
+            Container = Container,
+            Force = Force,
+            Syntax = CloneList(Syntax),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Password = CloneChild(Password);
-        c.ReplacePassword = CloneChild(ReplacePassword);
-        c.ExternalName = CloneChild(ExternalName);
-        c.Local = Local;
-        c.Tablespace = CloneChild(Tablespace);
-        c.Quota = CloneChild(Quota);
-        c.Unlimited = Unlimited;
-        c.Profile = CloneChild(Profile);
-        c.Proxy = CloneChild(Proxy);
-        c.EnterpriseUsers = EnterpriseUsers;
-        c.RoleSet = RoleSet;
-        c.Roles = CloneList(Roles);
-        c.ExceptRoles = CloneList(ExceptRoles);
-        c.AuthenticationRequired = AuthenticationRequired;
-        c.Container = Container;
-        c.Force = Force;
-        c.Syntax = CloneList(Syntax);
         return c;
     }
 
@@ -14433,10 +15001,12 @@ public partial class UsingArgument
 
     internal override SqlNode CloneCore()
     {
-        var c = new UsingArgument();
+        var c = new UsingArgument
+        {
+            Mode = Mode,
+            Value = CloneChild(Value)!,
+        };
         CopySpan(this, c);
-        c.Mode = Mode;
-        c.Value = CloneChild(Value)!;
         return c;
     }
 
@@ -14474,9 +15044,11 @@ public partial class UsingCharsetClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new UsingCharsetClause();
+        var c = new UsingCharsetClause
+        {
+            Charset = CloneChild(Charset)!,
+        };
         CopySpan(this, c);
-        c.Charset = CloneChild(Charset)!;
         return c;
     }
 
@@ -14519,11 +15091,13 @@ public partial class UsingIndexClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new UsingIndexClause();
+        var c = new UsingIndexClause
+        {
+            IndexName = CloneList(IndexName),
+            Create = CloneChild(Create),
+            Attributes = CloneList(Attributes),
+        };
         CopySpan(this, c);
-        c.IndexName = CloneList(IndexName);
-        c.Create = CloneChild(Create);
-        c.Attributes = CloneList(Attributes);
         return c;
     }
 
@@ -14562,9 +15136,11 @@ public partial class UsingListClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new UsingListClause();
+        var c = new UsingListClause
+        {
+            Items = CloneList(Items),
+        };
         CopySpan(this, c);
-        c.Items = CloneList(Items);
         return c;
     }
 
@@ -14601,10 +15177,12 @@ public partial class ValueClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new ValueClause();
+        var c = new ValueClause
+        {
+            Kind = Kind,
+            Value = CloneChild(Value),
+        };
         CopySpan(this, c);
-        c.Kind = Kind;
-        c.Value = CloneChild(Value);
         return c;
     }
 
@@ -14648,11 +15226,13 @@ public partial class ValuesOfControl
 
     internal override SqlNode CloneCore()
     {
-        var c = new ValuesOfControl();
+        var c = new ValuesOfControl
+        {
+            Collection = CloneChild(Collection)!,
+            While = CloneChild(While),
+            When = CloneChild(When),
+        };
         CopySpan(this, c);
-        c.Collection = CloneChild(Collection)!;
-        c.While = CloneChild(While);
-        c.When = CloneChild(When);
         return c;
     }
 
@@ -14691,9 +15271,11 @@ public partial class ValuesQuery
 
     internal override SqlNode CloneCore()
     {
-        var c = new ValuesQuery();
+        var c = new ValuesQuery
+        {
+            Rows = CloneNested(Rows),
+        };
         CopySpan(this, c);
-        c.Rows = CloneNested(Rows);
         return c;
     }
 
@@ -14736,11 +15318,13 @@ public partial class ValuesTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new ValuesTable();
+        var c = new ValuesTable
+        {
+            Rows = CloneNested(Rows),
+            ColumnAliases = CloneList(ColumnAliases),
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Rows = CloneNested(Rows);
-        c.ColumnAliases = CloneList(ColumnAliases);
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
@@ -14785,13 +15369,15 @@ public partial class VariableDeclaration
 
     internal override SqlNode CloneCore()
     {
-        var c = new VariableDeclaration();
+        var c = new VariableDeclaration
+        {
+            Name = CloneChild(Name)!,
+            Constant = Constant,
+            Type = CloneChild(Type)!,
+            NotNull = NotNull,
+            Default = CloneChild(Default),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Constant = Constant;
-        c.Type = CloneChild(Type)!;
-        c.NotNull = NotNull;
-        c.Default = CloneChild(Default);
         return c;
     }
 
@@ -14835,10 +15421,12 @@ public partial class ViewColumn
 
     internal override SqlNode CloneCore()
     {
-        var c = new ViewColumn();
+        var c = new ViewColumn
+        {
+            Name = CloneChild(Name)!,
+            Annotations = CloneChild(Annotations),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Annotations = CloneChild(Annotations);
         return c;
     }
 
@@ -14879,10 +15467,12 @@ public partial class WhenClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new WhenClause();
+        var c = new WhenClause
+        {
+            When = CloneChild(When)!,
+            Then = CloneChild(Then)!,
+        };
         CopySpan(this, c);
-        c.When = CloneChild(When)!;
-        c.Then = CloneChild(Then)!;
         return c;
     }
 
@@ -14923,11 +15513,13 @@ public partial class WindowFrame
 
     internal override SqlNode CloneCore()
     {
-        var c = new WindowFrame();
+        var c = new WindowFrame
+        {
+            Unit = Unit,
+            StartBound = CloneChild(StartBound)!,
+            EndBound = CloneChild(EndBound),
+        };
         CopySpan(this, c);
-        c.Unit = Unit;
-        c.StartBound = CloneChild(StartBound)!;
-        c.EndBound = CloneChild(EndBound);
         return c;
     }
 
@@ -14975,12 +15567,14 @@ public partial class WindowSpec
 
     internal override SqlNode CloneCore()
     {
-        var c = new WindowSpec();
+        var c = new WindowSpec
+        {
+            Name = CloneChild(Name),
+            PartitionBy = CloneList(PartitionBy),
+            OrderBy = CloneList(OrderBy),
+            Frame = CloneChild(Frame),
+        };
         CopySpan(this, c);
-        c.Name = CloneChild(Name);
-        c.PartitionBy = CloneList(PartitionBy);
-        c.OrderBy = CloneList(OrderBy);
-        c.Frame = CloneChild(Frame);
         return c;
     }
 
@@ -15003,11 +15597,13 @@ public partial class WordItem
 
     internal override SqlNode CloneCore()
     {
-        var c = new WordItem();
+        var c = new WordItem
+        {
+            Value = Value,
+            Quoted = Quoted,
+            Text = Text,
+        };
         CopySpan(this, c);
-        c.Value = Value;
-        c.Quoted = Quoted;
-        c.Text = Text;
         return c;
     }
 
@@ -15028,12 +15624,14 @@ public partial class WrapperClause
 
     internal override SqlNode CloneCore()
     {
-        var c = new WrapperClause();
+        var c = new WrapperClause
+        {
+            With = With,
+            Conditional = Conditional,
+            Unconditional = Unconditional,
+            Array = Array,
+        };
         CopySpan(this, c);
-        c.With = With;
-        c.Conditional = Conditional;
-        c.Unconditional = Unconditional;
-        c.Array = Array;
         return c;
     }
 
@@ -15076,11 +15674,13 @@ public partial class XmlNamespace
 
     internal override SqlNode CloneCore()
     {
-        var c = new XmlNamespace();
+        var c = new XmlNamespace
+        {
+            Uri = CloneChild(Uri)!,
+            Alias = CloneChild(Alias),
+            IsDefault = IsDefault,
+        };
         CopySpan(this, c);
-        c.Uri = CloneChild(Uri)!;
-        c.Alias = CloneChild(Alias);
-        c.IsDefault = IsDefault;
         return c;
     }
 
@@ -15131,13 +15731,15 @@ public partial class XmlTable
 
     internal override SqlNode CloneCore()
     {
-        var c = new XmlTable();
+        var c = new XmlTable
+        {
+            Namespaces = CloneList(Namespaces),
+            XQuery = CloneChild(XQuery)!,
+            Passing = CloneChild(Passing),
+            Columns = CloneList(Columns),
+            Alias = CloneChild(Alias),
+        };
         CopySpan(this, c);
-        c.Namespaces = CloneList(Namespaces);
-        c.XQuery = CloneChild(XQuery)!;
-        c.Passing = CloneChild(Passing);
-        c.Columns = CloneList(Columns);
-        c.Alias = CloneChild(Alias);
         return c;
     }
 
