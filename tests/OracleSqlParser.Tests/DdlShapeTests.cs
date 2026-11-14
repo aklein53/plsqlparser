@@ -158,7 +158,7 @@ public class DdlShapeTests
     [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'", "(CreateDatabaseLinkStatement name=[L] connectUser=U connectPassword=P using='tns')")]
     [InlineData("CREATE OR REPLACE PUBLIC DATABASE LINK l USING 'x'", "(CreateDatabaseLinkStatement orReplace public name=[L] using='x')")]
     [InlineData("CREATE DIRECTORY d AS '/tmp'", "(CreateDirectoryStatement name=D path='/tmp')")]
-    [InlineData("CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M", "(CreateObjectStatement kind=Tablespace name=[TS] body=[(WordItem value=DATAFILE) (LiteralItem kind=String value=f.dbf) (WordItem value=SIZE) (LiteralItem kind=Number value=10M)])")]
+    [InlineData("CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M", "(CreateTablespaceStatement name=TS files=[(DatafileSpec path='f.dbf' size=10M)])")]
     [InlineData("CREATE DOMAIN d AS NUMBER(3)", "(CreateObjectStatement kind=Domain name=[D] body=[(WordItem value=AS) (WordItem value=NUMBER) (GroupItem items=[(LiteralItem kind=Number value=3)])])")]
     [InlineData("CREATE PROPERTY GRAPH g VERTEX TABLES (v)", "(CreateObjectStatement kind=PropertyGraph name=[G] body=[(WordItem value=VERTEX) (WordItem value=TABLES) (GroupItem items=[(WordItem value=V)])])")]
     [InlineData("CREATE JSON RELATIONAL DUALITY VIEW dv AS SELECT 1", "(CreateObjectStatement kind=JsonRelationalDualityView name=[DV] body=[(WordItem value=AS) (WordItem value=SELECT) (LiteralItem kind=Number value=1)])")]
@@ -213,6 +213,23 @@ public class DdlShapeTests
         "(CreateContextStatement orReplace name=NS package=[SEC PKG] initialized=Globally accessedGlobally)")]
     [InlineData("CREATE CONTEXT ctx USING p INITIALIZED EXTERNALLY", "(CreateContextStatement name=CTX package=[P] initialized=Externally)")]
     public void CreateDirectoryDbLinkContext(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("CREATE BIGFILE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M AUTOEXTEND ON NEXT 1M MAXSIZE UNLIMITED NOLOGGING ONLINE EXTENT MANAGEMENT LOCAL UNIFORM SIZE 1M SEGMENT SPACE MANAGEMENT AUTO",
+        "(CreateTablespaceStatement bigfile=true name=TS files=[(DatafileSpec path='f.dbf' size=10M autoextend=true nextSize=1M maxSizeUnlimited)] logging=false online=true extentManagementLocal extentPolicy=Uniform uniformSize=1M segmentSpace=Auto)")]
+    [InlineData("CREATE TEMPORARY TABLESPACE tmp TEMPFILE 't.dbf' SIZE 5M REUSE", "(CreateTablespaceStatement kind=Temporary name=TMP files=[(DatafileSpec tempfile path='t.dbf' size=5M reuse)])")]
+    [InlineData("CREATE UNDO TABLESPACE u DATAFILE 'u.dbf' SIZE 1G AUTOEXTEND OFF", "(CreateTablespaceStatement kind=Undo name=U files=[(DatafileSpec path='u.dbf' size=1G autoextend=false)])")]
+    [InlineData("CREATE SMALLFILE TABLESPACE t2 ENCRYPTION USING 'AES256' DEFAULT STORAGE (ENCRYPT) BLOCKSIZE 8K",
+        "(CreateTablespaceStatement bigfile=false name=T2 encryption encryptionUsing='AES256' defaultStorageEncrypt otherClauses=[(WordItem value=BLOCKSIZE) (LiteralItem kind=Number value=8K)])")]
+    [InlineData("ALTER TABLESPACE ts ADD DATAFILE 'a.dbf' SIZE 1M, 'b.dbf' SIZE 2M",
+        "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=AddDatafile files=[(DatafileSpec path='a.dbf' size=1M) (DatafileSpec path='b.dbf' size=2M)])])")]
+    [InlineData("ALTER TABLESPACE ts DATAFILE 'a.dbf' RESIZE 200M", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=Resize target=(DatafileSpec path='a.dbf' size=200M))])")]
+    [InlineData("ALTER TABLESPACE ts DATAFILE 'a.dbf' AUTOEXTEND ON NEXT 10M MAXSIZE 4G",
+        "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=Autoextend target=(DatafileSpec path='a.dbf' autoextend=true nextSize=10M maxSize=4G))])")]
+    [InlineData("ALTER TABLESPACE ts OFFLINE IMMEDIATE", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=Offline mode=Immediate)])")]
+    [InlineData("ALTER TABLESPACE ts READ ONLY BEGIN BACKUP", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=ReadOnly) (TablespaceAction kind=BeginBackup)])")]
+    [InlineData("ALTER TABLESPACE ts RENAME TO ts2", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=RenameTo newName=TS2)])")]
+    public void CreateAlterTablespace(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Fact]
     public void CreateJava_Source()

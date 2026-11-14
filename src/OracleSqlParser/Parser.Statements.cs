@@ -683,6 +683,148 @@ public sealed partial class SqlParser
         return Fin(st, start);
     }
 
+    // ---- CREATE / ALTER TABLESPACE ----
+
+    private Statement ParseCreateTablespace(Token start, bool orReplace, bool pub, bool? bigfile, TablespaceType? kind)
+    {
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE TABLESPACE");
+        var st = new CreateTablespaceStatement { Bigfile = bigfile, Kind = kind, IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog)) ParseTablespaceOption(st);
+        return Fin(st, start);
+    }
+
+    private void ParseTablespaceOption(CreateTablespaceStatement st)
+    {
+        if (IsKw("DATAFILE") || IsKw("TEMPFILE"))
+        {
+            bool temp = Next().Value == "TEMPFILE";
+            do st.Files.Add(ParseDatafileSpec(temp)); while (AcceptOp(","));
+        }
+        else if (AcceptKw("LOGGING")) st.Logging = true;
+        else if (AcceptKw("NOLOGGING")) st.Logging = false;
+        else if (AcceptKw("ONLINE")) st.Online = true;
+        else if (AcceptKw("OFFLINE")) st.Online = false;
+        else if (IsKw("EXTENT") && IsKwAt(1, "MANAGEMENT") && IsKwAt(2, "LOCAL"))
+        {
+            Next(); Next(); Next();
+            st.ExtentManagementLocal = true;
+            if (AcceptKw("AUTOALLOCATE")) st.ExtentPolicy = ExtentPolicy.Autoallocate;
+            else if (AcceptKw("UNIFORM"))
+            {
+                st.ExtentPolicy = ExtentPolicy.Uniform;
+                if (AcceptKw("SIZE")) st.UniformSize = ParseAdditive();
+            }
+        }
+        else if (IsKw("SEGMENT") && IsKwAt(1, "SPACE") && IsKwAt(2, "MANAGEMENT") && (IsKwAt(3, "AUTO") || IsKwAt(3, "MANUAL")))
+        {
+            Next(); Next(); Next();
+            st.SegmentSpace = Next().Value == "AUTO" ? SegmentSpaceMode.Auto : SegmentSpaceMode.Manual;
+        }
+        else if (AcceptKw("ENCRYPTION"))
+        {
+            st.Encryption = true;
+            if (AcceptKw("USING")) st.EncryptionUsing = ParseAdditive();
+            if (IsKw("DEFAULT") && IsKwAt(1, "STORAGE") && IsOpAt(2, "(") && IsKwAt(3, "ENCRYPT") && IsOpAt(4, ")"))
+            {
+                for (int i = 0; i < 5; i++) Next();
+                st.DefaultStorageEncrypt = true;
+            }
+        }
+        else st.OtherClauses.Add(ParseSyntaxItem());
+    }
+
+    /// <summary>'name' [SIZE n] [REUSE] [AUTOEXTEND ...] of a DATAFILE or TEMPFILE clause.</summary>
+    private DatafileSpec ParseDatafileSpec(bool tempfile)
+    {
+        var s = Cur;
+        var f = new DatafileSpec { Tempfile = tempfile, Path = ParseAdditive() };
+        int prog = -1;
+        while (Progress(ref prog))
+        {
+            if (AcceptKw("SIZE")) f.Size = ParseAdditive();
+            else if (AcceptKw("REUSE")) f.Reuse = true;
+            else if (IsKw("AUTOEXTEND")) ParseAutoextend(f);
+            else break;
+        }
+        return Fin(f, s);
+    }
+
+    /// <summary>AUTOEXTEND ON|OFF [NEXT n] [MAXSIZE n | UNLIMITED].</summary>
+    private void ParseAutoextend(DatafileSpec f)
+    {
+        ExpectKw("AUTOEXTEND");
+        if (AcceptKw("OFF")) f.Autoextend = false;
+        else { ExpectKw("ON"); f.Autoextend = true; }
+        if (AcceptKw("NEXT")) f.NextSize = ParseAdditive();
+        if (AcceptKw("MAXSIZE"))
+        {
+            if (AcceptKw("UNLIMITED")) f.MaxSizeUnlimited = true;
+            else f.MaxSize = ParseAdditive();
+        }
+    }
+
+    private Statement ParseAlterTablespace(Token start, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to ALTER TABLESPACE");
+        var st = new AlterTablespaceStatement { IfExists = TryIfExists() };
+        st.Name = ParseIdentifier();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog)) st.Actions.Add(ParseTablespaceAction());
+        return Fin(st, start);
+    }
+
+    private TablespaceAction ParseTablespaceAction()
+    {
+        var s = Cur;
+        var a = new TablespaceAction();
+        if (IsKw("ADD") && (IsKwAt(1, "DATAFILE") || IsKwAt(1, "TEMPFILE")))
+        {
+            Next();
+            bool temp = Next().Value == "TEMPFILE";
+            a.Kind = temp ? TablespaceActionKind.AddTempfile : TablespaceActionKind.AddDatafile;
+            do a.Files.Add(ParseDatafileSpec(temp)); while (AcceptOp(","));
+        }
+        else if ((IsKw("DATAFILE") || IsKw("TEMPFILE")) && PeekTok(1).Type == TokenType.String
+                 && (IsKwAt(2, "RESIZE") || IsKwAt(2, "AUTOEXTEND") || IsKwAt(2, "ONLINE") || IsKwAt(2, "OFFLINE")))
+        {
+            bool temp = Next().Value == "TEMPFILE";
+            var t = new DatafileSpec { Tempfile = temp, Path = ParseAdditive() };
+            a.Target = t;
+            if (AcceptKw("RESIZE")) { a.Kind = TablespaceActionKind.Resize; t.Size = ParseAdditive(); }
+            else if (IsKw("AUTOEXTEND")) { a.Kind = TablespaceActionKind.Autoextend; ParseAutoextend(t); }
+            else if (AcceptKw("ONLINE")) a.Kind = TablespaceActionKind.Online;
+            else { ExpectKw("OFFLINE"); a.Kind = TablespaceActionKind.Offline; }
+        }
+        else if (AcceptKw("ONLINE")) a.Kind = TablespaceActionKind.Online;
+        else if (AcceptKw("OFFLINE"))
+        {
+            a.Kind = TablespaceActionKind.Offline;
+            if (AcceptKw("NORMAL")) a.Mode = OfflineMode.Normal;
+            else if (AcceptKw("TEMPORARY")) a.Mode = OfflineMode.Temporary;
+            else if (AcceptKw("IMMEDIATE")) a.Mode = OfflineMode.Immediate;
+        }
+        else if (IsKw("READ") && (IsKwAt(1, "ONLY") || IsKwAt(1, "WRITE")))
+        {
+            Next();
+            a.Kind = Next().Value == "ONLY" ? TablespaceActionKind.ReadOnly : TablespaceActionKind.ReadWrite;
+        }
+        else if (AcceptKw("RENAME")) { ExpectKw("TO"); a.Kind = TablespaceActionKind.RenameTo; a.NewName = ParseIdentifier(); }
+        else if (AcceptKw("LOGGING")) a.Kind = TablespaceActionKind.Logging;
+        else if (AcceptKw("NOLOGGING")) a.Kind = TablespaceActionKind.NoLogging;
+        else if (IsKw("BEGIN") && IsKwAt(1, "BACKUP")) { Next(); Next(); a.Kind = TablespaceActionKind.BeginBackup; }
+        else if (IsKw("END") && IsKwAt(1, "BACKUP")) { Next(); Next(); a.Kind = TablespaceActionKind.EndBackup; }
+        else
+        {
+            // Not modelled: keep one token so the action order survives a round trip.
+            a.Kind = TablespaceActionKind.Other;
+            a.Syntax.Add(ParseSyntaxItem());
+        }
+        return Fin(a, s);
+    }
+
     // ---- DROP / ALTER (generic) ----
 
     private Statement ParseDrop()
@@ -720,6 +862,7 @@ public sealed partial class SqlParser
         if (kind == ObjectKind.User) return ParseAlterUser(start, pub);
         if (kind == ObjectKind.Role) return ParseAlterRole(start, pub);
         if (kind == ObjectKind.Profile) return ParseAlterProfile(start, pub);
+        if (kind == ObjectKind.Tablespace) return ParseAlterTablespace(start, pub);
         var st = new AlterObjectStatement { Kind = kind, Public = pub };
         st.IfExists = TryIfExists();
         if (ObjectKindHasName(kind) && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) st.Name = ParseDottedName();
@@ -783,6 +926,8 @@ public sealed partial class SqlParser
         var start = Next();
         bool orReplace = false, unique = false, bitmap = false, pub = false, andResolve = false, andCompile = false, noForce = false;
         bool force = false, editioning = false, gtt = false, ptt = false, dup = false, imm = false, blk = false, shared = false;
+        bool? bigfile = null;
+        TablespaceType? tsType = null;
         EditionableKind? editionable = null;
         int prog22 = -1;
         while (Progress(ref prog22))
@@ -802,6 +947,9 @@ public sealed partial class SqlParser
             else if (IsKw("UNIQUE")) { Next(); unique = true; }
             else if (IsKw("BITMAP")) { Next(); bitmap = true; }
             else if (IsKw("SHARED") && (IsKwAt(1, "PUBLIC") || IsKwAt(1, "DATABASE"))) { Next(); shared = true; }
+            else if ((IsKw("BIGFILE") || IsKw("SMALLFILE")) && (IsKwAt(1, "TABLESPACE") || IsKwAt(1, "TEMPORARY") || IsKwAt(1, "UNDO"))) { bigfile = Next().Value == "BIGFILE"; }
+            else if (IsKw("TEMPORARY") && IsKwAt(1, "TABLESPACE")) { Next(); tsType = TablespaceType.Temporary; }
+            else if (IsKw("UNDO") && IsKwAt(1, "TABLESPACE")) { Next(); tsType = TablespaceType.Undo; }
             else if (IsKw("PUBLIC")) { Next(); pub = true; }
             else break;
         }
@@ -815,6 +963,7 @@ public sealed partial class SqlParser
         TryParseObjectKind(out var kind);
         switch (kind)
         {
+            case ObjectKind.Tablespace: return ParseCreateTablespace(start, orReplace, pub, bigfile, tsType);
             case ObjectKind.DatabaseLink: return ParseCreateDatabaseLink(start, orReplace, pub, shared);
             case ObjectKind.Directory: return ParseCreateDirectory(start, orReplace, pub);
             case ObjectKind.Context: return ParseCreateContext(start, orReplace, pub);

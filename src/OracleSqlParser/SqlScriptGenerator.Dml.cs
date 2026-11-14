@@ -29,7 +29,8 @@ public sealed partial class SqlScriptGenerator
                     or CreateJavaStatement or CreateLibraryStatement or CreateUserStatement or AlterUserStatement
                     or CreateRoleStatement or AlterRoleStatement
                     or CreateProfileStatement or AlterProfileStatement
-                    or CreateDirectoryStatement or CreateDatabaseLinkStatement or CreateContextStatement:
+                    or CreateDirectoryStatement or CreateDatabaseLinkStatement or CreateContextStatement
+                    or CreateTablespaceStatement or AlterTablespaceStatement:
                     Ddl(st); break;
                 // PL/SQL
                 case Block or CreateProgramStatement or CreatePackageStatement or CreatePackageBodyStatement or CreateTriggerStatement

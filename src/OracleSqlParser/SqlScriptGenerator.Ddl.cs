@@ -74,6 +74,21 @@ public sealed partial class SqlScriptGenerator
                     RoleIdentificationText(ar.Authentication, ar.Password, ar.Package);
                     ContainerClause(ar.Container);
                     break;
+                case CreateTablespaceStatement ct:
+                    Add("CREATE");
+                    if (ct.Bigfile != null) Add(ct.Bigfile.Value ? " BIGFILE" : " SMALLFILE");
+                    if (ct.Kind != null) Add(ct.Kind == TablespaceType.Temporary ? " TEMPORARY" : ct.Kind == TablespaceType.Undo ? " UNDO" : "");
+                    Add(" TABLESPACE");
+                    if (ct.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(ct.Name);
+                    TablespaceClauses(ct);
+                    break;
+                case AlterTablespaceStatement at:
+                    Add("ALTER TABLESPACE");
+                    if (at.IfExists) Add(" IF EXISTS");
+                    Sp(); Id(at.Name);
+                    foreach (var a in at.Actions) { Sp(); TablespaceActionText(a); }
+                    break;
                 case CreateDirectoryStatement cd:
                     Add("CREATE");
                     if (cd.OrReplace) Add(" OR REPLACE");
@@ -215,6 +230,88 @@ public sealed partial class SqlScriptGenerator
             if (l.Keyword != null) Add(l.Keyword switch { ProfileKeyword.Unlimited => "UNLIMITED", ProfileKeyword.Default => "DEFAULT", _ => "NULL" });
             else if (l.Function.Count > 0) Name(l.Function);
             else Expr(l.Value!);
+        }
+
+        // ---------- CREATE / ALTER TABLESPACE ----------
+
+        /// <summary>'name' [SIZE n] [REUSE] [AUTOEXTEND ...]: the CREATE and ADD forms.</summary>
+        private void DatafileSpecText(DatafileSpec f)
+        {
+            Expr(f.Path!);
+            if (f.Size != null) { Add(" SIZE "); Expr(f.Size); }
+            if (f.Reuse) Add(" REUSE");
+            AutoextendText(f);
+        }
+
+        private void AutoextendText(DatafileSpec f)
+        {
+            if (f.Autoextend == null) return;
+            Add(f.Autoextend.Value ? " AUTOEXTEND ON" : " AUTOEXTEND OFF");
+            if (f.NextSize != null) { Add(" NEXT "); Expr(f.NextSize); }
+            if (f.MaxSizeUnlimited) Add(" MAXSIZE UNLIMITED");
+            else if (f.MaxSize != null) { Add(" MAXSIZE "); Expr(f.MaxSize); }
+        }
+
+        private void TablespaceActionText(TablespaceAction a)
+        {
+            switch (a.Kind)
+            {
+                case TablespaceActionKind.AddDatafile: Add("ADD DATAFILE "); Sep(a.Files, DatafileSpecText); break;
+                case TablespaceActionKind.AddTempfile: Add("ADD TEMPFILE "); Sep(a.Files, DatafileSpecText); break;
+                case TablespaceActionKind.Resize:
+                    FileTarget(a.Target!); Add(" RESIZE "); Expr(a.Target!.Size!);
+                    break;
+                case TablespaceActionKind.Autoextend: FileTarget(a.Target!); AutoextendText(a.Target!); break;
+                case TablespaceActionKind.Online: if (a.Target != null) { FileTarget(a.Target); Add(" ONLINE"); } else Add("ONLINE"); break;
+                case TablespaceActionKind.Offline:
+                    if (a.Target != null) { FileTarget(a.Target); Add(" OFFLINE"); break; }
+                    Add("OFFLINE");
+                    if (a.Mode != null) Add(" " + a.Mode.Value.ToString().ToUpperInvariant());
+                    break;
+                case TablespaceActionKind.ReadOnly: Add("READ ONLY"); break;
+                case TablespaceActionKind.ReadWrite: Add("READ WRITE"); break;
+                case TablespaceActionKind.RenameTo: Add("RENAME TO "); Id(a.NewName!); break;
+                case TablespaceActionKind.Logging: Add("LOGGING"); break;
+                case TablespaceActionKind.NoLogging: Add("NOLOGGING"); break;
+                case TablespaceActionKind.BeginBackup: Add("BEGIN BACKUP"); break;
+                case TablespaceActionKind.EndBackup: Add("END BACKUP"); break;
+                default: SyntaxList(a.Syntax); break;
+            }
+        }
+
+        private void FileTarget(DatafileSpec f)
+        {
+            Add(f.Tempfile ? "TEMPFILE " : "DATAFILE ");
+            Expr(f.Path!);
+        }
+
+        private void TablespaceClauses(CreateTablespaceStatement ct)
+        {
+            if (ct.Files.Count > 0)
+            {
+                Add(ct.Files[0].Tempfile ? " TEMPFILE " : " DATAFILE ");
+                Sep(ct.Files, DatafileSpecText);
+            }
+            if (ct.Logging != null) Add(ct.Logging.Value ? " LOGGING" : " NOLOGGING");
+            if (ct.Online != null) Add(ct.Online.Value ? " ONLINE" : " OFFLINE");
+            if (ct.ExtentManagementLocal)
+            {
+                Add(" EXTENT MANAGEMENT LOCAL");
+                if (ct.ExtentPolicy == ExtentPolicy.Autoallocate) Add(" AUTOALLOCATE");
+                else if (ct.ExtentPolicy == ExtentPolicy.Uniform)
+                {
+                    Add(" UNIFORM");
+                    if (ct.UniformSize != null) { Add(" SIZE "); Expr(ct.UniformSize); }
+                }
+            }
+            if (ct.SegmentSpace != null) Add(ct.SegmentSpace == SegmentSpaceMode.Auto ? " SEGMENT SPACE MANAGEMENT AUTO" : " SEGMENT SPACE MANAGEMENT MANUAL");
+            if (ct.Encryption)
+            {
+                Add(" ENCRYPTION");
+                if (ct.EncryptionUsing != null) { Add(" USING "); Expr(ct.EncryptionUsing); }
+                if (ct.DefaultStorageEncrypt) Add(" DEFAULT STORAGE (ENCRYPT)");
+            }
+            if (ct.OtherClauses.Count > 0) { Sp(); SyntaxList(ct.OtherClauses); }
         }
 
         // ---------- CREATE / ALTER USER ----------

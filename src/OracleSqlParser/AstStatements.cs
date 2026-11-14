@@ -382,6 +382,81 @@ public sealed partial class CreateContextStatement : Statement
     public bool AccessedGlobally { get; set; }
 }
 
+// ---------- CREATE / ALTER TABLESPACE ----------
+
+public enum TablespaceType { Permanent, Temporary, Undo }
+public enum ExtentPolicy { Autoallocate, Uniform }
+public enum SegmentSpaceMode { Auto, Manual }
+public enum OfflineMode { Normal, Temporary, Immediate }
+
+/// <summary>A datafile or tempfile: 'name' [SIZE n] [REUSE] [AUTOEXTEND ON|OFF [NEXT n] [MAXSIZE n|UNLIMITED]].</summary>
+public sealed partial class DatafileSpec : SqlNode
+{
+    /// <summary>TEMPFILE rather than DATAFILE.</summary>
+    public bool Tempfile { get; set; }
+    public Expression? Path { get; set; }
+    public Expression? Size { get; set; }
+    public bool Reuse { get; set; }
+    /// <summary>AUTOEXTEND ON (true) or OFF (false); null when the clause is absent.</summary>
+    public bool? Autoextend { get; set; }
+    public Expression? NextSize { get; set; }
+    public Expression? MaxSize { get; set; }
+    public bool MaxSizeUnlimited { get; set; }
+}
+
+public sealed partial class CreateTablespaceStatement : Statement
+{
+    /// <summary>BIGFILE (true) or SMALLFILE (false); null when neither is given.</summary>
+    public bool? Bigfile { get; set; }
+    public TablespaceType? Kind { get; set; }
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    /// <summary>DATAFILE or TEMPFILE specs (one keyword per clause, comma-separated specs).</summary>
+    public List<DatafileSpec> Files { get; set; } = [];
+    /// <summary>LOGGING (true) or NOLOGGING (false).</summary>
+    public bool? Logging { get; set; }
+    /// <summary>ONLINE (true) or OFFLINE (false).</summary>
+    public bool? Online { get; set; }
+    /// <summary>EXTENT MANAGEMENT LOCAL [...].</summary>
+    public bool ExtentManagementLocal { get; set; }
+    public ExtentPolicy? ExtentPolicy { get; set; }
+    public Expression? UniformSize { get; set; }
+    public SegmentSpaceMode? SegmentSpace { get; set; }
+    public bool Encryption { get; set; }
+    public Expression? EncryptionUsing { get; set; }
+    /// <summary>DEFAULT STORAGE (ENCRYPT).</summary>
+    public bool DefaultStorageEncrypt { get; set; }
+    /// <summary>Rarely used options (BLOCKSIZE, FLASHBACK, RETENTION, ...) as a token tree.</summary>
+    public List<SyntaxItem> OtherClauses { get; set; } = [];
+}
+
+public enum TablespaceActionKind
+{
+    AddDatafile, AddTempfile, Resize, Autoextend, Online, Offline, ReadOnly, ReadWrite, RenameTo, Logging, NoLogging,
+    BeginBackup, EndBackup, Other,
+}
+
+/// <summary>One action of ALTER TABLESPACE. File-level actions (RESIZE, AUTOEXTEND, ONLINE/OFFLINE of a file) set <see cref="Target"/>.</summary>
+public sealed partial class TablespaceAction : SqlNode
+{
+    public TablespaceActionKind Kind { get; set; }
+    /// <summary>ADD DATAFILE/TEMPFILE specs.</summary>
+    public List<DatafileSpec> Files { get; set; } = [];
+    public DatafileSpec? Target { get; set; }
+    /// <summary>OFFLINE [NORMAL | TEMPORARY | IMMEDIATE] of the tablespace.</summary>
+    public OfflineMode? Mode { get; set; }
+    public Identifier? NewName { get; set; }
+    /// <summary>The unmodelled token of an <see cref="TablespaceActionKind.Other"/> action.</summary>
+    public List<SyntaxItem> Syntax { get; set; } = [];
+}
+
+public sealed partial class AlterTablespaceStatement : Statement
+{
+    public bool IfExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<TablespaceAction> Actions { get; set; } = [];
+}
+
 // ---------- Generic object DDL (typed header + token-tree body) ----------
 
 public enum ObjectKind
