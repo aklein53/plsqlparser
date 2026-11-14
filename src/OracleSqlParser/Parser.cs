@@ -61,10 +61,13 @@ public sealed partial class SqlParser
         return e;
     }
 
-    /// <summary>Parses a single statement; throws ParseException on error.</summary>
+    /// <summary>
+    /// Parses a single statement; throws <see cref="ParseException"/> on error. Stops at the first error, so
+    /// <see cref="ParseException.Errors"/> holds one diagnostic.
+    /// </summary>
     public static Statement ParseStatement(string sql) => ParseStatement(sql, null);
 
-    /// <summary>Parses a single statement with explicit options; throws ParseException on error.</summary>
+    /// <summary>Parses a single statement with explicit options; throws <see cref="ParseException"/> on error (see <see cref="ParseStatement(string)"/>).</summary>
     public static Statement ParseStatement(string sql, ParseOptions? options)
     {
         var p = new SqlParser(Lexer.Tokenize(sql, options?.SubstitutionEnabled ?? true), sql, options);
@@ -73,6 +76,85 @@ public sealed partial class SqlParser
         if (p.Cur.Type != TokenType.EOF) throw p.Fail($"Unexpected '{p.Cur.Text}' after statement");
         if (p._versionErrors.Count > 0) throw new ParseException(p._versionErrors[0]);
         return s;
+    }
+
+    /// <summary>
+    /// Parses a script and reports diagnostics without throwing. Returns true when <paramref name="errors"/> is empty.
+    /// <paramref name="script"/> is never null; when parsing failed it holds the statements that were recovered.
+    /// This is <see cref="Parse(string, ParseOptions?)"/> in try-form.
+    /// </summary>
+    /// <param name="sql">The script to parse.</param>
+    /// <param name="script">The parsed script (possibly partial when the method returns false).</param>
+    /// <param name="errors">Every diagnostic, in the same order as <see cref="ParseResult.Errors"/>.</param>
+    /// <param name="options">Parse options, or null for the defaults.</param>
+    public static bool TryParse(string sql, out SqlScript script, out IReadOnlyList<ParseError> errors, ParseOptions? options = null)
+    {
+        var result = Parse(sql, options);
+        script = result.Script;
+        errors = result.Errors;
+        return result.Success;
+    }
+
+    /// <summary>
+    /// Parses input that must be exactly one SELECT statement and returns it. Throws <see cref="ParseException"/>
+    /// when the script has any diagnostic, when it has no statement, when it has more than one, or when its single
+    /// statement is not a SELECT (for example an INSERT). Trailing ';' and '/' are allowed. A non-SELECT statement
+    /// yields a <see cref="ParseErrorCodes.NotSingleSelect"/> diagnostic.
+    /// </summary>
+    public static SelectStatement ParseSelect(string sql) => ParseSelect(sql, null);
+
+    /// <summary>Parses exactly one SELECT statement with explicit options; throws <see cref="ParseException"/> (see <see cref="ParseSelect(string)"/>).</summary>
+    public static SelectStatement ParseSelect(string sql, ParseOptions? options)
+    {
+        var result = Parse(sql, options);
+        if (!result.Success) throw new ParseException(result.Errors);
+        var select = FindSingleSelect(result.Script, out var error);
+        return select ?? throw new ParseException(error!);
+    }
+
+    /// <summary>
+    /// Non-throwing form of <see cref="ParseSelect(string)"/>. Returns true and sets <paramref name="select"/> when the
+    /// input is exactly one SELECT statement; otherwise returns false, sets <paramref name="select"/> to null and
+    /// reports the diagnostics in <paramref name="errors"/> (never empty when false).
+    /// </summary>
+    public static bool TryParseSelect(string sql, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out SelectStatement? select,
+        out IReadOnlyList<ParseError> errors, ParseOptions? options = null)
+    {
+        var result = Parse(sql, options);
+        if (!result.Success)
+        {
+            select = null;
+            errors = result.Errors;
+            return false;
+        }
+        select = FindSingleSelect(result.Script, out var error);
+        errors = error is null ? [] : [error];
+        return select is not null;
+    }
+
+    /// <summary>Returns the script's only statement when it is a SELECT; otherwise null and a NotSingleSelect error.</summary>
+    private static SelectStatement? FindSingleSelect(SqlScript script, out ParseError? error)
+    {
+        var statements = script.Statements;
+        error = null;
+        if (statements.Count == 1 && statements[0] is SelectStatement select) return select;
+        if (statements.Count == 0)
+        {
+            error = new ParseError("Expected a SELECT statement but the input has no statement", 0, 1, 1, 0, ParseErrorCodes.NotSingleSelect);
+        }
+        else if (statements.Count > 1)
+        {
+            var at = statements[1];
+            error = new ParseError($"Expected a single SELECT statement but found {statements.Count} statements",
+                at.Start, at.Line, at.Column, at.End - at.Start, ParseErrorCodes.NotSingleSelect);
+        }
+        else
+        {
+            var only = statements[0];
+            error = new ParseError($"Expected a SELECT statement but found {only.GetType().Name}",
+                only.Start, only.Line, only.Column, only.End - only.Start, ParseErrorCodes.NotSingleSelect);
+        }
+        return null;
     }
 
     private static List<Token> TokenizeLenient(string sql, List<ParseError> errors, bool substitutionEnabled)

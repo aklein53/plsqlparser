@@ -27,7 +27,7 @@ public static class ParseErrorCodes
     /// <summary>PSP0007: a form the parser does not implement yet, although Oracle accepts it (for example an unsupported GRAPH_TABLE quantifier).</summary>
     public const string UnsupportedForm = "PSP0007";
 
-    /// <summary>PSP0008: <c>SqlParser.ParseSelect</c> found input that is not exactly one SELECT statement.</summary>
+    /// <summary>PSP0008: <see cref="SqlParser.ParseSelect(string, ParseOptions?)"/> found input that is not exactly one SELECT statement.</summary>
     public const string NotSingleSelect = "PSP0008";
 
     /// <summary>PSP0099: an internal parser defect was contained. Please report it; the input itself is usually valid.</summary>
@@ -124,7 +124,7 @@ public sealed class ParseError
 
 /// <summary>
 /// Thrown by the parser entry points that return a single result (<see cref="SqlParser.ParseStatement(string, ParseOptions?)"/>,
-/// <see cref="SqlParser.ParseExpression(string, ParseOptions?)"/>, <c>SqlParser.ParseSelect</c>).
+/// <see cref="SqlParser.ParseExpression(string, ParseOptions?)"/>, <see cref="SqlParser.ParseSelect(string, ParseOptions?)"/>).
 /// <see cref="Errors"/> holds every diagnostic that was found, and <see cref="Error"/> the first one.
 /// </summary>
 public sealed class ParseException : Exception
