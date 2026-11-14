@@ -153,6 +153,28 @@ public class DdlShapeTests
     public void AlterTable(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
+    [InlineData("ALTER INDEX ix REBUILD", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Rebuild)])")]
+    [InlineData("ALTER INDEX ix REBUILD PARTITION p3 ONLINE TABLESPACE ts PARALLEL 4 NOLOGGING",
+        "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Rebuild partition=P3 online attributes=[(TablespaceAttribute name=TS) (ParallelAttribute degree=4) (LoggingAttribute)])])")]
+    [InlineData("ALTER INDEX ix REBUILD SUBPARTITION s1 REVERSE COMPRESS 2", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Rebuild partition=S1 subpartition reverse=true attributes=[(CompressAttribute compress prefixLength=2)])])")]
+    [InlineData("ALTER INDEX ix REBUILD NOREVERSE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Rebuild reverse=false)])")]
+    [InlineData("ALTER INDEX ix RENAME TO ix2", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=RenameTo newName=IX2)])")]
+    [InlineData("ALTER INDEX ix UNUSABLE ONLINE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Unusable online)])")]
+    [InlineData("ALTER INDEX ix INVISIBLE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Visibility visible=false)])")]
+    [InlineData("ALTER INDEX ix VISIBLE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Visibility visible=true)])")]
+    [InlineData("ALTER INDEX ix NOMONITORING USAGE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=MonitoringUsage monitoring=false)])")]
+    [InlineData("ALTER INDEX ix MONITORING USAGE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=MonitoringUsage monitoring=true)])")]
+    [InlineData("ALTER INDEX ix COALESCE CLEANUP ONLY", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Coalesce cleanup only)])")]
+    [InlineData("ALTER INDEX ix ENABLE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=EnableDisable enabled=true)])")]
+    [InlineData("ALTER INDEX ix DISABLE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=EnableDisable enabled=false)])")]
+    [InlineData("ALTER INDEX ix PARALLEL 4 NOLOGGING", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Attributes attributes=[(ParallelAttribute degree=4) (LoggingAttribute)])])")]
+    [InlineData("ALTER INDEX ix SHRINK SPACE COMPACT CASCADE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=ShrinkSpace compact cascade)])")]
+    [InlineData("ALTER INDEX ix DEALLOCATE UNUSED", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=DeallocateUnused)])")]
+    [InlineData("ALTER INDEX ix DEALLOCATE UNUSED KEEP 1024", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=DeallocateUnused keep=1024)])")]
+    [InlineData("ALTER INDEX ix REBUILD TABLESPACE ts ONLINE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Rebuild online attributes=[(TablespaceAttribute name=TS)])])")]
+    public void AlterIndex(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
     [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateObjectStatement kind=User name=[BOB] body=[(WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=PW)])")]
     [InlineData("CREATE ROLE r", "(CreateObjectStatement kind=Role name=[R])")]
     [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'",
@@ -165,7 +187,6 @@ public class DdlShapeTests
     [InlineData("CREATE JSON RELATIONAL DUALITY VIEW dv AS SELECT 1", "(CreateObjectStatement kind=JsonRelationalDualityView name=[DV] body=[(WordItem value=AS) (WordItem value=SELECT) (LiteralItem kind=Number value=1)])")]
     [InlineData("CREATE MATERIALIZED VIEW LOG ON t WITH PRIMARY KEY", "(CreateObjectStatement kind=MaterializedViewLog body=[(WordItem value=ON) (WordItem value=T) (WordItem value=WITH) (WordItem value=PRIMARY) (WordItem value=KEY)])")]
     [InlineData("ALTER SYSTEM FLUSH SHARED_POOL", "(AlterObjectStatement kind=System body=[(WordItem value=FLUSH) (WordItem value=SHARED_POOL)])")]
-    [InlineData("ALTER INDEX ix REBUILD", "(AlterObjectStatement kind=Index name=[IX] body=[(WordItem value=REBUILD)])")]
     [InlineData("ALTER USER u ACCOUNT LOCK", "(AlterObjectStatement kind=User name=[U] body=[(WordItem value=ACCOUNT) (WordItem value=LOCK)])")]
     [InlineData("ALTER PROCEDURE p COMPILE", "(AlterObjectStatement kind=Procedure name=[P] body=[(WordItem value=COMPILE)])")]
     [InlineData("ALTER SEQUENCE s INCREMENT BY 5", "(AlterObjectStatement kind=Sequence name=[S] body=[(WordItem value=INCREMENT) (WordItem value=BY) (LiteralItem kind=Number value=5)])")]

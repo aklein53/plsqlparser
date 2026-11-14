@@ -436,6 +436,7 @@ public sealed partial class SqlParser
         if (!TryParseObjectKind(out var kind)) kind = ObjectKind.Other;
         if (kind == ObjectKind.Table) return ParseAlterTable(start);
         if (kind == ObjectKind.Session) return ParseAlterSession(start);
+        if (kind == ObjectKind.Index) return ParseAlterIndex(start);
         var st = new AlterObjectStatement { Kind = kind, Public = pub };
         st.IfExists = TryIfExists();
         if (ObjectKindHasName(kind) && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) st.Name = ParseDottedName();

@@ -24,6 +24,7 @@ public sealed partial class SqlScriptGenerator
                     or FlashbackTableStatement or ExecStatement or SqlPlusCommand or AdminStatement:
                     AdminLike(st); break;
                 // generic and typed DDL
+                case AlterIndexStatement ai: AlterIndex(ai); break;
                 case CreateObjectStatement or AlterObjectStatement or DropStatement or CreateTableStatement or CreateIndexStatement
                     or CreateViewStatement or CreateSequenceStatement or CreateSynonymStatement or AlterTableStatement
                     or CreateJavaStatement or CreateLibraryStatement:
