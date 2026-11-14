@@ -26,6 +26,7 @@ public sealed partial class SqlParser
 
     private Block ParseBlock()
     {
+        using var _ = SetContext(true);
         Enter();
         var r = ParseBlockCore();
         Leave();
@@ -90,6 +91,7 @@ public sealed partial class SqlParser
 
     private List<Statement> ParseStatements(Func<bool> stop)
     {
+        using var _ = SetContext(true);
         Enter();
         var r = ParseStatementsCore(stop);
         Leave();
@@ -114,6 +116,7 @@ public sealed partial class SqlParser
 
     private List<Declaration> ParseDeclarations(Func<bool> stop)
     {
+        using var _ = SetContext(true);
         Enter();
         var r = ParseDeclarationsCore(stop);
         Leave();
@@ -182,6 +185,7 @@ public sealed partial class SqlParser
 
     private List<Parameter> ParseParameters()
     {
+        using var _ = SetContext(true);
         var list = new List<Parameter>();
         ExpectOp("(");
         if (AcceptOp(")")) return list;
@@ -283,6 +287,7 @@ public sealed partial class SqlParser
 
     private SubprogramDeclaration ParseSubprogram()
     {
+        using var _ = SetContext(true);
         var start = Cur;
         var sp = new SubprogramDeclaration { Modifiers = ParseMemberModifiers() };
         if (IsKw("FUNCTION")) sp.IsFunction = true;

@@ -208,6 +208,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="ChainedCall"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(ChainedCall node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="ChainedCall"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(ChainedCall node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="CloseStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(CloseStatement node) => Visit((SqlNode)node);
 
@@ -1028,6 +1038,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="IndexIterator"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(IndexIterator node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="IndexIterator"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(IndexIterator node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="IndicesOfControl"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(IndicesOfControl node) => Visit((SqlNode)node);
 
@@ -1063,6 +1083,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="InsertStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(InsertStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="IntervalExpression"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(IntervalExpression node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="IntervalExpression"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(IntervalExpression node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -1688,6 +1718,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="QualifiedExpression"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(QualifiedExpression node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="QualifiedExpression"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(QualifiedExpression node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="QuantifiedComparison"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(QuantifiedComparison node) => Visit((SqlNode)node);
 
@@ -2063,6 +2103,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="SubqueryTable"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(SubqueryTable node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="SubscriptRange"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(SubscriptRange node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="SubscriptRange"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(SubscriptRange node)
     {
         Visit(node);
         node.AcceptChildren(this);

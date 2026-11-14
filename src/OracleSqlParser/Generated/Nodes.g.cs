@@ -966,6 +966,50 @@ public partial class CellReference
     }
 }
 
+public partial class ChainedCall
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Target is not null) yield return Target;
+        if (Arguments is not null) foreach (var x in Arguments) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Target?.Accept(visitor);
+        if (Arguments is not null) foreach (var x in Arguments) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Target = SqlNodeRewriter.RewriteRequired(rewriter, Target, "ChainedCall.Target");
+        SqlNodeRewriter.RewriteList(rewriter, Arguments, "ChainedCall.Arguments");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ChainedCall();
+        CopySpan(this, c);
+        c.Target = CloneChild(Target)!;
+        c.Arguments = CloneList(Arguments);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ChainedCall)other;
+        return Pair(Target, o.Target, pending)
+            && PairList(Arguments, o.Arguments, pending);
+    }
+}
+
 public partial class CloseStatement
 {
     /// <inheritdoc/>
@@ -5303,6 +5347,55 @@ public partial class IndexColumn
     }
 }
 
+public partial class IndexIterator
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Variable is not null) yield return Variable;
+        if (Low is not null) yield return Low;
+        if (High is not null) yield return High;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Variable?.Accept(visitor);
+        Low?.Accept(visitor);
+        High?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Variable = SqlNodeRewriter.RewriteRequired(rewriter, Variable, "IndexIterator.Variable");
+        Low = SqlNodeRewriter.RewriteRequired(rewriter, Low, "IndexIterator.Low");
+        High = SqlNodeRewriter.RewriteRequired(rewriter, High, "IndexIterator.High");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new IndexIterator();
+        CopySpan(this, c);
+        c.Variable = CloneChild(Variable)!;
+        c.Low = CloneChild(Low)!;
+        c.High = CloneChild(High)!;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (IndexIterator)other;
+        return Pair(Variable, o.Variable, pending)
+            && Pair(Low, o.Low, pending)
+            && Pair(High, o.High, pending);
+    }
+}
+
 public partial class IndicesOfControl
 {
     /// <inheritdoc/>
@@ -5520,6 +5613,53 @@ public partial class InsertStatement
             && PairList(ReturningInto, o.ReturningInto, pending)
             && Pair(ErrorLogging, o.ErrorLogging, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class IntervalExpression
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Value is not null) yield return Value;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Value?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "IntervalExpression.Value");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new IntervalExpression();
+        CopySpan(this, c);
+        c.Value = CloneChild(Value)!;
+        c.From = From;
+        c.FromPrecision = FromPrecision;
+        c.To = To;
+        c.ToPrecision = ToPrecision;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (IntervalExpression)other;
+        return Pair(Value, o.Value, pending)
+            && From == o.From
+            && FromPrecision == o.FromPrecision
+            && To == o.To
+            && ToPrecision == o.ToPrecision;
     }
 }
 
@@ -8552,6 +8692,57 @@ public partial class PurgeStatement
     }
 }
 
+public partial class QualifiedExpression
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Choice is not null) yield return Choice;
+        if (Iterator is not null) yield return Iterator;
+        if (Value is not null) yield return Value;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Choice?.Accept(visitor);
+        Iterator?.Accept(visitor);
+        Value?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Choice = SqlNodeRewriter.RewriteOptional(rewriter, Choice, "QualifiedExpression.Choice");
+        Iterator = SqlNodeRewriter.RewriteOptional(rewriter, Iterator, "QualifiedExpression.Iterator");
+        Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "QualifiedExpression.Value");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new QualifiedExpression();
+        CopySpan(this, c);
+        c.Choice = CloneChild(Choice);
+        c.Others = Others;
+        c.Iterator = CloneChild(Iterator);
+        c.Value = CloneChild(Value)!;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (QualifiedExpression)other;
+        return Pair(Choice, o.Choice, pending)
+            && Others == o.Others
+            && Pair(Iterator, o.Iterator, pending)
+            && Pair(Value, o.Value, pending);
+    }
+}
+
 public partial class QuantifiedComparison
 {
     /// <inheritdoc/>
@@ -10309,6 +10500,50 @@ public partial class SubqueryTable
         return Lateral == o.Lateral
             && Pair(Query, o.Query, pending)
             && Pair(Alias, o.Alias, pending);
+    }
+}
+
+public partial class SubscriptRange
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (From is not null) yield return From;
+        if (To is not null) yield return To;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        From?.Accept(visitor);
+        To?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        From = SqlNodeRewriter.RewriteRequired(rewriter, From, "SubscriptRange.From");
+        To = SqlNodeRewriter.RewriteRequired(rewriter, To, "SubscriptRange.To");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new SubscriptRange();
+        CopySpan(this, c);
+        c.From = CloneChild(From)!;
+        c.To = CloneChild(To)!;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (SubscriptRange)other;
+        return Pair(From, o.From, pending)
+            && Pair(To, o.To, pending);
     }
 }
 

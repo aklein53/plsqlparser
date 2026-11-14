@@ -136,6 +136,8 @@ public sealed partial class SqlParser
         else if (AcceptKw("EMPTY")) ie.Test = IsTest.Empty;
         else if (AcceptKw("PRESENT")) ie.Test = IsTest.Present;
         else if (AcceptKw("DANGLING")) ie.Test = IsTest.Dangling;
+        else if (AcceptKw("TRUE")) ie.Test = IsTest.True; // Oracle 23ai boolean predicates
+        else if (AcceptKw("FALSE")) ie.Test = IsTest.False;
         else if (IsKw("A") && IsKwAt(1, "SET")) { Next(); Next(); ie.Test = IsTest.ASet; }
         else if (AcceptKw("JSON"))
         {
@@ -159,7 +161,7 @@ public sealed partial class SqlParser
             } while (AcceptOp(","));
             ExpectOp(")");
         }
-        else throw Fail($"Expected NULL, NAN, INFINITE, EMPTY, PRESENT, A SET, JSON, OF or DANGLING after IS but found {Describe(Cur)}");
+        else throw Fail($"Expected NULL, NAN, INFINITE, EMPTY, PRESENT, A SET, JSON, OF, DANGLING, TRUE or FALSE after IS but found {Describe(Cur)}");
         return Fin(ie, start);
     }
 
@@ -228,6 +230,7 @@ public sealed partial class SqlParser
         int prog110 = -1;
         while (IsOp("**") && Progress(ref prog110))
         {
+            if (!_plsql) throw Fail("'**' is a PL/SQL operator and is not valid in SQL (use POWER)");
             Next();
             left = Fin(new BinaryExpression { Left = left, Operator = "**", Right = ParsePostfix() }, start);
         }
@@ -242,6 +245,8 @@ public sealed partial class SqlParser
         while (Progress(ref prog7))
         {
             if (IsOp("[")) e = ParseSubscripts(e, start);
+            else if (e is CellReference or ChainedCall && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier) e = ParseMemberChain(e, start);
+            else if (e is FunctionCall or CellReference or ChainedCall && IsOp("(")) e = ParseChainedCall(e, start);
             else if (IsKw("AT") && (IsKwAt(1, "TIME") || IsKwAt(1, "LOCAL")))
             {
                 Next();
@@ -257,6 +262,7 @@ public sealed partial class SqlParser
                 Next();
                 e = Fin(new CollateExpression { Value = e, Collation = ParseIdentifier() }, start);
             }
+            else if (e is ParenthesizedExpression && AtIntervalExpression()) e = ParseIntervalExpression(e, start);
             else break;
         }
         return e;
@@ -422,9 +428,27 @@ public sealed partial class SqlParser
         }
         else result = Fin(new ColumnReference { Parts = parts, Attribute = attribute }, start);
 
-        // member access on call/collection results: f(x).field, coll(i).field(j)
+        return ParseMemberChain(result, start);
+    }
+
+    /// <summary>
+    /// Continues a postfix chain of '.field' and '.method(args)' steps on a call, collection element or member access:
+    /// f(x).field, coll(i).field(j), t.c.a[0].b (JSON dot-notation after an array step).
+    /// </summary>
+    /// <summary>Parses the argument list of a call whose callee is itself a call or subscript: f(x)(y).</summary>
+    private Expression ParseChainedCall(Expression target, Token start)
+    {
+        Next(); // (
+        var cc = new ChainedCall { Target = target };
+        if (!IsOp(")")) do cc.Arguments.Add(ParseArgument()); while (AcceptOp(","));
+        ExpectOp(")");
+        return Fin(cc, start);
+    }
+
+    private Expression ParseMemberChain(Expression result, Token start)
+    {
         int prog114 = -1;
-        while (result is FunctionCall or MethodCall or MemberAccess && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog114))
+        while (result is FunctionCall or MethodCall or MemberAccess or CellReference or ChainedCall && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog114))
         {
             Next();
             var m = ParseIdentifier();
@@ -522,6 +546,25 @@ public sealed partial class SqlParser
         var a = Cur;
         var arg = new Argument();
         if (IsOp("*")) { Next(); arg.Value = Fin(new StarExpression(), a); return Fin(arg, a); }
+        // PL/SQL qualified expression choices (OTHERS and the iterator cannot be a FunctionCall argument name)
+        if (IsKw("OTHERS") && Cur.Type == TokenType.Identifier && IsOpAt(1, "=>"))
+        {
+            Next(); Next();
+            arg.Value = Fin(new QualifiedExpression { Others = true, Value = ParseExpr() }, a);
+            return Fin(arg, a);
+        }
+        if (IsKw("FOR") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && IsKwAt(2, "IN"))
+        {
+            var fs = Next();
+            var it = new IndexIterator { Variable = ParseIdentifier() };
+            ExpectKw("IN");
+            it.Low = ParseAdditive();
+            ExpectOp("..");
+            it.High = ParseAdditive();
+            ExpectOp("=>");
+            arg.Value = Fin(new QualifiedExpression { Iterator = Fin(it, fs), Value = ParseExpr() }, a);
+            return Fin(arg, a);
+        }
         if (Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier && IsOpAt(1, "=>"))
         {
             arg.Name = ParseIdentifier();
@@ -537,8 +580,15 @@ public sealed partial class SqlParser
             };
         }
         arg.Value = ParseExpr();
+        if (IsOp("=>") && arg.Name == null)
+        {
+            // index => value with a non-name index: a PL/SQL qualified expression
+            Next();
+            arg.Value = Fin(new QualifiedExpression { Choice = arg.Value, Value = ParseExpr() }, a);
+            return Fin(arg, a);
+        }
         if (AcceptKw("VALUE")) arg.MappedValue = ParseExpr();
-        else if (Cur.Type == TokenType.Bind && Cur.Text == ":") { Next(); arg.MappedValue = ParseExpr(); }
+        else if (Cur.Text == ":" && Cur.Type is TokenType.Operator or TokenType.Bind) { Next(); arg.MappedValue = ParseExpr(); } // 'key' : value
         if (IsKw("FORMAT") && IsKwAt(1, "JSON")) arg.Format = (FormatClause)ParseFunctionClause();
         if (IsKw("AS") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier) { Next(); arg.Alias = ParseIdentifier(); }
         return Fin(arg, a);
@@ -973,6 +1023,31 @@ public sealed partial class SqlParser
             il.ToPrecision = ParseIntervalPrecision();
         }
         return Fin(il, start);
+    }
+
+    /// <summary>
+    /// True at <c>DAY [(p)] TO</c> or <c>YEAR [(p)] TO</c>. DAY and YEAR are not reserved, so the lookahead requires
+    /// the TO that makes this an interval suffix; otherwise they remain an alias or a name.
+    /// </summary>
+    private bool AtIntervalExpression()
+    {
+        if (!(IsKw("DAY") || IsKw("YEAR"))) return false;
+        if (IsKwAt(1, "TO")) return true;
+        return IsOpAt(1, "(") && PeekTok(2).Type == TokenType.Number && IsOpAt(3, ")") && IsKwAt(4, "TO");
+    }
+
+    /// <summary>Parses the suffix of <c>(a - b) DAY(p) TO SECOND(fs)</c> or <c>(a - b) YEAR(p) TO MONTH</c>.</summary>
+    private Expression ParseIntervalExpression(Expression value, Token start)
+    {
+        var ie = new IntervalExpression { Value = value };
+        ie.From = ParseIntervalUnit();
+        ie.FromPrecision = ParseIntervalPrecision();
+        ExpectKw("TO");
+        ie.To = ParseIntervalUnit();
+        bool valid = ie.From == IntervalUnit.Day ? ie.To == IntervalUnit.Second : ie.From == IntervalUnit.Year && ie.To == IntervalUnit.Month;
+        if (!valid) throw Fail("Interval expressions are DAY TO SECOND or YEAR TO MONTH");
+        ie.ToPrecision = ParseIntervalPrecision();
+        return Fin(ie, start);
     }
 
     private IntervalUnit ParseIntervalUnit()

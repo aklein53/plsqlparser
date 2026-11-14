@@ -138,15 +138,29 @@ public sealed partial class SqlScriptGenerator
                     break;
                 case CollateExpression co: Child(co.Value, 9); Add(" COLLATE "); Id(co.Collation); break;
                 case IntervalLiteral il: Interval(il); break;
+                case IntervalExpression ix:
+                    Expr(ix.Value); Add(" " + ix.From.ToString().ToUpperInvariant());
+                    if (ix.FromPrecision != null) Add($"({ix.FromPrecision})");
+                    Add(" TO " + ix.To.ToString().ToUpperInvariant());
+                    if (ix.ToPrecision != null) Add($"({ix.ToPrecision})");
+                    break;
                 case FunctionCall fc: Function(fc); break;
                 case MethodCall mc: Expr(mc.Target); Add("."); Id(mc.Name); Add("("); Sep(mc.Arguments, Arg); Add(")"); break;
                 case MemberAccess ma: Expr(ma.Target); Add("."); Id(ma.Member); break;
+                case ChainedCall cc: Expr(cc.Target); Add("("); Sep(cc.Arguments, Arg); Add(")"); break;
                 case CellReference cr:
                     Expr(cr.Base); Add("[");
                     Sep(cr.Subscripts, s => Expr(s));
                     Add("]");
                     break;
                 case ForIterationSubscript fi: ForIteration(fi); break;
+                case SubscriptRange sr: Expr(sr.From); Add(" TO "); Expr(sr.To); break;
+                case QualifiedExpression qx:
+                    if (qx.Others) Add("OTHERS");
+                    else if (qx.Iterator is { } it) { Add("FOR "); Id(it.Variable); Add(" IN "); Expr(it.Low); Add(".."); Expr(it.High); }
+                    else Expr(qx.Choice!);
+                    Add(" => "); Expr(qx.Value);
+                    break;
                 case CurrentOfExpression co2: Add("CURRENT OF "); Id(co2.Cursor); break;
                 default: throw Unsupported(e);
             }
@@ -213,6 +227,8 @@ public sealed partial class SqlScriptGenerator
                 case IsTest.Present: Add("PRESENT"); break;
                 case IsTest.Dangling: Add("DANGLING"); break;
                 case IsTest.ASet: Add("A SET"); break;
+                case IsTest.True: Add("TRUE"); break;
+                case IsTest.False: Add("FALSE"); break;
                 case IsTest.Json: Add("JSON"); foreach (var c in x.JsonClauses) { Add(" "); Clause(c); } break;
                 case IsTest.OfType:
                     Add("OF (");

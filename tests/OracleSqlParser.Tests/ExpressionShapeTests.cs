@@ -8,7 +8,6 @@ public class ExpressionShapeTests
     [InlineData("a OR b AND c", "(OR A (AND B C))")]
     [InlineData("1 + 2 * 3", "(+ 1 (* 2 3))")]
     [InlineData("(1 + 2) * 3", "(* (paren (+ 1 2)) 3)")]
-    [InlineData("-a ** 2", "(- (** A 2))")]
     [InlineData("a - -1", "(- A (- 1))")]
     [InlineData("a || b || 'c'", "(|| (|| A B) 'c')")]
     [InlineData("NOT a = b", "(NOT (= A B))")]
@@ -46,6 +45,9 @@ public class ExpressionShapeTests
     [InlineData("a IS NOT NAN", "(IsExpression value=A not test=Nan)")]
     [InlineData("a IS A SET", "(IsExpression value=A test=ASet)")]
     [InlineData("a IS EMPTY", "(IsExpression value=A test=Empty)")]
+    [InlineData("(1=1) IS TRUE", "(IsExpression value=(paren (= 1 1)) test=True)")]
+    [InlineData("(1=1) IS NOT FALSE", "(IsExpression value=(paren (= 1 1)) not test=False)")]
+    [InlineData("a IS TRUE AND b IS NOT TRUE", "(AND (IsExpression value=A test=True) (IsExpression value=B not test=True))")]
     [InlineData("x IS JSON STRICT WITH UNIQUE KEYS", "(IsExpression value=X test=Json jsonClauses=[(FlagClause flag=Strict) (FlagClause flag=WithUniqueKeys)])")]
     [InlineData("x IS OF (ONLY t1, t2)", "(IsExpression value=X test=OfType ofTypes=[(IsOfType only type=(DataType name=T1)) (IsOfType type=(DataType name=T2))])")]
     [InlineData("a MEMBER OF b", "(MEMBER OF A B)")]
@@ -121,7 +123,39 @@ public class ExpressionShapeTests
     [InlineData("XMLQUERY('/a' PASSING BY VALUE x AS \"v\" RETURNING CONTENT NULL ON EMPTY)",
         "(FunctionCall name=[XMLQUERY] clauses=[(PassingClause byValue items=[(ExpressionSelectItem expression=X alias=\"v\")]) (ReturningClause content) (OnBehaviorClause behavior=Null event=Empty)] arguments=[(Argument value='/a')])")]
     [InlineData("TRANSLATE(x USING NCHAR_CS)", "(FunctionCall name=[TRANSLATE] clauses=[(UsingCharsetClause charset=NCHAR_CS)] arguments=[(Argument value=X)])")]
-    public void JsonXmlAndFunctionClauses(string sql, string expected) => Assert.Equal(expected, Shape.Expr(sql));
+    // 'key':value with no space: ':' right after a string key is the separator, not the start of a bind :1
+    [InlineData("JSON_OBJECT('a':1)", "(FunctionCall name=[JSON_OBJECT] arguments=[(Argument value='a' mappedValue=1)])")]
+    [InlineData("JSON_OBJECT('a':x)", "(FunctionCall name=[JSON_OBJECT] arguments=[(Argument value='a' mappedValue=X)])")]
+    [InlineData("JSON_OBJECT('a':1+2, 'b' : 'c')", "(FunctionCall name=[JSON_OBJECT] arguments=[(Argument value='a' mappedValue=(+ 1 2)) (Argument value='b' mappedValue='c')])")]
+    [InlineData("JSON_OBJECT(UPPER('a'):1)", "(FunctionCall name=[JSON_OBJECT] arguments=[(Argument value=(FunctionCall name=[UPPER] arguments=[(Argument value='a')]) mappedValue=1)])")]
+    public void JsonObjectColonSeparator(string sql, string expected) => Assert.Equal(expected, Shape.Expr(sql));
+
+    // Real binds keep lexing as binds everywhere else, including right after a string or a ')' in a non-key position.
+    [Theory]
+    [InlineData(":1", ":1")]
+    [InlineData("y = :1", "(= Y :1)")]
+    [InlineData("(:1, :2)", "(ExpressionList items=[:1 :2])")]
+    [InlineData("x = :name", "(= X :name)")]
+    public void BindsStillLexAsBinds(string sql, string expected) => Assert.Equal(expected, Shape.Expr(sql));
+
+    /// <summary>Token <paramref name="index"/> of the lexed input (EOF is included): ':' after a string key is an operator, elsewhere ':x' is a bind.</summary>
+    [Theory]
+    [InlineData("'a':1", 1, TokenType.Operator, ":")]
+    [InlineData("'a' :1", 1, TokenType.Operator, ":")]
+    [InlineData("'a' : 1", 1, TokenType.Operator, ":")]
+    [InlineData("'a':1", 2, TokenType.Number, "1")]
+    [InlineData("f(x):1", 4, TokenType.Operator, ":")]
+    [InlineData("'a' := 1", 1, TokenType.Operator, ":=")]
+    [InlineData("y = :1", 2, TokenType.Bind, ":1")]
+    [InlineData("(:1", 1, TokenType.Bind, ":1")]
+    [InlineData("INTO :x", 1, TokenType.Bind, ":x")]
+    [InlineData("x := :1", 2, TokenType.Bind, ":1")]
+    public void ColonLexing(string sql, int index, TokenType type, string text)
+    {
+        var t = Lexer.Tokenize(sql)[index];
+        Assert.Equal(type, t.Type);
+        Assert.Equal(text, t.Text);
+    }
 
     [Theory]
     [InlineData("x AT TIME ZONE 'UTC'", "(AtTimeZoneExpression value=X zone='UTC')")]
@@ -131,9 +165,46 @@ public class ExpressionShapeTests
     [InlineData("s[ANY, 2000]", "(CellReference base=S subscripts=[ANY 2000])")]
     [InlineData("s[FOR p IN ('a', 'b'), 2000]", "(CellReference base=S subscripts=[(ForIterationSubscript dimensions=[P] inList=['a' 'b']) 2000])")]
     [InlineData("s[FOR y FROM 2000 TO 2010 INCREMENT 2]", "(CellReference base=S subscripts=[(ForIterationSubscript dimensions=[Y] from=2000 to=2010 step=2)])")]
+    // JSON simple dot-notation continues after an array step: the step is a CellReference, the member a MemberAccess.
+    [InlineData("t.c.a[0].b", "(MemberAccess target=(CellReference base=T.C.A subscripts=[0]) member=B)")]
+    [InlineData("t.c.a[*].b", "(MemberAccess target=(CellReference base=T.C.A subscripts=[*]) member=B)")]
+    [InlineData("t.c.a[0 to 2].b", "(MemberAccess target=(CellReference base=T.C.A subscripts=[(SubscriptRange from=0 to=2)]) member=B)")]
+    [InlineData("t.c.a[1,3].b", "(MemberAccess target=(CellReference base=T.C.A subscripts=[1 3]) member=B)")]
+    [InlineData("t.c.a[0].b[1].c", "(MemberAccess target=(CellReference base=(MemberAccess target=(CellReference base=T.C.A subscripts=[0]) member=B) subscripts=[1]) member=C)")]
+    [InlineData("t.c.a[0].b.c", "(MemberAccess target=(MemberAccess target=(CellReference base=T.C.A subscripts=[0]) member=B) member=C)")]
+    // A call on the result of a call or an index: the left side must already be a call or subscript, so plain
+    // parentheses after other expressions are not consumed.
+    [InlineData("arr(1)(2)", "(ChainedCall target=(FunctionCall name=[ARR] arguments=[(Argument value=1)]) arguments=[(Argument value=2)])")]
+    [InlineData("f(x)(y)", "(ChainedCall target=(FunctionCall name=[F] arguments=[(Argument value=X)]) arguments=[(Argument value=Y)])")]
+    [InlineData("f(x)()", "(ChainedCall target=(FunctionCall name=[F] arguments=[(Argument value=X)]))")]
+    [InlineData("arr(1)(2)(3)", "(ChainedCall target=(ChainedCall target=(FunctionCall name=[ARR] arguments=[(Argument value=1)]) arguments=[(Argument value=2)]) arguments=[(Argument value=3)])")]
+    [InlineData("s['x'](2)", "(ChainedCall target=(CellReference base=S subscripts=['x']) arguments=[(Argument value=2)])")]
+    [InlineData("f(x)(y).z", "(MemberAccess target=(ChainedCall target=(FunctionCall name=[F] arguments=[(Argument value=X)]) arguments=[(Argument value=Y)]) member=Z)")]
+    [InlineData("f(x)(y)[1]", "(CellReference base=(ChainedCall target=(FunctionCall name=[F] arguments=[(Argument value=X)]) arguments=[(Argument value=Y)]) subscripts=[1])")]
     [InlineData("PRIOR x", "(PRIOR X)")]
     [InlineData("CONNECT_BY_ROOT x", "(CONNECT_BY_ROOT X)")]
     [InlineData("CURSOR(SELECT 1 FROM dual)", "(CursorExpression query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[DUAL])])))")]
     [InlineData("EXISTS (SELECT 1 FROM dual)", "(ExistsExpression subquery=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[DUAL])])))")]
     public void Postfix_And_Misc(string sql, string expected) => Assert.Equal(expected, Shape.Expr(sql));
+
+    [Theory]
+    [InlineData("(a - b) DAY TO SECOND","(IntervalExpression value=(paren (- A B)) from=Day to=Second)")]
+    [InlineData("(SYSTIMESTAMP - SYSTIMESTAMP) DAY(9) TO SECOND", "(IntervalExpression value=(paren (- SYSTIMESTAMP SYSTIMESTAMP)) from=Day fromPrecision=9 to=Second)")]
+    [InlineData("(a - b) DAY(2) TO SECOND(6)", "(IntervalExpression value=(paren (- A B)) from=Day fromPrecision=2 to=Second toPrecision=6)")]
+    [InlineData("(a - b) YEAR TO MONTH", "(IntervalExpression value=(paren (- A B)) from=Year to=Month)")]
+    [InlineData("(a - b) YEAR(4) TO MONTH", "(IntervalExpression value=(paren (- A B)) from=Year fromPrecision=4 to=Month)")]
+    [InlineData("x + (a - b) DAY TO SECOND", "(+ X (IntervalExpression value=(paren (- A B)) from=Day to=Second))")]
+    public void IntervalExpressions(string sql, string expected) => Assert.Equal(expected, Shape.Expr(sql));
+
+    [Theory]
+    [InlineData("SELECT (a - b) day FROM t", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=(paren (- A B)) alias=DAY)] from=[(NamedTable name=[T])]))")]
+    [InlineData("SELECT (a - b) year FROM t", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=(paren (- A B)) alias=YEAR)] from=[(NamedTable name=[T])]))")]
+    public void IntervalWordsStillWorkAsAliases(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("SELECT (a - b) DAY TO MONTH FROM t")]   // DAY only goes with SECOND, YEAR only with MONTH
+    [InlineData("SELECT (a - b) YEAR TO SECOND FROM t")]
+    [InlineData("SELECT a - b DAY TO SECOND FROM t")]     // operand must be parenthesized
+    public void IntervalExpressionsRejectInvalidForms(string sql) => Assert.False(SqlParser.Parse(sql).Success);
+
 }

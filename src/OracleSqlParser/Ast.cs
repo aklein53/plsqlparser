@@ -460,6 +460,19 @@ public sealed partial class IntervalLiteral : Expression
     public int? ToPrecision { get; set; }
 }
 
+/// <summary>
+/// Postfix interval over a parenthesized datetime difference: <c>(a - b) DAY(2) TO SECOND(6)</c> or
+/// <c>(a - b) YEAR TO MONTH</c>. Unlike <see cref="IntervalLiteral"/> there is no INTERVAL keyword or string.
+/// </summary>
+public sealed partial class IntervalExpression : Expression
+{
+    public Expression Value { get; set; } = null!;
+    public IntervalUnit From { get; set; }
+    public int? FromPrecision { get; set; }
+    public IntervalUnit To { get; set; }
+    public int? ToPrecision { get; set; }
+}
+
 public enum IntervalUnit { Year, Month, Day, Hour, Minute, Second }
 
 public sealed partial class BindVariable : Expression
@@ -538,7 +551,7 @@ public sealed partial class LikeExpression : Expression
     public Expression? Escape { get; set; }
 }
 
-public enum IsTest { Null, Nan, Infinite, Empty, Present, ASet, Json, OfType, Dangling }
+public enum IsTest { Null, Nan, Infinite, Empty, Present, ASet, Json, OfType, Dangling, True, False }
 
 public sealed partial class IsOfType : SqlNode
 {
