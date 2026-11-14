@@ -63,6 +63,7 @@ public sealed partial class SqlScriptGenerator
                 case CreateTableStatement ct: CreateTable(ct); break;
                 case CreateIndexStatement ci: CreateIndex(ci); break;
                 case CreateViewStatement cv: CreateView(cv); break;
+                case CreatePropertyGraphStatement pg: PropertyGraph(pg); break;
                 case CreateSequenceStatement cs:
                     Add("CREATE SEQUENCE");
                     if (cs.IfNotExists) Add(" IF NOT EXISTS");
@@ -199,6 +200,49 @@ public sealed partial class SqlScriptGenerator
                 });
             foreach (var a in t.Attributes) { Sp(); Attribute(a); }
             if (t.AsQuery != null) { Add(" AS "); Select(t.AsQuery); }
+        }
+
+        private void PropertyGraph(CreatePropertyGraphStatement g)
+        {
+            Add("CREATE "); if (g.OrReplace) Add("OR REPLACE "); Add("PROPERTY GRAPH "); Name(g.Name);
+            Add(" VERTEX TABLES ("); Sep(g.VertexTables, GraphElementDef); Add(")");
+            if (g.EdgeTables.Count > 0) { Add(" EDGE TABLES ("); Sep(g.EdgeTables, GraphElementDef); Add(")"); }
+        }
+
+        private void GraphElementDef(GraphElementTable t)
+        {
+            Name(t.Table);
+            if (t.Alias != null) { Add(" AS "); Id(t.Alias); }
+            if (t.Key.Count > 0) { Add(" KEY ("); Sep(t.Key, Id); Add(")"); }
+            if (t is GraphEdgeTable e)
+            {
+                Add(" SOURCE "); GraphEndpoint(e.Source);
+                Add(" DESTINATION "); GraphEndpoint(e.Destination);
+            }
+            foreach (var l in t.Labels)
+            {
+                Add(" LABEL "); Id(l.Name);
+                if (l.Properties is { } p)
+                {
+                    Add(" ");
+                    switch (p.Kind)
+                    {
+                        case GraphPropertiesKind.None: Add("NO PROPERTIES"); break;
+                        case GraphPropertiesKind.AllColumns:
+                            Add("PROPERTIES ARE ALL COLUMNS");
+                            if (p.Except.Count > 0) { Add(" EXCEPT ("); Sep(p.Except, Id); Add(")"); }
+                            break;
+                        default: Add("PROPERTIES ("); Sep(p.Columns, Id); Add(")"); break;
+                    }
+                }
+            }
+        }
+
+        private void GraphEndpoint(GraphEdgeEndpoint ep)
+        {
+            if (ep.Keys.Count > 0) { Add("KEY ("); Sep(ep.Keys, Id); Add(") REFERENCES "); }
+            Name(ep.Table);
+            if (ep.Columns.Count > 0) { Add(" ("); Sep(ep.Columns, Id); Add(")"); }
         }
 
         private void ColumnDef(ColumnDefinition c)

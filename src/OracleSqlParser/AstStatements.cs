@@ -522,6 +522,59 @@ public sealed partial class CreateViewStatement : Statement
     public Identifier? CheckOptionConstraint { get; set; }
 }
 
+/// <summary>CREATE [OR REPLACE] PROPERTY GRAPH g VERTEX TABLES (...) [EDGE TABLES (...)] (SQL/PGQ).</summary>
+public sealed partial class CreatePropertyGraphStatement : Statement
+{
+    public bool OrReplace { get; set; }
+    public List<Identifier> Name { get; set; } = [];
+    public List<GraphVertexTable> VertexTables { get; set; } = [];
+    public List<GraphEdgeTable> EdgeTables { get; set; } = [];
+}
+
+/// <summary>A table used as vertices or edges: table [AS alias] [KEY (cols)] [LABEL ... [PROPERTIES ...]]...</summary>
+public abstract partial class GraphElementTable : SqlNode
+{
+    public List<Identifier> Table { get; set; } = [];
+    public Identifier? Alias { get; set; }
+    public List<Identifier> Key { get; set; } = [];
+    public List<GraphElementLabel> Labels { get; set; } = [];
+}
+
+public sealed partial class GraphVertexTable : GraphElementTable
+{
+}
+
+public sealed partial class GraphEdgeTable : GraphElementTable
+{
+    public GraphEdgeEndpoint Source { get; set; } = null!;
+    public GraphEdgeEndpoint Destination { get; set; } = null!;
+}
+
+/// <summary>SOURCE/DESTINATION of an edge table: [KEY (edge cols) REFERENCES] vertex_table [(vertex cols)].</summary>
+public sealed partial class GraphEdgeEndpoint : SqlNode
+{
+    public List<Identifier> Keys { get; set; } = [];
+    public List<Identifier> Table { get; set; } = [];
+    public List<Identifier> Columns { get; set; } = [];
+}
+
+/// <summary>LABEL name with an optional PROPERTIES clause.</summary>
+public sealed partial class GraphElementLabel : SqlNode
+{
+    public Identifier Name { get; set; } = null!;
+    public GraphPropertiesClause? Properties { get; set; }
+}
+
+public enum GraphPropertiesKind { Columns, AllColumns, None }
+
+/// <summary>PROPERTIES (cols) | PROPERTIES ARE ALL COLUMNS [EXCEPT (cols)] | NO PROPERTIES.</summary>
+public sealed partial class GraphPropertiesClause : SqlNode
+{
+    public GraphPropertiesKind Kind { get; set; }
+    public List<Identifier> Columns { get; set; } = [];
+    public List<Identifier> Except { get; set; } = [];
+}
+
 public sealed partial class CreateSequenceStatement : Statement
 {
     public SharingKind? Sharing { get; set; }

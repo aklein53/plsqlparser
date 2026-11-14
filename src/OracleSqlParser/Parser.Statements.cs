@@ -535,6 +535,7 @@ public sealed partial class SqlParser
             case ObjectKind.View: return ParseCreateView(start, orReplace, force, noForce, editioning, false);
             case ObjectKind.MaterializedView: return ParseCreateView(start, orReplace, force, noForce, editioning, true);
             case ObjectKind.Sequence: return ParseCreateSequence(start);
+            case ObjectKind.PropertyGraph: return ParseCreatePropertyGraph(start, orReplace);
             case ObjectKind.Synonym: return ParseCreateSynonym(start, orReplace, pub);
             case ObjectKind.Procedure: case ObjectKind.Function:
             {
@@ -899,6 +900,91 @@ public sealed partial class SqlParser
             list.Add(Fin(opt, s));
         }
         return list;
+    }
+
+    private Statement ParseCreatePropertyGraph(Token start, bool orReplace)
+    {
+        var st = new CreatePropertyGraphStatement { OrReplace = orReplace, Name = ParseDottedName() };
+        ExpectKw("VERTEX"); ExpectKw("TABLES"); ExpectOp("(");
+        do st.VertexTables.Add(ParseGraphVertexTable()); while (AcceptOp(","));
+        ExpectOp(")");
+        if (AcceptKw("EDGE"))
+        {
+            ExpectKw("TABLES"); ExpectOp("(");
+            do st.EdgeTables.Add(ParseGraphEdgeTable()); while (AcceptOp(","));
+            ExpectOp(")");
+        }
+        return Fin(st, start);
+    }
+
+    private GraphVertexTable ParseGraphVertexTable()
+    {
+        var s = Cur;
+        var t = new GraphVertexTable();
+        ParseGraphElementCommon(t);
+        ParseGraphLabels(t);
+        return Fin(t, s);
+    }
+
+    private GraphEdgeTable ParseGraphEdgeTable()
+    {
+        var s = Cur;
+        var t = new GraphEdgeTable();
+        ParseGraphElementCommon(t);
+        ExpectKw("SOURCE");
+        t.Source = ParseGraphEdgeEndpoint();
+        ExpectKw("DESTINATION");
+        t.Destination = ParseGraphEdgeEndpoint();
+        ParseGraphLabels(t);
+        return Fin(t, s);
+    }
+
+    /// <summary>The table, optional AS alias and optional KEY, shared by vertex and edge tables.</summary>
+    private void ParseGraphElementCommon(GraphElementTable t)
+    {
+        t.Table = ParseDottedName();
+        if (AcceptKw("AS")) t.Alias = ParseIdentifier();
+        if (AcceptKw("KEY")) { ExpectOp("("); t.Key = ParseIdentifierList(); ExpectOp(")"); }
+    }
+
+    /// <summary>The LABEL clauses that close a vertex or edge table definition.</summary>
+    private void ParseGraphLabels(GraphElementTable t)
+    {
+        while (AcceptKw("LABEL"))
+        {
+            var l = new GraphElementLabel { Name = ParseIdentifier() };
+            if (IsKw("PROPERTIES") || (IsKw("NO") && IsKwAt(1, "PROPERTIES"))) l.Properties = ParseGraphProperties();
+            t.Labels.Add(l);
+        }
+    }
+
+    private GraphEdgeEndpoint ParseGraphEdgeEndpoint()
+    {
+        var s = Cur;
+        var ep = new GraphEdgeEndpoint();
+        if (AcceptKw("KEY")) { ExpectOp("("); ep.Keys = ParseIdentifierList(); ExpectOp(")"); ExpectKw("REFERENCES"); }
+        ep.Table = ParseDottedName();
+        if (AcceptOp("(")) { ep.Columns = ParseIdentifierList(); ExpectOp(")"); }
+        return Fin(ep, s);
+    }
+
+    private GraphPropertiesClause ParseGraphProperties()
+    {
+        var s = Cur;
+        var p = new GraphPropertiesClause();
+        if (AcceptKw("NO")) { ExpectKw("PROPERTIES"); p.Kind = GraphPropertiesKind.None; }
+        else
+        {
+            ExpectKw("PROPERTIES");
+            if (AcceptOp("(")) { p.Columns = ParseIdentifierList(); ExpectOp(")"); }
+            else
+            {
+                ExpectKw("ARE"); ExpectKw("ALL"); ExpectKw("COLUMNS");
+                p.Kind = GraphPropertiesKind.AllColumns;
+                if (AcceptKw("EXCEPT")) { ExpectOp("("); p.Except = ParseIdentifierList(); ExpectOp(")"); }
+            }
+        }
+        return Fin(p, s);
     }
 
     private Statement ParseCreateSequence(Token start)

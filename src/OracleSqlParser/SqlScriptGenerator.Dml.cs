@@ -25,7 +25,7 @@ public sealed partial class SqlScriptGenerator
                     AdminLike(st); break;
                 // generic and typed DDL
                 case CreateObjectStatement or AlterObjectStatement or DropStatement or CreateTableStatement or CreateIndexStatement
-                    or CreateViewStatement or CreateSequenceStatement or CreateSynonymStatement or AlterTableStatement
+                    or CreateViewStatement or CreateSequenceStatement or CreateSynonymStatement or AlterTableStatement or CreatePropertyGraphStatement
                     or CreateJavaStatement or CreateLibraryStatement:
                     Ddl(st); break;
                 // PL/SQL
