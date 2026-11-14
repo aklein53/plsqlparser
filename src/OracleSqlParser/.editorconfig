@@ -1,9 +1,6 @@
-# Missing XML documentation (CS1591) is suppressed across this project, except in the public API files below,
-# which must document every public member. A later section overrides an earlier one, so the second section wins.
-# A pragma cannot do this: '#pragma warning restore' falls back to the project's NoWarn setting.
+# Every public type and member of the library must have an XML doc comment. CS1591 (missing XML comment) is a warning
+# for all C# files here, and the build uses -warnaserror, so an undocumented public member fails the build.
+# The generated files in Generated/ are covered too: their members are overrides or partial declarations documented in the source.
 
 [*.cs]
-dotnet_diagnostic.CS1591.severity = none
-
-[{ParseError,ParseOptions,Parser,Lexer,SqlAnalysis}.cs]
 dotnet_diagnostic.CS1591.severity = warning

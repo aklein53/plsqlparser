@@ -40,8 +40,8 @@ fuzz) and were re-verified by hand where cited.
 - [x] Generate per node type (checked-in output of `tools/AstGen`, no Roslyn generator): `Accept(visitor)`, `Visit(T)` + `ExplicitVisit(T)` on an abstract `SqlNodeVisitor`
   (matching ScriptDom's model), and `GetChildren` (removes reflection from traversal: faster, AOT/trim-safe).
 - [x] `SqlNodeRewriter` with typed `Rewrite(T)` returning replacements (in place; null removes) for editing scenarios; `DeepClone`; `SqlNodeComparer.StructurallyEqual`.
-- [ ] `required` members instead of `= null!` (~120 sites) so a hand-built tree fails at compile time, not in the printer.
-  Deferred: would force every parser construction site to use initializers; ScriptDom does not do this either.
+- [x] `required` members instead of `= null!` (179 mandatory properties) so a hand-built tree fails at compile time, not in the printer.
+  `CreateDualityViewStatement.Query` is nullable (GraphQL form). Guarded by `RequiredMembersTests`.
 - [x] Span setters internal (nodes built in code have zero spans); `ParseResult.Errors` read-only.
 - [x] Thread-safety documented: parsing is thread-safe; trees are mutable and not.
 
@@ -96,7 +96,7 @@ fuzz) and were re-verified by hand where cited.
   target frameworks; test projects not packable.
 - [x] XML docs on the public entry points; missing docs fail the build for the parser API files and `SqlAnalysis`
   (`src/OracleSqlParser/.editorconfig`).
-- [ ] Before 1.0: XML docs on every AST node type; consider `required` members (Epic 2 deferral).
+- [x] Before 1.0: XML docs on every AST node type; `required` members (Epic 2 deferral).
 
 ## Out of core: QueryGuard
 
