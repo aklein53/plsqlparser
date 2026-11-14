@@ -38,11 +38,10 @@ public sealed partial class JsonArrayConstructor : Expression
 {
     /// <summary>The array elements, in source order; empty when there are none.</summary>
     public List<Expression> Elements { get; set; } = [];
-    /// <summary>The subquery of <c>JSON_ARRAY(SELECT ...)</c>, or null for the element-list form.</summary>
+    /// <summary>The subquery of the <c>JSON [ SELECT ... ]</c> form, or null for the element-list form.</summary>
     public SelectStatement? Query { get; set; }
 }
 
-/// <summary>Table annotations of a JSON relational duality view query.</summary>
 /// <summary>A JSON relational duality view annotation written after a table, as in <c>WITH INSERT UPDATE DELETE</c>.</summary>
 public enum DualityAnnotation
 {
@@ -58,11 +57,11 @@ public enum DualityAnnotation
     NoUpdate,
     /// <summary><c>WITH NODELETE</c>: deletes through the view are not allowed.</summary>
     NoDelete,
-    /// <summary><c>WITH NOCHECK</c>: the document is not checked against the table on write.</summary>
+    /// <summary><c>WITH NOCHECK</c>: the write-time check is disabled for the table.</summary>
     NoCheck,
     /// <summary><c>WITH ETAG</c>: an etag check is applied on write.</summary>
     Etag,
-    /// <summary><c>WITH NOETAG</c>: no etag check is applied.</summary>
+    /// <summary><c>WITH NO ETAG</c>: no etag check is applied.</summary>
     NoEtag,
 }
 
@@ -203,7 +202,7 @@ public sealed partial class XmlNamespace : SqlNode
     public required Expression Uri { get; set; }
     /// <summary>The prefix after <c>AS</c>, or null for the default namespace.</summary>
     public Identifier? Alias { get; set; }
-    /// <summary>DEFAULT 'uri'.</summary>
+    /// <summary>True for <c>DEFAULT 'uri'</c>, which declares the default namespace; Alias is then null.</summary>
     public bool IsDefault { get; set; }
 }
 
@@ -244,7 +243,7 @@ public sealed partial class PathColumn : SqlNode
     public bool ForOrdinality { get; set; }
     /// <summary>The column's data type, or null when absent.</summary>
     public DataType? Type { get; set; }
-    /// <summary>EXISTS PATH column.</summary>
+    /// <summary>True for an <c>EXISTS PATH</c> column, which yields whether the path matches rather than a value.</summary>
     public bool Exists { get; set; }
     /// <summary>FORMAT JSON, TRUNCATE, WITH WRAPPER, ON ERROR/EMPTY, ... (in source order).</summary>
     public List<FunctionClause> Clauses { get; set; } = [];
@@ -372,7 +371,7 @@ public sealed partial class PatternQuantified : PatternNode
     public required PatternNode Inner { get; set; }
     /// <summary>The minimum number of repetitions.</summary>
     public int Min { get; set; }
-    /// <summary>null = unbounded.</summary>
+    /// <summary>The maximum number of repetitions, or null when there is no upper bound (<c>+</c>, <c>*</c>).</summary>
     public int? Max { get; set; }
     /// <summary>True when the quantifier is reluctant (followed by <c>?</c>).</summary>
     public bool Reluctant { get; set; }
@@ -447,7 +446,6 @@ public sealed partial class GraphVertexPattern : GraphPatternElement
     public Expression? Where { get; set; }
 }
 
-/// <summary>Right: -&gt;, Left: &lt;-, Any: -, LeftOrRight: &lt;-[...]-&gt; (bracketed only).</summary>
 /// <summary>The direction of an edge pattern.</summary>
 public enum GraphEdgeDirection
 {
@@ -494,14 +492,14 @@ public enum GraphQuantifierKind
     Range,
 }
 
-/// <summary>Repetition of an edge or group: {n} (exact), {n,m} / {,m} (range). Oracle rejects * and + on edges and {n,} (ORA-40984/40985).</summary>
+/// <summary>Repetition of an edge or group: {n} (exact) or {n,m} / {,m} (range). An open-ended {n,} is not supported.</summary>
 public sealed partial class GraphQuantifier : SqlNode
 {
     /// <summary>Whether the quantifier is an exact count or a range.</summary>
     public GraphQuantifierKind Kind { get; set; }
     /// <summary>The count for Exact, or the lower bound for Range (null when omitted).</summary>
     public Expression? Min { get; set; }
-    /// <summary>The upper bound of a range, or null when unbounded.</summary>
+    /// <summary>The upper bound of a range; null for <c>Exact</c>, where <see cref="Min"/> holds the count.</summary>
     public Expression? Max { get; set; }
 }
 
