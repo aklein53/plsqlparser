@@ -886,7 +886,7 @@ public sealed partial class SqlParser
             w.Then = ParseExpr();
             ce.Whens.Add(Fin(w, ws));
         }
-        if (ce.Whens.Count == 0) throw FailExpected("Expected WHEN in CASE expression", "WHEN in CASE expression");
+        if (ce.Whens.Count == 0) throw FailExpected("Expected WHEN in CASE expression", "WHEN");
         if (AcceptKw("ELSE")) ce.Else = ParseExpr();
         ExpectKw("END");
         return Fin(ce, start);

@@ -1087,7 +1087,7 @@ public sealed partial class SqlParser
             else throw FailExpected($"Expected UPDATE, DELETE or INSERT but found {Describe(Cur)}", "UPDATE", "DELETE", "INSERT");
             st.Clauses.Add(Fin(mc, cs));
         }
-        if (st.Clauses.Count == 0) throw FailExpected("Expected WHEN clause in MERGE", "WHEN clause in MERGE");
+        if (st.Clauses.Count == 0) throw FailExpected("Expected WHEN clause in MERGE", "WHEN");
         ParseErrorLogging(st);
         return Fin(st, start);
     }

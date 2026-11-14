@@ -773,7 +773,7 @@ public sealed partial class SqlParser
         }
         else
         {
-            if (Cur.Text != ":") throw FailExpected($"Expected ':' in a JSON member but found {Describe(Cur)}", "':' in a JSON member");
+            if (Cur.Text != ":") throw FailExpected($"Expected ':' in a JSON member but found {Describe(Cur)}", ":");
             Next();
             m.Value = IsOp("[") ? ParseJsonArray(keyword: false) : ParseExpr();
         }
