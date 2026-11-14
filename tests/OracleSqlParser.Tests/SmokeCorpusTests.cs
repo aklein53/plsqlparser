@@ -40,6 +40,7 @@ public class SmokeCorpusTests
     [InlineData("SELECT * FROM t WHERE ts AT TIME ZONE 'UTC' > SYSTIMESTAMP")]
     [InlineData("SELECT f(a => 1, b => 2), pkg.fn(x) FROM dual")]
     [InlineData("INSERT INTO t (a, b) VALUES (1, DEFAULT) RETURNING a INTO :x")]
+    [InlineData("UPDATE t SET a = 1 RETURNING OLD a, NEW a, NEW a + 1 INTO :o, :n, :m")]
     [InlineData("INSERT /*+ APPEND */ INTO t SELECT * FROM u")]
     [InlineData("INSERT INTO t (a) (SELECT 1 FROM dual)")]
     [InlineData("UPDATE t SET a = 1, (b, c) = (SELECT 1, 2 FROM dual) WHERE id = 5")]

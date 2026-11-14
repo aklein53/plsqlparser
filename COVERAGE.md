@@ -15,7 +15,7 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 | PIVOT / UNPIVOT / MATCH_RECOGNIZE / MODEL / XMLTABLE / JSON_TABLE / flashback / SAMPLE / VALUES table | `PivotTable` … `ValuesTable` | typed | QueryShape, MiscShape |
 | GRAPH_TABLE | `GraphTable` | header+tree (body) | QueryShape |
 | INSERT (single, multitable, RETURNING, LOG ERRORS, `VALUES rec`) | `InsertStatement`, `MultiTableInsertStatement` | typed | DmlAndSessionShape, MiscShape |
-| UPDATE (incl. `SET ROW`, 23ai `FROM`), DELETE, MERGE (incl. `LOG ERRORS`) | `UpdateStatement` … | typed | DmlAndSessionShape, MiscShape |
+| UPDATE (incl. `SET ROW`, 23ai `FROM`, RETURNING `OLD`/`NEW`), DELETE, MERGE (incl. `LOG ERRORS`) | `UpdateStatement` … | typed | DmlAndSessionShape, MiscShape |
 | CALL, EXPLAIN PLAN, LOCK TABLE | `CallStatement`, `ExplainPlanStatement`, `LockTableStatement` | typed | DmlAndSessionShape |
 | COMMIT, ROLLBACK, SAVEPOINT, SET TRANSACTION, SET CONSTRAINT(S) | `CommitStatement` … `SetConstraintsStatement` | typed | DmlAndSessionShape |
 | ALTER SESSION (SET, ENABLE/DISABLE/FORCE, CLOSE DATABASE LINK, ADVISE, SYNC) | `AlterSessionStatement` | typed (`FeatureSyntax` token tree for unmodeled ENABLE/DISABLE features) | DmlAndSessionShape |
@@ -48,7 +48,6 @@ Error recovery resyncs at `;`, or for PL/SQL units at a `/` alone on its line (e
 
 ## Known gaps (each is a parse error today, not a silent mis-parse)
 
-- `RETURNING OLD/NEW` (23ai) — syntax not verified against the docs, not implemented.
 - `JSON_TRANSFORM` `NESTED PATH` and `CASE` operations.
 - PL/SQL conditional compilation (`$IF ... $THEN ... $END`, `$$inquiry_directives`).
 - PL/SQL Oracle 21+ iterator forms (`FOR i IN 1..3, REVERSE 5..7`, `FOR x IN VALUES OF c`), qualified expressions

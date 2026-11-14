@@ -760,12 +760,31 @@ public sealed partial class SqlParser
     {
         if (AcceptKw("RETURNING") || AcceptKw("RETURN"))
         {
-            do st.Returning.Add(ParseExpr()); while (AcceptOp(","));
+            do st.Returning.Add(ParseReturningItem()); while (AcceptOp(","));
             if (IsKw("BULK") && IsKwAt(1, "COLLECT")) { Next(); Next(); st.ReturningBulkCollect = true; }
             ExpectKw("INTO");
             do st.ReturningInto.Add(ParsePostfix()); while (AcceptOp(","));
         }
         ParseErrorLogging(st);
+    }
+
+    /// <summary>
+    /// OLD and NEW are not reserved words, so they only qualify the item when an expression follows them:
+    /// `RETURNING OLD a` qualifies, while `RETURNING old, new INTO` and `RETURNING old INTO` name columns.
+    /// </summary>
+    private ReturningItem ParseReturningItem()
+    {
+        var s = Cur;
+        var item = new ReturningItem();
+        var next = PeekTok();
+        bool nextStartsItem = next.Type == TokenType.QuotedIdentifier || (next.Type == TokenType.Identifier && !Reserved.Contains(next.Value));
+        if ((IsKw("OLD") || IsKw("NEW")) && nextStartsItem)
+        {
+            item.Image = IsKw("OLD") ? ReturningImage.Old : ReturningImage.New;
+            Next();
+        }
+        item.Expression = ParseExpr();
+        return Fin(item, s);
     }
 
     /// <summary>LOG ERRORS [INTO t] [('tag')] [REJECT LIMIT n | UNLIMITED]; also the last clause of MERGE.</summary>

@@ -8509,6 +8509,47 @@ public partial class ReturningClause
     }
 }
 
+public partial class ReturningItem
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Expression is not null) yield return Expression;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Expression?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Expression = SqlNodeRewriter.RewriteRequired(rewriter, Expression, "ReturningItem.Expression");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ReturningItem();
+        CopySpan(this, c);
+        c.Image = Image;
+        c.Expression = CloneChild(Expression)!;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ReturningItem)other;
+        return Image == o.Image
+            && Pair(Expression, o.Expression, pending);
+    }
+}
+
 public partial class RoleSpec
 {
     /// <inheritdoc/>

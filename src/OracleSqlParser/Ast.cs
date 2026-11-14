@@ -164,11 +164,21 @@ public abstract partial class Statement : SqlNode
 public abstract partial class DmlStatement : Statement
 {
     public HintClause? Hint { get; set; }
-    public List<Expression> Returning { get; set; } = [];
+    public List<ReturningItem> Returning { get; set; } = [];
     public bool ReturningBulkCollect { get; set; }
     public List<Expression> ReturningInto { get; set; } = [];
     public ErrorLogging? ErrorLogging { get; set; }
 }
+
+/// <summary>One item of a RETURNING list: a column or expression, optionally qualified with the row image OLD or NEW (23ai).</summary>
+public sealed partial class ReturningItem : SqlNode
+{
+    /// <summary>Null when neither OLD nor NEW is written: the value after the change is returned.</summary>
+    public ReturningImage? Image { get; set; }
+    public Expression Expression { get; set; } = null!;
+}
+
+public enum ReturningImage { Old, New }
 
 public sealed partial class ErrorLogging : SqlNode
 {
