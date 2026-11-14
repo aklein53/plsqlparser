@@ -13,7 +13,7 @@ public static class AstGenerator
 {
     private enum Kind { Node, List, Nested, Strings, Scalar }
 
-    private sealed record Prop(string Name, Kind Kind, string? Element, bool Nullable, bool SpellingOnly);
+    private sealed record Prop(string Name, Kind Kind, string? Element, bool Nullable, bool SpellingOnly, bool NullableBool = false);
 
     /// <summary>Returns file name to file content for every generated file.</summary>
     public static IReadOnlyDictionary<string, string> Generate(Assembly library)
@@ -95,7 +95,7 @@ public static class AstGenerator
             {
                 var u = Nullable.GetUnderlyingType(pt) ?? pt;
                 if (u == typeof(string) || u == typeof(bool) || u == typeof(int) || u == typeof(char) || u.IsEnum)
-                    list.Add(new Prop(p.Name, Kind.Scalar, null, nullable, spelling));
+                    list.Add(new Prop(p.Name, Kind.Scalar, null, nullable, spelling, pt == typeof(bool?)));
                 else throw new InvalidOperationException($"{type.Name}.{p.Name}: unsupported property type {pt}");
             }
         }
@@ -151,6 +151,14 @@ public static class AstGenerator
             sb.Append("    }\n\n");
         }
 
+        // Name/value pairs for the diagnostic AstPrinter and AstJson, in declaration order: no reflection, so trim/AOT-safe.
+        if (props.Count > 0)
+        {
+            sb.Append("    internal override NodeProperty[] NodeProperties() =>\n    [\n");
+            foreach (var p in props)
+                sb.Append($"        new(\"{p.Name}\", {p.Name}{(p.NullableBool ? ", NullableBool: true" : "")}{(p.SpellingOnly ? ", SpellingOnly: true" : "")}),\n");
+            sb.Append("    ];\n\n");
+        }
         sb.Append("    /// <inheritdoc/>\n    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);\n\n");
         sb.Append("    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);\n\n");
 

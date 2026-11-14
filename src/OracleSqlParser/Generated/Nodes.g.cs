@@ -25,6 +25,12 @@ public partial class Accessor
         SqlNodeRewriter.RewriteList(rewriter, Name, "Accessor.Name");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Name", Name),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -67,6 +73,13 @@ public partial class AdminStatement
     {
         SqlNodeRewriter.RewriteList(rewriter, Body, "AdminStatement.Body");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Verb", Verb),
+        new("Body", Body),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -118,6 +131,15 @@ public partial class AlterAnnotationsStatement
         Annotations = SqlNodeRewriter.RewriteOptional(rewriter, Annotations, "AlterAnnotationsStatement.Annotations");
         SqlNodeRewriter.RewriteList(rewriter, ColumnAnnotations, "AlterAnnotationsStatement.ColumnAnnotations");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Name", Name),
+        new("Annotations", Annotations),
+        new("ColumnAnnotations", ColumnAnnotations),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -174,6 +196,17 @@ public partial class AlterAuditPolicyStatement
         Condition = SqlNodeRewriter.RewriteOptional(rewriter, Condition, "AlterAuditPolicyStatement.Condition");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IfExists", IfExists),
+        new("Name", Name),
+        new("Lists", Lists),
+        new("Condition", Condition),
+        new("Evaluate", Evaluate),
+        new("DropCondition", DropCondition),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -229,6 +262,19 @@ public partial class AlterCompileStatement
         SqlNodeRewriter.RewriteList(rewriter, Name, "AlterCompileStatement.Name");
         SqlNodeRewriter.RewriteList(rewriter, Parameters, "AlterCompileStatement.Parameters");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Name", Name),
+        new("Editionable", Editionable),
+        new("Compile", Compile),
+        new("Debug", Debug),
+        new("Part", Part),
+        new("ReuseSettings", ReuseSettings),
+        new("Parameters", Parameters),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -287,6 +333,12 @@ public partial class AlterDomainAction
         Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "AlterDomainAction.Value");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Value", Value),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -338,6 +390,15 @@ public partial class AlterDomainStatement
         Annotations = SqlNodeRewriter.RewriteOptional(rewriter, Annotations, "AlterDomainStatement.Annotations");
         SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "AlterDomainStatement.OtherClauses");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Action", Action),
+        new("Annotations", Annotations),
+        new("OtherClauses", OtherClauses),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -396,6 +457,25 @@ public partial class AlterIndexAction
         Keep = SqlNodeRewriter.RewriteOptional(rewriter, Keep, "AlterIndexAction.Keep");
         SqlNodeRewriter.RewriteList(rewriter, Attributes, "AlterIndexAction.Attributes");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Partition", Partition),
+        new("Subpartition", Subpartition),
+        new("Reverse", Reverse, NullableBool: true),
+        new("Online", Online),
+        new("NewName", NewName),
+        new("Visible", Visible, NullableBool: true),
+        new("Monitoring", Monitoring, NullableBool: true),
+        new("Cleanup", Cleanup),
+        new("Only", Only),
+        new("Enabled", Enabled, NullableBool: true),
+        new("Compact", Compact),
+        new("Cascade", Cascade),
+        new("Keep", Keep),
+        new("Attributes", Attributes),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -469,6 +549,13 @@ public partial class AlterIndexStatement
         SqlNodeRewriter.RewriteList(rewriter, Actions, "AlterIndexStatement.Actions");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Actions", Actions),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -519,6 +606,20 @@ public partial class AlterMaterializedViewStatement
         Refresh = SqlNodeRewriter.RewriteOptional(rewriter, Refresh, "AlterMaterializedViewStatement.Refresh");
         SqlNodeRewriter.RewriteList(rewriter, Attributes, "AlterMaterializedViewStatement.Attributes");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Refresh", Refresh),
+        new("QueryRewrite", QueryRewrite, NullableBool: true),
+        new("Compile", Compile),
+        new("ConsiderFresh", ConsiderFresh),
+        new("ShrinkSpace", ShrinkSpace),
+        new("ShrinkCompact", ShrinkCompact),
+        new("ShrinkCascade", ShrinkCascade),
+        new("Attributes", Attributes),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -582,6 +683,16 @@ public partial class AlterObjectStatement
         SqlNodeRewriter.RewriteList(rewriter, Body, "AlterObjectStatement.Body");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Public", Public),
+        new("IfExists", IfExists),
+        new("Name", Name),
+        new("Body", Body),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -635,6 +746,16 @@ public partial class AlterProfileStatement
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "AlterProfileStatement.Name");
         SqlNodeRewriter.RewriteList(rewriter, Limits, "AlterProfileStatement.Limits");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IfExists", IfExists),
+        new("Name", Name),
+        new("Limits", Limits),
+        new("Container", Container),
+        new("Cascade", Cascade),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -693,6 +814,17 @@ public partial class AlterRoleStatement
         SqlNodeRewriter.RewriteList(rewriter, Package, "AlterRoleStatement.Package");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IfExists", IfExists),
+        new("Name", Name),
+        new("Authentication", Authentication),
+        new("Password", Password),
+        new("Package", Package),
+        new("Container", Container),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -748,6 +880,13 @@ public partial class AlterSequenceStatement
         SqlNodeRewriter.RewriteList(rewriter, Name, "AlterSequenceStatement.Name");
         SqlNodeRewriter.RewriteList(rewriter, Options, "AlterSequenceStatement.Options");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Options", Options),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -808,6 +947,20 @@ public partial class AlterSessionStatement
         DatabaseLink = SqlNodeRewriter.RewriteOptional(rewriter, DatabaseLink, "AlterSessionStatement.DatabaseLink");
         SqlNodeRewriter.RewriteList(rewriter, FeatureSyntax, "AlterSessionStatement.FeatureSyntax");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Settings", Settings),
+        new("Feature", Feature),
+        new("Parallel", Parallel),
+        new("Timeout", Timeout),
+        new("ResumableName", ResumableName),
+        new("DatabaseLink", DatabaseLink),
+        new("Advise", Advise),
+        new("FeatureSyntax", FeatureSyntax),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -898,6 +1051,31 @@ public partial class AlterTableAction
         SqlNodeRewriter.RewriteList(rewriter, Syntax, "AlterTableAction.Syntax");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Columns", Columns),
+        new("Constraints", Constraints),
+        new("Names", Names),
+        new("NewName", NewName),
+        new("Cascade", Cascade),
+        new("Online", Online),
+        new("Attributes", Attributes),
+        new("PartitionRefs", PartitionRefs),
+        new("Annotations", Annotations),
+        new("Partitions", Partitions),
+        new("Values", Values),
+        new("SplitByValues", SplitByValues),
+        new("AddValues", AddValues, NullableBool: true),
+        new("Interval", Interval),
+        new("UpdateIndexes", UpdateIndexes),
+        new("GlobalIndexes", GlobalIndexes),
+        new("IncludingIndexes", IncludingIndexes, NullableBool: true),
+        new("WithValidation", WithValidation, NullableBool: true),
+        new("Storage", Storage),
+        new("Syntax", Syntax),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -982,6 +1160,14 @@ public partial class AlterTableStatement
         SqlNodeRewriter.RewriteList(rewriter, Actions, "AlterTableStatement.Actions");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("IfExists", IfExists),
+        new("Actions", Actions),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1031,6 +1217,14 @@ public partial class AlterTablespaceStatement
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "AlterTablespaceStatement.Name");
         SqlNodeRewriter.RewriteList(rewriter, Actions, "AlterTablespaceStatement.Actions");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IfExists", IfExists),
+        new("Name", Name),
+        new("Actions", Actions),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -1082,6 +1276,14 @@ public partial class AlterTriggerStatement
         RenameTo = SqlNodeRewriter.RewriteOptional(rewriter, RenameTo, "AlterTriggerStatement.RenameTo");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Enable", Enable, NullableBool: true),
+        new("RenameTo", RenameTo),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1132,6 +1334,14 @@ public partial class AlterUserStatement
         SqlNodeRewriter.RewriteList(rewriter, Clauses, "AlterUserStatement.Clauses");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IfExists", IfExists),
+        new("Name", Name),
+        new("Clauses", Clauses),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1181,6 +1391,14 @@ public partial class AlterViewStatement
         SqlNodeRewriter.RewriteList(rewriter, Name, "AlterViewStatement.Name");
         SqlNodeRewriter.RewriteList(rewriter, Actions, "AlterViewStatement.Actions");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Actions", Actions),
+        new("ReadOnly", ReadOnly, NullableBool: true),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -1240,6 +1458,22 @@ public partial class AnalyzeStatement
         SqlNodeRewriter.RewriteList(rewriter, IntoTable, "AnalyzeStatement.IntoTable");
         SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "AnalyzeStatement.OtherClauses");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Name", Name),
+        new("Partition", Partition),
+        new("Action", Action),
+        new("SystemStatistics", SystemStatistics),
+        new("Sample", Sample),
+        new("SamplePercent", SamplePercent),
+        new("Cascade", Cascade),
+        new("Online", Online, NullableBool: true),
+        new("IntoTable", IntoTable),
+        new("OtherClauses", OtherClauses),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -1307,6 +1541,15 @@ public partial class AnnotationItem
         Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "AnnotationItem.Value");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Action", Action),
+        new("IfNotExists", IfNotExists),
+        new("IfExists", IfExists),
+        new("Name", Name),
+        new("Value", Value),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1356,6 +1599,11 @@ public partial class AnnotationsAttribute
         Clause = SqlNodeRewriter.RewriteRequired(rewriter, Clause, "AnnotationsAttribute.Clause");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Clause", Clause),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1396,6 +1644,11 @@ public partial class AnnotationsClause
     {
         SqlNodeRewriter.RewriteList(rewriter, Items, "AnnotationsClause.Items");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Items", Items),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -1453,6 +1706,17 @@ public partial class Argument
         OnConversionError = SqlNodeRewriter.RewriteOptional(rewriter, OnConversionError, "Argument.OnConversionError");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Keyword", Keyword),
+        new("Value", Value),
+        new("MappedValue", MappedValue),
+        new("Alias", Alias),
+        new("Format", Format),
+        new("OnConversionError", OnConversionError),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1509,6 +1773,13 @@ public partial class AssignmentStatement
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "AssignmentStatement.Value");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Value", Value),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1557,6 +1828,13 @@ public partial class AtTimeZoneExpression
         Zone = SqlNodeRewriter.RewriteOptional(rewriter, Zone, "AtTimeZoneExpression.Zone");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Local", Local),
+        new("Zone", Zone),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1602,6 +1880,13 @@ public partial class AuditObject
         SqlNodeRewriter.RewriteList(rewriter, Name, "AuditObject.Name");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Default", Default),
+        new("Directory", Directory),
+        new("Name", Name),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1630,6 +1915,11 @@ public partial class AuditObject
 
 public partial class AuditOption
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1673,6 +1963,13 @@ public partial class AuditPolicyItem
         Component = SqlNodeRewriter.RewriteOptional(rewriter, Component, "AuditPolicyItem.Component");
         On = SqlNodeRewriter.RewriteOptional(rewriter, On, "AuditPolicyItem.On");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Component", Component),
+        new("Name", Name),
+        new("On", On),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -1721,6 +2018,14 @@ public partial class AuditPolicyList
         SqlNodeRewriter.RewriteList(rewriter, Items, "AuditPolicyList.Items");
         SqlNodeRewriter.RewriteList(rewriter, Roles, "AuditPolicyList.Roles");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Drop", Drop),
+        new("Items", Items),
+        new("Roles", Roles),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -1789,6 +2094,23 @@ public partial class AuditStatement
         SqlNodeRewriter.RewriteList(rewriter, WithRoles, "AuditStatement.WithRoles");
         SqlNodeRewriter.RewriteList(rewriter, ExceptUsers, "AuditStatement.ExceptUsers");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Noaudit", Noaudit),
+        new("Policy", Policy),
+        new("ContextNamespace", ContextNamespace),
+        new("ContextAttributes", ContextAttributes),
+        new("Options", Options),
+        new("On", On),
+        new("ByUsers", ByUsers),
+        new("WithRoles", WithRoles),
+        new("GrantedRoles", GrantedRoles),
+        new("ExceptUsers", ExceptUsers),
+        new("By", By),
+        new("Successful", Successful, NullableBool: true),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -1861,6 +2183,14 @@ public partial class BetweenExpression
         High = SqlNodeRewriter.RewriteRequired(rewriter, High, "BetweenExpression.High");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Not", Not),
+        new("Low", Low),
+        new("High", High),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1911,6 +2241,13 @@ public partial class BinaryExpression
         Right = SqlNodeRewriter.RewriteRequired(rewriter, Right, "BinaryExpression.Right");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Left", Left),
+        new("Operator", Operator),
+        new("Right", Right),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1939,6 +2276,11 @@ public partial class BinaryExpression
 
 public partial class BindItem
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -1963,6 +2305,12 @@ public partial class BindItem
 
 public partial class BindVariable
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Quoted", Quoted),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2015,6 +2363,16 @@ public partial class Block
         EndName = SqlNodeRewriter.RewriteOptional(rewriter, EndName, "Block.EndName");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("HasDeclare", HasDeclare),
+        new("Declarations", Declarations),
+        new("Statements", Statements),
+        new("Handlers", Handlers),
+        new("EndName", EndName),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2049,6 +2407,11 @@ public partial class Block
 
 public partial class CacheAttribute
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Cache", Cache),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2092,6 +2455,13 @@ public partial class CallStatement
         Routine = SqlNodeRewriter.RewriteRequired(rewriter, Routine, "CallStatement.Routine");
         Into = SqlNodeRewriter.RewriteOptional(rewriter, Into, "CallStatement.Into");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Routine", Routine),
+        new("Into", Into),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -2144,6 +2514,13 @@ public partial class CaseExpression
         Else = SqlNodeRewriter.RewriteOptional(rewriter, Else, "CaseExpression.Else");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Operand", Operand),
+        new("Whens", Whens),
+        new("Else", Else),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2191,6 +2568,12 @@ public partial class CaseStatementWhen
         When = SqlNodeRewriter.RewriteRequired(rewriter, When, "CaseStatementWhen.When");
         SqlNodeRewriter.RewriteList(rewriter, Statements, "CaseStatementWhen.Statements");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("When", When),
+        new("Statements", Statements),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -2249,6 +2632,19 @@ public partial class CastExpression
         NlsParam = SqlNodeRewriter.RewriteOptional(rewriter, NlsParam, "CastExpression.NlsParam");
         SqlNodeRewriter.RewriteList(rewriter, Clauses, "CastExpression.Clauses");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Multiset", Multiset),
+        new("Value", Value),
+        new("Ref", Ref),
+        new("Type", Type),
+        new("OnConversionError", OnConversionError),
+        new("Format", Format),
+        new("NlsParam", NlsParam),
+        new("Clauses", Clauses),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -2310,6 +2706,12 @@ public partial class CellReference
         SqlNodeRewriter.RewriteList(rewriter, Subscripts, "CellReference.Subscripts");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Base", Base),
+        new("Subscripts", Subscripts),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2356,6 +2758,12 @@ public partial class ChainedCall
         SqlNodeRewriter.RewriteList(rewriter, Arguments, "ChainedCall.Arguments");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Arguments", Arguments),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2398,6 +2806,12 @@ public partial class CloseStatement
     {
         Cursor = SqlNodeRewriter.RewriteRequired(rewriter, Cursor, "CloseStatement.Cursor");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Cursor", Cursor),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -2444,6 +2858,12 @@ public partial class CollateExpression
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "CollateExpression.Value");
         Collation = SqlNodeRewriter.RewriteRequired(rewriter, Collation, "CollateExpression.Collation");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Collation", Collation),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -2496,6 +2916,16 @@ public partial class CollectionTypeDeclaration
         ElementType = SqlNodeRewriter.RewriteRequired(rewriter, ElementType, "CollectionTypeDeclaration.ElementType");
         IndexBy = SqlNodeRewriter.RewriteOptional(rewriter, IndexBy, "CollectionTypeDeclaration.IndexBy");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Kind", Kind),
+        new("Limit", Limit),
+        new("ElementType", ElementType),
+        new("NotNull", NotNull),
+        new("IndexBy", IndexBy),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -2578,6 +3008,25 @@ public partial class ColumnDefinition
         SqlNodeRewriter.RewriteList(rewriter, OtherProperties, "ColumnDefinition.OtherProperties");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Type", Type),
+        new("Default", Default),
+        new("DefaultOnNull", DefaultOnNull),
+        new("DefaultOnNullFor", DefaultOnNullFor),
+        new("Identity", Identity),
+        new("VirtualExpression", VirtualExpression),
+        new("Constraints", Constraints),
+        new("Visible", Visible, NullableBool: true),
+        new("Collation", Collation),
+        new("Domain", Domain),
+        new("Encrypt", Encrypt),
+        new("Sort", Sort),
+        new("Annotations", Annotations),
+        new("OtherProperties", OtherProperties),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2647,6 +3096,13 @@ public partial class ColumnReference
         SqlNodeRewriter.RewriteList(rewriter, Parts, "ColumnReference.Parts");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Parts", Parts),
+        new("OuterJoin", OuterJoin),
+        new("Attribute", Attribute),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2691,6 +3147,14 @@ public partial class CommentStatement
     {
         SqlNodeRewriter.RewriteList(rewriter, Name, "CommentStatement.Name");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Name", Name),
+        new("Text", Text),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -2748,6 +3212,16 @@ public partial class CommitStatement
         ForceScn = SqlNodeRewriter.RewriteOptional(rewriter, ForceScn, "CommitStatement.ForceScn");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Work", Work),
+        new("Comment", Comment),
+        new("Write", Write),
+        new("Force", Force),
+        new("ForceScn", ForceScn),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2782,6 +3256,12 @@ public partial class CommitStatement
 
 public partial class CommitWrite
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Wait", Wait),
+        new("Mode", Mode),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2837,6 +3317,15 @@ public partial class CommonTableExpression
         Cycle = SqlNodeRewriter.RewriteOptional(rewriter, Cycle, "CommonTableExpression.Cycle");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Columns", Columns),
+        new("Query", Query),
+        new("Search", Search),
+        new("Cycle", Cycle),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2886,6 +3375,11 @@ public partial class CompilationErrorDeclaration
         Message = SqlNodeRewriter.RewriteRequired(rewriter, Message, "CompilationErrorDeclaration.Message");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Message", Message),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -2926,6 +3420,12 @@ public partial class CompilationErrorStatement
     {
         Message = SqlNodeRewriter.RewriteRequired(rewriter, Message, "CompilationErrorStatement.Message");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Message", Message),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -2972,6 +3472,13 @@ public partial class CompressAttribute
         PrefixLength = SqlNodeRewriter.RewriteOptional(rewriter, PrefixLength, "CompressAttribute.PrefixLength");
         SqlNodeRewriter.RewriteList(rewriter, Method, "CompressAttribute.Method");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Compress", Compress),
+        new("PrefixLength", PrefixLength),
+        new("Method", Method),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -3027,6 +3534,14 @@ public partial class ConditionalDeclaration
         SqlNodeRewriter.RewriteList(rewriter, ElseDeclarations, "ConditionalDeclaration.ElseDeclarations");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Condition", Condition),
+        new("ThenDeclarations", ThenDeclarations),
+        new("ElsifBranches", ElsifBranches),
+        new("ElseDeclarations", ElseDeclarations),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -3076,6 +3591,12 @@ public partial class ConditionalDeclarationBranch
         Condition = SqlNodeRewriter.RewriteRequired(rewriter, Condition, "ConditionalDeclarationBranch.Condition");
         SqlNodeRewriter.RewriteList(rewriter, Declarations, "ConditionalDeclarationBranch.Declarations");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Condition", Condition),
+        new("Declarations", Declarations),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -3129,6 +3650,14 @@ public partial class ConditionalParameter
         SqlNodeRewriter.RewriteList(rewriter, ElseParameters, "ConditionalParameter.ElseParameters");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Condition", Condition),
+        new("ThenParameters", ThenParameters),
+        new("ElsifBranches", ElsifBranches),
+        new("ElseParameters", ElseParameters),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -3178,6 +3707,12 @@ public partial class ConditionalParameterBranch
         Condition = SqlNodeRewriter.RewriteRequired(rewriter, Condition, "ConditionalParameterBranch.Condition");
         SqlNodeRewriter.RewriteList(rewriter, Parameters, "ConditionalParameterBranch.Parameters");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Condition", Condition),
+        new("Parameters", Parameters),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -3231,6 +3766,15 @@ public partial class ConditionalStatement
         SqlNodeRewriter.RewriteList(rewriter, ElseStatements, "ConditionalStatement.ElseStatements");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Condition", Condition),
+        new("ThenStatements", ThenStatements),
+        new("ElsifBranches", ElsifBranches),
+        new("ElseStatements", ElseStatements),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -3283,6 +3827,12 @@ public partial class ConditionalStatementBranch
         SqlNodeRewriter.RewriteList(rewriter, Statements, "ConditionalStatementBranch.Statements");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Condition", Condition),
+        new("Statements", Statements),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -3328,6 +3878,17 @@ public partial class ConstraintState
         UsingIndex = SqlNodeRewriter.RewriteOptional(rewriter, UsingIndex, "ConstraintState.UsingIndex");
         SqlNodeRewriter.RewriteList(rewriter, ExceptionsInto, "ConstraintState.ExceptionsInto");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Deferrable", Deferrable, NullableBool: true),
+        new("InitiallyDeferred", InitiallyDeferred, NullableBool: true),
+        new("Enable", Enable, NullableBool: true),
+        new("Validate", Validate, NullableBool: true),
+        new("Rely", Rely, NullableBool: true),
+        new("UsingIndex", UsingIndex),
+        new("ExceptionsInto", ExceptionsInto),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -3385,6 +3946,13 @@ public partial class ContinueStatement
         When = SqlNodeRewriter.RewriteOptional(rewriter, When, "ContinueStatement.When");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Label", Label),
+        new("When", When),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -3435,6 +4003,18 @@ public partial class CreateAuditPolicyStatement
         SqlNodeRewriter.RewriteList(rewriter, Lists, "CreateAuditPolicyStatement.Lists");
         Condition = SqlNodeRewriter.RewriteOptional(rewriter, Condition, "CreateAuditPolicyStatement.Condition");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IfNotExists", IfNotExists),
+        new("Name", Name),
+        new("Lists", Lists),
+        new("Condition", Condition),
+        new("Evaluate", Evaluate),
+        new("OnlyToplevel", OnlyToplevel),
+        new("Container", Container),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -3493,6 +4073,17 @@ public partial class CreateContextStatement
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateContextStatement.Name");
         SqlNodeRewriter.RewriteList(rewriter, Package, "CreateContextStatement.Package");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("IfNotExists", IfNotExists),
+        new("Name", Name),
+        new("Package", Package),
+        new("Initialized", Initialized),
+        new("AccessedGlobally", AccessedGlobally),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -3565,6 +4156,23 @@ public partial class CreateDatabaseLinkStatement
         SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreateDatabaseLinkStatement.OtherClauses");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("IfNotExists", IfNotExists),
+        new("Public", Public),
+        new("Shared", Shared),
+        new("Name", Name),
+        new("ConnectUser", ConnectUser),
+        new("ConnectPassword", ConnectPassword),
+        new("CurrentUser", CurrentUser),
+        new("AuthenticatedUser", AuthenticatedUser),
+        new("AuthenticatedPassword", AuthenticatedPassword),
+        new("Using", Using),
+        new("OtherClauses", OtherClauses),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -3632,6 +4240,16 @@ public partial class CreateDirectoryStatement
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateDirectoryStatement.Name");
         Path = SqlNodeRewriter.RewriteRequired(rewriter, Path, "CreateDirectoryStatement.Path");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("IfNotExists", IfNotExists),
+        new("Name", Name),
+        new("Sharing", Sharing),
+        new("Path", Path),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -3705,6 +4323,22 @@ public partial class CreateDomainStatement
         Annotations = SqlNodeRewriter.RewriteOptional(rewriter, Annotations, "CreateDomainStatement.Annotations");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("UseCase", UseCase),
+        new("IfNotExists", IfNotExists),
+        new("Name", Name),
+        new("Type", Type),
+        new("Default", Default),
+        new("Constraints", Constraints),
+        new("Collation", Collation),
+        new("Display", Display),
+        new("Order", Order),
+        new("Annotations", Annotations),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -3773,6 +4407,16 @@ public partial class CreateDualityViewStatement
         Query = SqlNodeRewriter.RewriteOptional(rewriter, Query, "CreateDualityViewStatement.Query");
         SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreateDualityViewStatement.OtherClauses");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("Relational", Relational),
+        new("Name", Name),
+        new("Query", Query),
+        new("OtherClauses", OtherClauses),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -3845,6 +4489,27 @@ public partial class CreateIndexStatement
         IndextypeParameters = SqlNodeRewriter.RewriteOptional(rewriter, IndextypeParameters, "CreateIndexStatement.IndextypeParameters");
         SqlNodeRewriter.RewriteList(rewriter, Attributes, "CreateIndexStatement.Attributes");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Unique", Unique),
+        new("Bitmap", Bitmap),
+        new("IfNotExists", IfNotExists),
+        new("Name", Name),
+        new("Table", Table),
+        new("Cluster", Cluster),
+        new("TableAlias", TableAlias),
+        new("Columns", Columns),
+        new("Indextype", Indextype),
+        new("IndextypeParameters", IndextypeParameters),
+        new("Visible", Visible, NullableBool: true),
+        new("Online", Online),
+        new("Reverse", Reverse),
+        new("Local", Local),
+        new("Global", Global),
+        new("Attributes", Attributes),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -3934,6 +4599,26 @@ public partial class CreateJavaStatement
         UsingQuery = SqlNodeRewriter.RewriteOptional(rewriter, UsingQuery, "CreateJavaStatement.UsingQuery");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("AndResolve", AndResolve),
+        new("AndCompile", AndCompile),
+        new("NoForce", NoForce),
+        new("Kind", Kind),
+        new("Name", Name),
+        new("Sharing", Sharing),
+        new("Authid", Authid),
+        new("Resolver", Resolver),
+        new("UsingKind", UsingKind),
+        new("UsingDirectory", UsingDirectory),
+        new("UsingFile", UsingFile),
+        new("UsingKey", UsingKey),
+        new("UsingQuery", UsingQuery),
+        new("SourceText", SourceText),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -4014,6 +4699,18 @@ public partial class CreateLibraryStatement
         Credential = SqlNodeRewriter.RewriteOptional(rewriter, Credential, "CreateLibraryStatement.Credential");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("Editionable", Editionable),
+        new("Sharing", Sharing),
+        new("Name", Name),
+        new("Path", Path),
+        new("Agent", Agent),
+        new("Credential", Credential),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -4071,6 +4768,17 @@ public partial class CreateObjectStatement
         SqlNodeRewriter.RewriteList(rewriter, Name, "CreateObjectStatement.Name");
         SqlNodeRewriter.RewriteList(rewriter, Body, "CreateObjectStatement.Body");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("OrReplace", OrReplace),
+        new("Public", Public),
+        new("IfNotExists", IfNotExists),
+        new("Name", Name),
+        new("Body", Body),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -4137,6 +4845,18 @@ public partial class CreatePackageBodyStatement
         EndName = SqlNodeRewriter.RewriteOptional(rewriter, EndName, "CreatePackageBodyStatement.EndName");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("Editionable", Editionable),
+        new("Name", Name),
+        new("Declarations", Declarations),
+        new("InitStatements", InitStatements),
+        new("InitHandlers", InitHandlers),
+        new("EndName", EndName),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -4201,6 +4921,17 @@ public partial class CreatePackageStatement
         EndName = SqlNodeRewriter.RewriteOptional(rewriter, EndName, "CreatePackageStatement.EndName");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("Editionable", Editionable),
+        new("Name", Name),
+        new("Options", Options),
+        new("Declarations", Declarations),
+        new("EndName", EndName),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -4257,6 +4988,15 @@ public partial class CreateProfileStatement
         SqlNodeRewriter.RewriteList(rewriter, Limits, "CreateProfileStatement.Limits");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IfNotExists", IfNotExists),
+        new("Name", Name),
+        new("Limits", Limits),
+        new("Container", Container),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -4305,6 +5045,14 @@ public partial class CreateProgramStatement
     {
         Subprogram = SqlNodeRewriter.RewriteRequired(rewriter, Subprogram, "CreateProgramStatement.Subprogram");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("Editionable", Editionable),
+        new("Subprogram", Subprogram),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -4358,6 +5106,15 @@ public partial class CreatePropertyGraphStatement
         SqlNodeRewriter.RewriteList(rewriter, VertexTables, "CreatePropertyGraphStatement.VertexTables");
         SqlNodeRewriter.RewriteList(rewriter, EdgeTables, "CreatePropertyGraphStatement.EdgeTables");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("Name", Name),
+        new("VertexTables", VertexTables),
+        new("EdgeTables", EdgeTables),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -4413,6 +5170,17 @@ public partial class CreateRoleStatement
         Password = SqlNodeRewriter.RewriteOptional(rewriter, Password, "CreateRoleStatement.Password");
         SqlNodeRewriter.RewriteList(rewriter, Package, "CreateRoleStatement.Package");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IfNotExists", IfNotExists),
+        new("Name", Name),
+        new("Authentication", Authentication),
+        new("Password", Password),
+        new("Package", Package),
+        new("Container", Container),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -4470,6 +5238,15 @@ public partial class CreateSequenceStatement
         SqlNodeRewriter.RewriteList(rewriter, Options, "CreateSequenceStatement.Options");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Sharing", Sharing),
+        new("IfNotExists", IfNotExists),
+        new("Name", Name),
+        new("Options", Options),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -4524,6 +5301,18 @@ public partial class CreateSynonymStatement
         SqlNodeRewriter.RewriteList(rewriter, Target, "CreateSynonymStatement.Target");
         SqlNodeRewriter.RewriteList(rewriter, DbLink, "CreateSynonymStatement.DbLink");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Sharing", Sharing),
+        new("OrReplace", OrReplace),
+        new("IfNotExists", IfNotExists),
+        new("Public", Public),
+        new("Name", Name),
+        new("Target", Target),
+        new("DbLink", DbLink),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -4594,6 +5383,26 @@ public partial class CreateTableStatement
         SqlNodeRewriter.RewriteList(rewriter, Attributes, "CreateTableStatement.Attributes");
         AsQuery = SqlNodeRewriter.RewriteOptional(rewriter, AsQuery, "CreateTableStatement.AsQuery");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Sharing", Sharing),
+        new("OrReplace", OrReplace),
+        new("IfNotExists", IfNotExists),
+        new("GlobalTemporary", GlobalTemporary),
+        new("PrivateTemporary", PrivateTemporary),
+        new("Duplicated", Duplicated),
+        new("Immutable", Immutable),
+        new("Blockchain", Blockchain),
+        new("Name", Name),
+        new("Columns", Columns),
+        new("Constraints", Constraints),
+        new("OfType", OfType),
+        new("OnCommit", OnCommit),
+        new("Attributes", Attributes),
+        new("AsQuery", AsQuery),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -4677,6 +5486,27 @@ public partial class CreateTablespaceStatement
         EncryptionUsing = SqlNodeRewriter.RewriteOptional(rewriter, EncryptionUsing, "CreateTablespaceStatement.EncryptionUsing");
         SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreateTablespaceStatement.OtherClauses");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Bigfile", Bigfile, NullableBool: true),
+        new("Kind", Kind),
+        new("IfNotExists", IfNotExists),
+        new("Name", Name),
+        new("Files", Files),
+        new("Logging", Logging, NullableBool: true),
+        new("ForceLogging", ForceLogging),
+        new("Online", Online, NullableBool: true),
+        new("ExtentManagementLocal", ExtentManagementLocal),
+        new("ExtentPolicy", ExtentPolicy),
+        new("UniformSize", UniformSize),
+        new("SegmentSpace", SegmentSpace),
+        new("Encryption", Encryption),
+        new("EncryptionUsing", EncryptionUsing),
+        new("DefaultStorageEncrypt", DefaultStorageEncrypt),
+        new("OtherClauses", OtherClauses),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -4781,6 +5611,32 @@ public partial class CreateTriggerStatement
         SqlNodeRewriter.RewriteList(rewriter, Sections, "CreateTriggerStatement.Sections");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("Editionable", Editionable),
+        new("Sharing", Sharing),
+        new("Name", Name),
+        new("Timing", Timing),
+        new("Events", Events),
+        new("TargetKind", TargetKind),
+        new("Target", Target),
+        new("NestedTableColumn", NestedTableColumn),
+        new("Referencing", Referencing),
+        new("ForEachRow", ForEachRow),
+        new("CrossEdition", CrossEdition),
+        new("Ordering", Ordering),
+        new("OrderingTriggers", OrderingTriggers),
+        new("Enabled", Enabled, NullableBool: true),
+        new("When", When),
+        new("Body", Body),
+        new("Call", Call),
+        new("Compound", Compound),
+        new("CompoundDeclarations", CompoundDeclarations),
+        new("Sections", Sections),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -4867,6 +5723,14 @@ public partial class CreateTypeBodyStatement
         SqlNodeRewriter.RewriteList(rewriter, Members, "CreateTypeBodyStatement.Members");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("Name", Name),
+        new("Members", Members),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -4934,6 +5798,26 @@ public partial class CreateTypeStatement
         Limit = SqlNodeRewriter.RewriteOptional(rewriter, Limit, "CreateTypeStatement.Limit");
         SqlNodeRewriter.RewriteList(rewriter, SuperType, "CreateTypeStatement.SuperType");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("OrReplace", OrReplace),
+        new("Editionable", Editionable),
+        new("Name", Name),
+        new("Kind", Kind),
+        new("Options", Options),
+        new("Force", Force),
+        new("Oid", Oid),
+        new("Final", Final, NullableBool: true),
+        new("Instantiable", Instantiable, NullableBool: true),
+        new("Persistable", Persistable, NullableBool: true),
+        new("Attributes", Attributes),
+        new("Members", Members),
+        new("ElementType", ElementType),
+        new("Limit", Limit),
+        new("SuperType", SuperType),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -5009,6 +5893,14 @@ public partial class CreateUserStatement
         SqlNodeRewriter.RewriteList(rewriter, Clauses, "CreateUserStatement.Clauses");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IfNotExists", IfNotExists),
+        new("Name", Name),
+        new("Clauses", Clauses),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -5070,6 +5962,29 @@ public partial class CreateViewStatement
         Query = SqlNodeRewriter.RewriteRequired(rewriter, Query, "CreateViewStatement.Query");
         CheckOptionConstraint = SqlNodeRewriter.RewriteOptional(rewriter, CheckOptionConstraint, "CreateViewStatement.CheckOptionConstraint");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Sharing", Sharing),
+        new("OrReplace", OrReplace),
+        new("IfNotExists", IfNotExists),
+        new("Materialized", Materialized),
+        new("Force", Force),
+        new("NoForce", NoForce),
+        new("Editioning", Editioning),
+        new("Name", Name),
+        new("Columns", Columns),
+        new("Bequeath", Bequeath),
+        new("BuildImmediate", BuildImmediate, NullableBool: true),
+        new("Refresh", Refresh),
+        new("QueryRewrite", QueryRewrite, NullableBool: true),
+        new("Attributes", Attributes),
+        new("Query", Query),
+        new("ReadOnly", ReadOnly),
+        new("CheckOption", CheckOption),
+        new("CheckOptionConstraint", CheckOptionConstraint),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -5148,6 +6063,11 @@ public partial class CurrentOfExpression
         Cursor = SqlNodeRewriter.RewriteRequired(rewriter, Cursor, "CurrentOfExpression.Cursor");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Cursor", Cursor),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -5194,6 +6114,13 @@ public partial class CursorControl
         While = SqlNodeRewriter.RewriteOptional(rewriter, While, "CursorControl.While");
         When = SqlNodeRewriter.RewriteOptional(rewriter, When, "CursorControl.When");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Query", Query),
+        new("While", While),
+        new("When", When),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -5249,6 +6176,14 @@ public partial class CursorDeclaration
         Query = SqlNodeRewriter.RewriteOptional(rewriter, Query, "CursorDeclaration.Query");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Parameters", Parameters),
+        new("ReturnType", ReturnType),
+        new("Query", Query),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -5295,6 +6230,11 @@ public partial class CursorExpression
     {
         Query = SqlNodeRewriter.RewriteRequired(rewriter, Query, "CursorExpression.Query");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Query", Query),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -5346,6 +6286,14 @@ public partial class CycleClause
         DefaultValue = SqlNodeRewriter.RewriteOptional(rewriter, DefaultValue, "CycleClause.DefaultValue");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Columns", Columns),
+        new("SetColumn", SetColumn),
+        new("CycleValue", CycleValue),
+        new("DefaultValue", DefaultValue),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -5392,6 +6340,14 @@ public partial class DataType
     {
         SqlNodeRewriter.RewriteList(rewriter, Arguments, "DataType.Arguments");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Arguments", Arguments),
+        new("Semantics", Semantics),
+        new("Attribute", Attribute),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -5448,6 +6404,18 @@ public partial class DatafileSpec
         NextSize = SqlNodeRewriter.RewriteOptional(rewriter, NextSize, "DatafileSpec.NextSize");
         MaxSize = SqlNodeRewriter.RewriteOptional(rewriter, MaxSize, "DatafileSpec.MaxSize");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Tempfile", Tempfile),
+        new("Path", Path),
+        new("Size", Size),
+        new("Reuse", Reuse),
+        new("Autoextend", Autoextend, NullableBool: true),
+        new("NextSize", NextSize),
+        new("MaxSize", MaxSize),
+        new("MaxSizeUnlimited", MaxSizeUnlimited),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -5522,6 +6490,19 @@ public partial class DeleteStatement
         ErrorLogging = SqlNodeRewriter.RewriteOptional(rewriter, ErrorLogging, "DeleteStatement.ErrorLogging");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("From", From),
+        new("Where", Where),
+        new("Hint", Hint),
+        new("Returning", Returning),
+        new("ReturningBulkCollect", ReturningBulkCollect),
+        new("ReturningInto", ReturningInto),
+        new("ErrorLogging", ErrorLogging),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -5585,6 +6566,25 @@ public partial class DropStatement
         SqlNodeRewriter.RewriteList(rewriter, Rest, "DropStatement.Rest");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Public", Public),
+        new("IfExists", IfExists),
+        new("Name", Name),
+        new("OnTable", OnTable),
+        new("CascadeConstraints", CascadeConstraints),
+        new("Cascade", Cascade),
+        new("Purge", Purge),
+        new("Force", Force),
+        new("IncludingContents", IncludingContents),
+        new("AndDatafiles", AndDatafiles),
+        new("Validate", Validate),
+        new("Invalidate", Invalidate),
+        new("Rest", Rest),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -5637,6 +6637,11 @@ public partial class DropStatement
 
 public partial class DualityAnnotationItem
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -5687,6 +6692,14 @@ public partial class DynamicSqlControl
         When = SqlNodeRewriter.RewriteOptional(rewriter, When, "DynamicSqlControl.When");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Sql", Sql),
+        new("Using", Using),
+        new("While", While),
+        new("When", When),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -5736,6 +6749,14 @@ public partial class EncryptClause
         Algorithm = SqlNodeRewriter.RewriteOptional(rewriter, Algorithm, "EncryptClause.Algorithm");
         IdentifiedBy = SqlNodeRewriter.RewriteOptional(rewriter, IdentifiedBy, "EncryptClause.IdentifiedBy");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Algorithm", Algorithm),
+        new("IdentifiedBy", IdentifiedBy),
+        new("NoSalt", NoSalt),
+        new("Salt", Salt),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -5790,6 +6811,14 @@ public partial class ErrorLogging
         RejectLimit = SqlNodeRewriter.RewriteOptional(rewriter, RejectLimit, "ErrorLogging.RejectLimit");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Table", Table),
+        new("Tag", Tag),
+        new("RejectLimit", RejectLimit),
+        new("RejectUnlimited", RejectUnlimited),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -5837,6 +6866,11 @@ public partial class ExceptionDeclaration
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "ExceptionDeclaration.Name");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -5880,6 +6914,13 @@ public partial class ExceptionHandler
         SqlNodeRewriter.RewriteNested(rewriter, Exceptions, "ExceptionHandler.Exceptions");
         SqlNodeRewriter.RewriteList(rewriter, Statements, "ExceptionHandler.Statements");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Exceptions", Exceptions),
+        new("Others", Others),
+        new("Statements", Statements),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -5925,6 +6966,12 @@ public partial class ExecStatement
     {
         Body = SqlNodeRewriter.RewriteRequired(rewriter, Body, "ExecStatement.Body");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Body", Body),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -5977,6 +7024,17 @@ public partial class ExecuteImmediateStatement
         SqlNodeRewriter.RewriteList(rewriter, Using, "ExecuteImmediateStatement.Using");
         SqlNodeRewriter.RewriteList(rewriter, ReturningInto, "ExecuteImmediateStatement.ReturningInto");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Sql", Sql),
+        new("BulkCollect", BulkCollect),
+        new("Into", Into),
+        new("Using", Using),
+        new("ReturningInto", ReturningInto),
+        new("ReturningBulkCollect", ReturningBulkCollect),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -6031,6 +7089,11 @@ public partial class ExistsExpression
         Subquery = SqlNodeRewriter.RewriteRequired(rewriter, Subquery, "ExistsExpression.Subquery");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Subquery", Subquery),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -6074,6 +7137,13 @@ public partial class ExitStatement
         Label = SqlNodeRewriter.RewriteOptional(rewriter, Label, "ExitStatement.Label");
         When = SqlNodeRewriter.RewriteOptional(rewriter, When, "ExitStatement.When");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Label", Label),
+        new("When", When),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -6125,6 +7195,14 @@ public partial class ExplainPlanStatement
         SqlNodeRewriter.RewriteList(rewriter, IntoTable, "ExplainPlanStatement.IntoTable");
         Statement = SqlNodeRewriter.RewriteRequired(rewriter, Statement, "ExplainPlanStatement.Statement");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("StatementId", StatementId),
+        new("IntoTable", IntoTable),
+        new("Statement", Statement),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -6179,6 +7257,13 @@ public partial class ExpressionControl
         When = SqlNodeRewriter.RewriteOptional(rewriter, When, "ExpressionControl.When");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("While", While),
+        new("When", When),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -6224,6 +7309,11 @@ public partial class ExpressionList
         SqlNodeRewriter.RewriteList(rewriter, Items, "ExpressionList.Items");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Items", Items),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -6267,6 +7357,12 @@ public partial class ExpressionSelectItem
         Expression = SqlNodeRewriter.RewriteRequired(rewriter, Expression, "ExpressionSelectItem.Expression");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "ExpressionSelectItem.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Expression", Expression),
+        new("Alias", Alias),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -6328,6 +7424,20 @@ public partial class ExternalCall
         SqlNodeRewriter.RewriteList(rewriter, MleEnv, "ExternalCall.MleEnv");
         Signature = SqlNodeRewriter.RewriteOptional(rewriter, Signature, "ExternalCall.Signature");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Language", Language),
+        new("Name", Name),
+        new("Library", Library),
+        new("AgentIn", AgentIn),
+        new("WithContext", WithContext),
+        new("Pascal", Pascal),
+        new("Parameters", Parameters),
+        new("MleModule", MleModule),
+        new("MleEnv", MleEnv),
+        new("Signature", Signature),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -6391,6 +7501,15 @@ public partial class ExternalParameter
         Type = SqlNodeRewriter.RewriteOptional(rewriter, Type, "ExternalParameter.Type");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Name", Name),
+        new("Property", Property),
+        new("ByReference", ByReference),
+        new("Type", Type),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -6440,6 +7559,12 @@ public partial class ExtractExpression
         Source = SqlNodeRewriter.RewriteRequired(rewriter, Source, "ExtractExpression.Source");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Field", Field),
+        new("Source", Source),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -6485,6 +7610,16 @@ public partial class FetchClause
         Count = SqlNodeRewriter.RewriteOptional(rewriter, Count, "FetchClause.Count");
         TargetAccuracy = SqlNodeRewriter.RewriteOptional(rewriter, TargetAccuracy, "FetchClause.TargetAccuracy");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Next", Next),
+        new("Count", Count),
+        new("Percent", Percent),
+        new("WithTies", WithTies),
+        new("Accuracy", Accuracy),
+        new("TargetAccuracy", TargetAccuracy),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -6543,6 +7678,15 @@ public partial class FetchStatement
         Limit = SqlNodeRewriter.RewriteOptional(rewriter, Limit, "FetchStatement.Limit");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Cursor", Cursor),
+        new("BulkCollect", BulkCollect),
+        new("Into", Into),
+        new("Limit", Limit),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -6575,6 +7719,11 @@ public partial class FetchStatement
 
 public partial class FlagClause
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Flag", Flag),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -6621,6 +7770,15 @@ public partial class FlashbackClause
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "FlashbackClause.Value");
         ToValue = SqlNodeRewriter.RewriteOptional(rewriter, ToValue, "FlashbackClause.ToValue");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Mode", Mode),
+        new("Unit", Unit),
+        new("Period", Period),
+        new("Value", Value),
+        new("ToValue", ToValue),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -6677,6 +7835,17 @@ public partial class FlashbackTableStatement
         RenameTo = SqlNodeRewriter.RewriteOptional(rewriter, RenameTo, "FlashbackTableStatement.RenameTo");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Tables", Tables),
+        new("Target", Target),
+        new("Point", Point),
+        new("RenameTo", RenameTo),
+        new("Before", Before),
+        new("EnableTriggers", EnableTriggers),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -6732,6 +7901,13 @@ public partial class ForIterand
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "ForIterand.Name");
         Type = SqlNodeRewriter.RewriteOptional(rewriter, Type, "ForIterand.Type");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Type", Type),
+        new("Mutable", Mutable),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -6796,6 +7972,18 @@ public partial class ForIterationSubscript
         Step = SqlNodeRewriter.RewriteOptional(rewriter, Step, "ForIterationSubscript.Step");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Dimensions", Dimensions),
+        new("InList", InList),
+        new("InQuery", InQuery),
+        new("LikePattern", LikePattern),
+        new("From", From),
+        new("To", To),
+        new("Step", Step),
+        new("Decrement", Decrement),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -6853,6 +8041,14 @@ public partial class ForUpdateClause
         SqlNodeRewriter.RewriteList(rewriter, Of, "ForUpdateClause.Of");
         Wait = SqlNodeRewriter.RewriteOptional(rewriter, Wait, "ForUpdateClause.Wait");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Of", Of),
+        new("NoWait", NoWait),
+        new("SkipLocked", SkipLocked),
+        new("Wait", Wait),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -6922,6 +8118,20 @@ public partial class ForallStatement
         Body = SqlNodeRewriter.RewriteRequired(rewriter, Body, "ForallStatement.Body");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Index", Index),
+        new("Lower", Lower),
+        new("Upper", Upper),
+        new("IndicesOf", IndicesOf),
+        new("ValuesOf", ValuesOf),
+        new("BetweenLow", BetweenLow),
+        new("BetweenHigh", BetweenHigh),
+        new("SaveExceptions", SaveExceptions),
+        new("Body", Body),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -6981,6 +8191,12 @@ public partial class FormatClause
         Encoding = SqlNodeRewriter.RewriteOptional(rewriter, Encoding, "FormatClause.Encoding");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Encoding", Encoding),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -7023,6 +8239,12 @@ public partial class FrameBound
     {
         Offset = SqlNodeRewriter.RewriteOptional(rewriter, Offset, "FrameBound.Offset");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Offset", Offset),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7087,6 +8309,23 @@ public partial class FunctionCall
         Over = SqlNodeRewriter.RewriteOptional(rewriter, Over, "FunctionCall.Over");
         SqlNodeRewriter.RewriteList(rewriter, OrderBy, "FunctionCall.OrderBy");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("New", New),
+        new("Attribute", Attribute),
+        new("Clauses", Clauses),
+        new("Operations", Operations),
+        new("Quantifier", Quantifier),
+        new("Arguments", Arguments),
+        new("IgnoreNulls", IgnoreNulls),
+        new("RespectNulls", RespectNulls),
+        new("WithinGroup", WithinGroup),
+        new("Keep", Keep),
+        new("Over", Over),
+        new("OrderBy", OrderBy),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7153,6 +8392,12 @@ public partial class GotoStatement
         Target = SqlNodeRewriter.RewriteRequired(rewriter, Target, "GotoStatement.Target");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -7195,6 +8440,12 @@ public partial class GrantPrivilege
     {
         SqlNodeRewriter.RewriteList(rewriter, Columns, "GrantPrivilege.Columns");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Columns", Columns),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7244,6 +8495,23 @@ public partial class GrantStatement
         SqlNodeRewriter.RewriteList(rewriter, Object, "GrantStatement.Object");
         SqlNodeRewriter.RewriteList(rewriter, Grantees, "GrantStatement.Grantees");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Revoke", Revoke),
+        new("AllPrivileges", AllPrivileges),
+        new("Privileges", Privileges),
+        new("ObjectKind", ObjectKind),
+        new("Object", Object),
+        new("Grantees", Grantees),
+        new("WithGrantOption", WithGrantOption),
+        new("WithAdminOption", WithAdminOption),
+        new("WithHierarchyOption", WithHierarchyOption),
+        new("CascadeConstraints", CascadeConstraints),
+        new("Force", Force),
+        new("Container", Container),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7310,6 +8578,12 @@ public partial class Grantee
         Name = SqlNodeRewriter.RewriteOptional(rewriter, Name, "Grantee.Name");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Public", Public),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -7355,6 +8629,12 @@ public partial class GraphColumn
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "GraphColumn.Value");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphColumn.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Alias", Alias),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7404,6 +8684,13 @@ public partial class GraphEdgeEndpoint
         SqlNodeRewriter.RewriteList(rewriter, Table, "GraphEdgeEndpoint.Table");
         SqlNodeRewriter.RewriteList(rewriter, Columns, "GraphEdgeEndpoint.Columns");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Keys", Keys),
+        new("Table", Table),
+        new("Columns", Columns),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7458,6 +8745,16 @@ public partial class GraphEdgePattern
         Where = SqlNodeRewriter.RewriteOptional(rewriter, Where, "GraphEdgePattern.Where");
         Quantifier = SqlNodeRewriter.RewriteOptional(rewriter, Quantifier, "GraphEdgePattern.Quantifier");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Direction", Direction),
+        new("Bracketed", Bracketed),
+        new("Variable", Variable),
+        new("Label", Label),
+        new("Where", Where),
+        new("Quantifier", Quantifier),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7528,6 +8825,17 @@ public partial class GraphEdgeTable
         SqlNodeRewriter.RewriteList(rewriter, Labels, "GraphEdgeTable.Labels");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Source", Source),
+        new("Destination", Destination),
+        new("Table", Table),
+        new("Alias", Alias),
+        new("Key", Key),
+        new("Properties", Properties),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -7584,6 +8892,12 @@ public partial class GraphElementLabel
         Properties = SqlNodeRewriter.RewriteOptional(rewriter, Properties, "GraphElementLabel.Properties");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Properties", Properties),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -7627,6 +8941,11 @@ public partial class GraphLabelExpression
         SqlNodeRewriter.RewriteList(rewriter, Labels, "GraphLabelExpression.Labels");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -7667,6 +8986,11 @@ public partial class GraphPathPattern
     {
         SqlNodeRewriter.RewriteList(rewriter, Elements, "GraphPathPattern.Elements");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Elements", Elements),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7711,6 +9035,13 @@ public partial class GraphPropertiesClause
         SqlNodeRewriter.RewriteList(rewriter, Columns, "GraphPropertiesClause.Columns");
         SqlNodeRewriter.RewriteList(rewriter, Except, "GraphPropertiesClause.Except");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Columns", Columns),
+        new("Except", Except),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7760,6 +9091,12 @@ public partial class GraphProperty
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphProperty.Alias");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Property", Property),
+        new("Alias", Alias),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -7805,6 +9142,13 @@ public partial class GraphQuantifier
         Min = SqlNodeRewriter.RewriteOptional(rewriter, Min, "GraphQuantifier.Min");
         Max = SqlNodeRewriter.RewriteOptional(rewriter, Max, "GraphQuantifier.Max");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Min", Min),
+        new("Max", Max),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7853,6 +9197,12 @@ public partial class GraphSubpatternElement
         Path = SqlNodeRewriter.RewriteRequired(rewriter, Path, "GraphSubpatternElement.Path");
         Quantifier = SqlNodeRewriter.RewriteOptional(rewriter, Quantifier, "GraphSubpatternElement.Quantifier");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Path", Path),
+        new("Quantifier", Quantifier),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7911,6 +9261,17 @@ public partial class GraphTable
         SqlNodeRewriter.RewriteList(rewriter, Columns, "GraphTable.Columns");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphTable.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Graph", Graph),
+        new("Match", Match),
+        new("Where", Where),
+        new("RowsPer", RowsPer),
+        new("RowsPerVariables", RowsPerVariables),
+        new("Columns", Columns),
+        new("Alias", Alias),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -7971,6 +9332,13 @@ public partial class GraphVertexPattern
         Where = SqlNodeRewriter.RewriteOptional(rewriter, Where, "GraphVertexPattern.Where");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Variable", Variable),
+        new("Label", Label),
+        new("Where", Where),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -8028,6 +9396,15 @@ public partial class GraphVertexTable
         SqlNodeRewriter.RewriteList(rewriter, Labels, "GraphVertexTable.Labels");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Table", Table),
+        new("Alias", Alias),
+        new("Key", Key),
+        new("Properties", Properties),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -8077,6 +9454,11 @@ public partial class GroupItem
         SqlNodeRewriter.RewriteList(rewriter, Items, "GroupItem.Items");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Items", Items),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -8117,6 +9499,12 @@ public partial class HintClause
     {
         SqlNodeRewriter.RewriteList(rewriter, Items, "HintClause.Items");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Text", Text),
+        new("Items", Items),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -8161,6 +9549,12 @@ public partial class HintItem
         SqlNodeRewriter.RewriteList(rewriter, Arguments, "HintItem.Arguments");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Arguments", Arguments),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -8187,6 +9581,13 @@ public partial class HintItem
 
 public partial class Identifier
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Quoted", Quoted),
+        new("Text", Text, SpellingOnly: true),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -8230,6 +9631,13 @@ public partial class IdentityClause
     {
         SqlNodeRewriter.RewriteList(rewriter, Options, "IdentityClause.Options");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Mode", Mode),
+        new("OnNull", OnNull),
+        new("Options", Options),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -8278,6 +9686,12 @@ public partial class IfBranch
         Condition = SqlNodeRewriter.RewriteRequired(rewriter, Condition, "IfBranch.Condition");
         SqlNodeRewriter.RewriteList(rewriter, Statements, "IfBranch.Statements");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Condition", Condition),
+        new("Statements", Statements),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -8330,6 +9744,15 @@ public partial class IfStatement
         SqlNodeRewriter.RewriteList(rewriter, ElsifBranches, "IfStatement.ElsifBranches");
         SqlNodeRewriter.RewriteList(rewriter, ElseStatements, "IfStatement.ElseStatements");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Condition", Condition),
+        new("ThenStatements", ThenStatements),
+        new("ElsifBranches", ElsifBranches),
+        new("ElseStatements", ElseStatements),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -8386,6 +9809,14 @@ public partial class InExpression
         Subquery = SqlNodeRewriter.RewriteOptional(rewriter, Subquery, "InExpression.Subquery");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Not", Not),
+        new("List", List),
+        new("Subquery", Subquery),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -8432,6 +9863,12 @@ public partial class IndexColumn
     {
         Expression = SqlNodeRewriter.RewriteRequired(rewriter, Expression, "IndexColumn.Expression");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Expression", Expression),
+        new("Descending", Descending),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -8481,6 +9918,13 @@ public partial class IndexIterator
         Low = SqlNodeRewriter.RewriteRequired(rewriter, Low, "IndexIterator.Low");
         High = SqlNodeRewriter.RewriteRequired(rewriter, High, "IndexIterator.High");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Variable", Variable),
+        new("Low", Low),
+        new("High", High),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -8533,6 +9977,13 @@ public partial class IndicesOfControl
         When = SqlNodeRewriter.RewriteOptional(rewriter, When, "IndicesOfControl.When");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Collection", Collection),
+        new("While", While),
+        new("When", When),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -8577,6 +10028,11 @@ public partial class InquiryDirective
     {
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "InquiryDirective.Name");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -8624,6 +10080,13 @@ public partial class InsertIntoClause
         SqlNodeRewriter.RewriteList(rewriter, Columns, "InsertIntoClause.Columns");
         SqlNodeRewriter.RewriteList(rewriter, Values, "InsertIntoClause.Values");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Table", Table),
+        new("Columns", Columns),
+        new("Values", Values),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -8694,6 +10157,21 @@ public partial class InsertStatement
         ErrorLogging = SqlNodeRewriter.RewriteOptional(rewriter, ErrorLogging, "InsertStatement.ErrorLogging");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Columns", Columns),
+        new("ValueRows", ValueRows),
+        new("RecordValue", RecordValue),
+        new("Query", Query),
+        new("Hint", Hint),
+        new("Returning", Returning),
+        new("ReturningBulkCollect", ReturningBulkCollect),
+        new("ReturningInto", ReturningInto),
+        new("ErrorLogging", ErrorLogging),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -8755,6 +10233,15 @@ public partial class IntervalExpression
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "IntervalExpression.Value");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("From", From),
+        new("FromPrecision", FromPrecision),
+        new("To", To),
+        new("ToPrecision", ToPrecision),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -8803,6 +10290,15 @@ public partial class IntervalLiteral
     {
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "IntervalLiteral.Value");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("From", From),
+        new("FromPrecision", FromPrecision),
+        new("To", To),
+        new("ToPrecision", ToPrecision),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -8859,6 +10355,15 @@ public partial class IsExpression
         SqlNodeRewriter.RewriteList(rewriter, OfTypes, "IsExpression.OfTypes");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Not", Not),
+        new("Test", Test),
+        new("JsonClauses", JsonClauses),
+        new("OfTypes", OfTypes),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -8907,6 +10412,12 @@ public partial class IsOfType
     {
         Type = SqlNodeRewriter.RewriteRequired(rewriter, Type, "IsOfType.Type");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Only", Only),
+        new("Type", Type),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -8969,6 +10480,19 @@ public partial class JoinTable
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "JoinTable.Alias");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Left", Left),
+        new("Kind", Kind),
+        new("Natural", Natural),
+        new("Right", Right),
+        new("On", On),
+        new("Using", Using),
+        new("LeftPartitionBy", LeftPartitionBy),
+        new("RightPartitionBy", RightPartitionBy),
+        new("Alias", Alias),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9029,6 +10553,12 @@ public partial class JsonArrayConstructor
         Query = SqlNodeRewriter.RewriteOptional(rewriter, Query, "JsonArrayConstructor.Query");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Elements", Elements),
+        new("Query", Query),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9078,6 +10608,14 @@ public partial class JsonMember
         Returning = SqlNodeRewriter.RewriteOptional(rewriter, Returning, "JsonMember.Returning");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Key", Key),
+        new("Value", Value),
+        new("NullHandling", NullHandling),
+        new("Returning", Returning),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9124,6 +10662,12 @@ public partial class JsonObjectConstructor
     {
         SqlNodeRewriter.RewriteList(rewriter, Members, "JsonObjectConstructor.Members");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Wildcard", Wildcard),
+        new("Members", Members),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -9182,6 +10726,16 @@ public partial class JsonTable
         SqlNodeRewriter.RewriteList(rewriter, Columns, "JsonTable.Columns");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "JsonTable.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Input", Input),
+        new("InputFormat", InputFormat),
+        new("Path", Path),
+        new("Clauses", Clauses),
+        new("Columns", Columns),
+        new("Alias", Alias),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -9243,6 +10797,16 @@ public partial class JsonTransformOperation
         SqlNodeRewriter.RewriteList(rewriter, Clauses, "JsonTransformOperation.Clauses");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Op", Op),
+        new("Path", Path),
+        new("Value", Value),
+        new("Format", Format),
+        new("Descending", Descending),
+        new("Clauses", Clauses),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9294,6 +10858,12 @@ public partial class KeepClause
         SqlNodeRewriter.RewriteList(rewriter, OrderBy, "KeepClause.OrderBy");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("First", First),
+        new("OrderBy", OrderBy),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9343,6 +10913,15 @@ public partial class LikeExpression
         Escape = SqlNodeRewriter.RewriteOptional(rewriter, Escape, "LikeExpression.Escape");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Not", Not),
+        new("Kind", Kind),
+        new("Pattern", Pattern),
+        new("Escape", Escape),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9375,6 +10954,14 @@ public partial class LikeExpression
 
 public partial class Literal
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("National", National),
+        new("QuoteDelimiter", QuoteDelimiter, SpellingOnly: true),
+        new("Value", Value),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9404,6 +10991,12 @@ public partial class Literal
 
 public partial class LiteralItem
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Value", Value),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9450,6 +11043,15 @@ public partial class LockTableStatement
         Wait = SqlNodeRewriter.RewriteOptional(rewriter, Wait, "LockTableStatement.Wait");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Tables", Tables),
+        new("Mode", Mode),
+        new("NoWait", NoWait),
+        new("Wait", Wait),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9482,6 +11084,11 @@ public partial class LockTableStatement
 
 public partial class LoggingAttribute
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Logging", Logging),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9534,6 +11141,17 @@ public partial class LoopStatement
         SqlNodeRewriter.RewriteList(rewriter, Body, "LoopStatement.Body");
         EndLabel = SqlNodeRewriter.RewriteOptional(rewriter, EndLabel, "LoopStatement.EndLabel");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Condition", Condition),
+        new("Iterands", Iterands),
+        new("Controls", Controls),
+        new("Body", Body),
+        new("EndLabel", EndLabel),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -9612,6 +11230,23 @@ public partial class MatchRecognizeTable
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "MatchRecognizeTable.Alias");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Source", Source),
+        new("PartitionBy", PartitionBy),
+        new("OrderBy", OrderBy),
+        new("Measures", Measures),
+        new("RowsPerMatch", RowsPerMatch),
+        new("AllRowsMode", AllRowsMode),
+        new("Skip", Skip),
+        new("SkipVariable", SkipVariable),
+        new("Seek", Seek),
+        new("Pattern", Pattern),
+        new("Subsets", Subsets),
+        new("Define", Define),
+        new("Alias", Alias),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9680,6 +11315,12 @@ public partial class MemberAccess
         Member = SqlNodeRewriter.RewriteRequired(rewriter, Member, "MemberAccess.Member");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Member", Member),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9740,6 +11381,18 @@ public partial class MergeClause
         SqlNodeRewriter.RewriteList(rewriter, InsertValues, "MergeClause.InsertValues");
         InsertWhere = SqlNodeRewriter.RewriteOptional(rewriter, InsertWhere, "MergeClause.InsertWhere");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Matched", Matched),
+        new("AndCondition", AndCondition),
+        new("Set", Set),
+        new("UpdateWhere", UpdateWhere),
+        new("DeleteWhere", DeleteWhere),
+        new("InsertColumns", InsertColumns),
+        new("InsertValues", InsertValues),
+        new("InsertWhere", InsertWhere),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -9817,6 +11470,20 @@ public partial class MergeStatement
         ErrorLogging = SqlNodeRewriter.RewriteOptional(rewriter, ErrorLogging, "MergeStatement.ErrorLogging");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Source", Source),
+        new("On", On),
+        new("Clauses", Clauses),
+        new("Hint", Hint),
+        new("Returning", Returning),
+        new("ReturningBulkCollect", ReturningBulkCollect),
+        new("ReturningInto", ReturningInto),
+        new("ErrorLogging", ErrorLogging),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -9881,6 +11548,13 @@ public partial class MethodCall
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "MethodCall.Name");
         SqlNodeRewriter.RewriteList(rewriter, Arguments, "MethodCall.Arguments");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Name", Name),
+        new("Arguments", Arguments),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -9947,6 +11621,25 @@ public partial class ModelClause
         IterateUntil = SqlNodeRewriter.RewriteOptional(rewriter, IterateUntil, "ModelClause.IterateUntil");
         SqlNodeRewriter.RewriteList(rewriter, Rules, "ModelClause.Rules");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Nav", Nav),
+        new("Uniqueness", Uniqueness),
+        new("Return", Return),
+        new("References", References),
+        new("MainName", MainName),
+        new("PartitionBy", PartitionBy),
+        new("DimensionBy", DimensionBy),
+        new("Measures", Measures),
+        new("MainNav", MainNav),
+        new("MainUniqueness", MainUniqueness),
+        new("RulesMode", RulesMode),
+        new("RulesOrder", RulesOrder),
+        new("Iterate", Iterate),
+        new("IterateUntil", IterateUntil),
+        new("Rules", Rules),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -10023,6 +11716,14 @@ public partial class ModelRule
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "ModelRule.Value");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Mode", Mode),
+        new("Target", Target),
+        new("OrderBy", OrderBy),
+        new("Value", Value),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -10072,6 +11773,12 @@ public partial class MultiInsertBranch
         When = SqlNodeRewriter.RewriteOptional(rewriter, When, "MultiInsertBranch.When");
         SqlNodeRewriter.RewriteList(rewriter, Targets, "MultiInsertBranch.Targets");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("When", When),
+        new("Targets", Targets),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -10133,6 +11840,21 @@ public partial class MultiTableInsertStatement
         SqlNodeRewriter.RewriteList(rewriter, ReturningInto, "MultiTableInsertStatement.ReturningInto");
         ErrorLogging = SqlNodeRewriter.RewriteOptional(rewriter, ErrorLogging, "MultiTableInsertStatement.ErrorLogging");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("First", First),
+        new("Conditional", Conditional),
+        new("Branches", Branches),
+        new("Else", Else),
+        new("Query", Query),
+        new("Hint", Hint),
+        new("Returning", Returning),
+        new("ReturningBulkCollect", ReturningBulkCollect),
+        new("ReturningInto", ReturningInto),
+        new("ErrorLogging", ErrorLogging),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -10213,6 +11935,17 @@ public partial class NamedTable
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "NamedTable.Alias");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("DbLink", DbLink),
+        new("Partition", Partition),
+        new("Sample", Sample),
+        new("Flashback", Flashback),
+        new("DualityAnnotations", DualityAnnotations),
+        new("Alias", Alias),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -10249,6 +11982,11 @@ public partial class NamedTable
 
 public partial class NullOnClause
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Absent", Absent),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -10273,6 +12011,11 @@ public partial class NullOnClause
 
 public partial class NullStatement
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -10313,6 +12056,12 @@ public partial class NumericAttribute
     {
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "NumericAttribute.Value");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Value", Value),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -10356,6 +12105,13 @@ public partial class OnBehaviorClause
     {
         Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "OnBehaviorClause.Value");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Behavior", Behavior),
+        new("Value", Value),
+        new("Event", Event),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -10411,6 +12167,15 @@ public partial class OpenStatement
         SqlNodeRewriter.RewriteList(rewriter, Using, "OpenStatement.Using");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Cursor", Cursor),
+        new("ForQuery", ForQuery),
+        new("ForExpression", ForExpression),
+        new("Using", Using),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -10460,6 +12225,13 @@ public partial class OrderByItem
         Expression = SqlNodeRewriter.RewriteRequired(rewriter, Expression, "OrderByItem.Expression");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Expression", Expression),
+        new("Descending", Descending),
+        new("Nulls", Nulls),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -10505,6 +12277,12 @@ public partial class OrganizationAttribute
         SqlNodeRewriter.RewriteList(rewriter, Details, "OrganizationAttribute.Details");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Organization", Organization),
+        new("Details", Details),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -10548,6 +12326,11 @@ public partial class OtherAttribute
         SqlNodeRewriter.RewriteList(rewriter, Items, "OtherAttribute.Items");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Items", Items),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -10588,6 +12371,13 @@ public partial class OverflowClause
     {
         Indicator = SqlNodeRewriter.RewriteOptional(rewriter, Indicator, "OverflowClause.Indicator");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Truncate", Truncate),
+        new("Indicator", Indicator),
+        new("WithCount", WithCount, NullableBool: true),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -10640,6 +12430,13 @@ public partial class PairsOfControl
         When = SqlNodeRewriter.RewriteOptional(rewriter, When, "PairsOfControl.When");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Collection", Collection),
+        new("While", While),
+        new("When", When),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -10684,6 +12481,12 @@ public partial class ParallelAttribute
     {
         Degree = SqlNodeRewriter.RewriteOptional(rewriter, Degree, "ParallelAttribute.Degree");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("NoParallel", NoParallel),
+        new("Degree", Degree),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -10733,6 +12536,16 @@ public partial class ParallelEnableClause
         SqlNodeRewriter.RewriteList(rewriter, MethodColumns, "ParallelEnableClause.MethodColumns");
         SqlNodeRewriter.RewriteList(rewriter, StreamingColumns, "ParallelEnableClause.StreamingColumns");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("PartitionArgument", PartitionArgument),
+        new("Method", Method),
+        new("MethodColumns", MethodColumns),
+        new("Cluster", Cluster),
+        new("Order", Order),
+        new("StreamingColumns", StreamingColumns),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -10791,6 +12604,15 @@ public partial class Parameter
         Default = SqlNodeRewriter.RewriteOptional(rewriter, Default, "Parameter.Default");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Mode", Mode),
+        new("NoCopy", NoCopy),
+        new("Type", Type),
+        new("Default", Default),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -10840,6 +12662,11 @@ public partial class ParenthesizedExpression
         Inner = SqlNodeRewriter.RewriteRequired(rewriter, Inner, "ParenthesizedExpression.Inner");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Inner", Inner),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -10880,6 +12707,11 @@ public partial class ParenthesizedQuery
     {
         Query = SqlNodeRewriter.RewriteRequired(rewriter, Query, "ParenthesizedQuery.Query");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Query", Query),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -10924,6 +12756,12 @@ public partial class ParenthesizedTable
         Inner = SqlNodeRewriter.RewriteRequired(rewriter, Inner, "ParenthesizedTable.Inner");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "ParenthesizedTable.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Inner", Inner),
+        new("Alias", Alias),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -10982,6 +12820,18 @@ public partial class PartitionByAttribute
         SqlNodeRewriter.RewriteList(rewriter, Partitions, "PartitionByAttribute.Partitions");
         SqlNodeRewriter.RewriteList(rewriter, SubpartitionColumns, "PartitionByAttribute.SubpartitionColumns");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Method", Method),
+        new("Columns", Columns),
+        new("ReferenceConstraint", ReferenceConstraint),
+        new("Interval", Interval),
+        new("PartitionCount", PartitionCount),
+        new("Partitions", Partitions),
+        new("SubpartitionMethod", SubpartitionMethod),
+        new("SubpartitionColumns", SubpartitionColumns),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -11047,6 +12897,16 @@ public partial class PartitionDefinition
         SqlNodeRewriter.RewriteList(rewriter, Subpartitions, "PartitionDefinition.Subpartitions");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("LessThan", LessThan),
+        new("ValuesDefault", ValuesDefault),
+        new("Values", Values),
+        new("Attributes", Attributes),
+        new("Subpartitions", Subpartitions),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11101,6 +12961,13 @@ public partial class PartitionReference
         SqlNodeRewriter.RewriteList(rewriter, ForValues, "PartitionReference.ForValues");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Subpartition", Subpartition),
+        new("Name", Name),
+        new("ForValues", ForValues),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11145,6 +13012,12 @@ public partial class PassingClause
     {
         SqlNodeRewriter.RewriteList(rewriter, Items, "PassingClause.Items");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("ByValue", ByValue),
+        new("Items", Items),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -11204,6 +13077,19 @@ public partial class PathColumn
         SqlNodeRewriter.RewriteList(rewriter, Columns, "PathColumn.Columns");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("ForOrdinality", ForOrdinality),
+        new("Type", Type),
+        new("Exists", Exists),
+        new("Clauses", Clauses),
+        new("Path", Path),
+        new("Default", Default),
+        new("Nested", Nested),
+        new("Columns", Columns),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11261,6 +13147,11 @@ public partial class PatternAlternation
         SqlNodeRewriter.RewriteList(rewriter, Items, "PatternAlternation.Items");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Items", Items),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11285,6 +13176,11 @@ public partial class PatternAlternation
 
 public partial class PatternAnchor
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IsStart", IsStart),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11325,6 +13221,11 @@ public partial class PatternConcat
     {
         SqlNodeRewriter.RewriteList(rewriter, Items, "PatternConcat.Items");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Items", Items),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -11370,6 +13271,12 @@ public partial class PatternDefine
         Condition = SqlNodeRewriter.RewriteRequired(rewriter, Condition, "PatternDefine.Condition");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Variable", Variable),
+        new("Condition", Condition),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11413,6 +13320,11 @@ public partial class PatternExclusion
         Inner = SqlNodeRewriter.RewriteRequired(rewriter, Inner, "PatternExclusion.Inner");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Inner", Inner),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11453,6 +13365,11 @@ public partial class PatternGroup
     {
         Inner = SqlNodeRewriter.RewriteRequired(rewriter, Inner, "PatternGroup.Inner");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Inner", Inner),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -11495,6 +13412,11 @@ public partial class PatternPermute
         SqlNodeRewriter.RewriteList(rewriter, Items, "PatternPermute.Items");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Items", Items),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11535,6 +13457,14 @@ public partial class PatternQuantified
     {
         Inner = SqlNodeRewriter.RewriteRequired(rewriter, Inner, "PatternQuantified.Inner");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Inner", Inner),
+        new("Min", Min),
+        new("Max", Max),
+        new("Reluctant", Reluctant),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -11586,6 +13516,12 @@ public partial class PatternSubset
         SqlNodeRewriter.RewriteList(rewriter, Members, "PatternSubset.Members");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Members", Members),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11629,6 +13565,11 @@ public partial class PatternVariable
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "PatternVariable.Name");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11669,6 +13610,12 @@ public partial class PipeRowStatement
     {
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "PipeRowStatement.Value");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -11716,6 +13663,12 @@ public partial class PivotAggregate
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "PivotAggregate.Alias");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Function", Function),
+        new("Alias", Alias),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11761,6 +13714,12 @@ public partial class PivotInItem
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "PivotInItem.Value");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "PivotInItem.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Alias", Alias),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -11819,6 +13778,18 @@ public partial class PivotTable
         InSubquery = SqlNodeRewriter.RewriteOptional(rewriter, InSubquery, "PivotTable.InSubquery");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "PivotTable.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Source", Source),
+        new("Xml", Xml),
+        new("Aggregates", Aggregates),
+        new("ForColumns", ForColumns),
+        new("InItems", InItems),
+        new("InAny", InAny),
+        new("InSubquery", InSubquery),
+        new("Alias", Alias),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -11881,6 +13852,14 @@ public partial class PlsqlCaseStatement
         SqlNodeRewriter.RewriteList(rewriter, ElseStatements, "PlsqlCaseStatement.ElseStatements");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Operand", Operand),
+        new("Whens", Whens),
+        new("ElseStatements", ElseStatements),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11931,6 +13910,12 @@ public partial class PragmaDeclaration
         SqlNodeRewriter.RewriteList(rewriter, Arguments, "PragmaDeclaration.Arguments");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Arguments", Arguments),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -11973,6 +13958,12 @@ public partial class ProcedureCallStatement
     {
         Call = SqlNodeRewriter.RewriteRequired(rewriter, Call, "ProcedureCallStatement.Call");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Call", Call),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -12022,6 +14013,14 @@ public partial class ProfileLimit
         Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "ProfileLimit.Value");
         SqlNodeRewriter.RewriteList(rewriter, Function, "ProfileLimit.Function");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Value", Value),
+        new("Keyword", Keyword),
+        new("Function", Function),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -12087,6 +14086,24 @@ public partial class ProgramOptions
         DeprecateMessage = SqlNodeRewriter.RewriteOptional(rewriter, DeprecateMessage, "ProgramOptions.DeprecateMessage");
         DefaultCollation = SqlNodeRewriter.RewriteOptional(rewriter, DefaultCollation, "ProgramOptions.DefaultCollation");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Authid", Authid),
+        new("Sharing", Sharing),
+        new("Deterministic", Deterministic),
+        new("Pipelined", Pipelined),
+        new("PipelinedUsing", PipelinedUsing),
+        new("ParallelEnable", ParallelEnable),
+        new("ResultCache", ResultCache),
+        new("RelyOn", RelyOn),
+        new("AggregateUsing", AggregateUsing),
+        new("SqlMacro", SqlMacro),
+        new("AccessibleBy", AccessibleBy),
+        new("Deprecate", Deprecate),
+        new("DeprecateMessage", DeprecateMessage),
+        new("DefaultCollation", DefaultCollation),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -12158,6 +14175,14 @@ public partial class PurgeStatement
         User = SqlNodeRewriter.RewriteOptional(rewriter, User, "PurgeStatement.User");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Name", Name),
+        new("User", User),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12211,6 +14236,14 @@ public partial class QualifiedExpression
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "QualifiedExpression.Value");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Choice", Choice),
+        new("Others", Others),
+        new("Iterator", Iterator),
+        new("Value", Value),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12260,6 +14293,14 @@ public partial class QuantifiedComparison
         Left = SqlNodeRewriter.RewriteRequired(rewriter, Left, "QuantifiedComparison.Left");
         Right = SqlNodeRewriter.RewriteRequired(rewriter, Right, "QuantifiedComparison.Right");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Left", Left),
+        new("Operator", Operator),
+        new("Quantifier", Quantifier),
+        new("Right", Right),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -12335,6 +14376,23 @@ public partial class QuerySpecification
         Model = SqlNodeRewriter.RewriteOptional(rewriter, Model, "QuerySpecification.Model");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Hint", Hint),
+        new("Quantifier", Quantifier),
+        new("SelectList", SelectList),
+        new("From", From),
+        new("Where", Where),
+        new("StartWith", StartWith),
+        new("ConnectBy", ConnectBy),
+        new("NoCycle", NoCycle),
+        new("GroupBy", GroupBy),
+        new("Having", Having),
+        new("Into", Into),
+        new("IntoBulkCollect", IntoBulkCollect),
+        new("Model", Model),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12383,6 +14441,12 @@ public partial class QuerySpecification
 
 public partial class QuotesClause
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Keep", Keep),
+        new("OnScalarString", OnScalarString),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12425,6 +14489,12 @@ public partial class RaiseStatement
     {
         SqlNodeRewriter.RewriteList(rewriter, Exception, "RaiseStatement.Exception");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Exception", Exception),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -12481,6 +14551,16 @@ public partial class RangeControl
         When = SqlNodeRewriter.RewriteOptional(rewriter, When, "RangeControl.When");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Reverse", Reverse),
+        new("Lower", Lower),
+        new("Upper", Upper),
+        new("By", By),
+        new("While", While),
+        new("When", When),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12535,6 +14615,12 @@ public partial class RecordTypeDeclaration
         SqlNodeRewriter.RewriteList(rewriter, Fields, "RecordTypeDeclaration.Fields");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Fields", Fields),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12580,6 +14666,12 @@ public partial class RefCursorTypeDeclaration
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "RefCursorTypeDeclaration.Name");
         ReturnType = SqlNodeRewriter.RewriteOptional(rewriter, ReturnType, "RefCursorTypeDeclaration.ReturnType");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("ReturnType", ReturnType),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -12633,6 +14725,16 @@ public partial class ReferenceModel
         SqlNodeRewriter.RewriteList(rewriter, Measures, "ReferenceModel.Measures");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Query", Query),
+        new("DimensionBy", DimensionBy),
+        new("Measures", Measures),
+        new("Nav", Nav),
+        new("Uniqueness", Uniqueness),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12684,6 +14786,12 @@ public partial class ReferencingItem
         Alias = SqlNodeRewriter.RewriteRequired(rewriter, Alias, "ReferencingItem.Alias");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Alias", Alias),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12729,6 +14837,16 @@ public partial class RefreshClause
         StartWith = SqlNodeRewriter.RewriteOptional(rewriter, StartWith, "RefreshClause.StartWith");
         Next = SqlNodeRewriter.RewriteOptional(rewriter, Next, "RefreshClause.Next");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Method", Method),
+        new("Mode", Mode),
+        new("StartWith", StartWith),
+        new("Next", Next),
+        new("WithPrimaryKey", WithPrimaryKey),
+        new("WithRowId", WithRowId),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -12784,6 +14902,13 @@ public partial class RenameStatement
         SqlNodeRewriter.RewriteList(rewriter, To, "RenameStatement.To");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("From", From),
+        new("To", To),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12835,6 +14960,13 @@ public partial class RepeatControl
         When = SqlNodeRewriter.RewriteOptional(rewriter, When, "RepeatControl.When");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("While", While),
+        new("When", When),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12880,6 +15012,12 @@ public partial class ReturnStatement
         Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "ReturnStatement.Value");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12923,6 +15061,12 @@ public partial class ReturningClause
         Type = SqlNodeRewriter.RewriteOptional(rewriter, Type, "ReturningClause.Type");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Type", Type),
+        new("Content", Content),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -12965,6 +15109,12 @@ public partial class ReturningItem
     {
         Expression = SqlNodeRewriter.RewriteRequired(rewriter, Expression, "ReturningItem.Expression");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Image", Image),
+        new("Expression", Expression),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -13012,6 +15162,12 @@ public partial class RoleSpec
         IdentifiedBy = SqlNodeRewriter.RewriteOptional(rewriter, IdentifiedBy, "RoleSpec.IdentifiedBy");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("IdentifiedBy", IdentifiedBy),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13058,6 +15214,14 @@ public partial class RollbackStatement
         Force = SqlNodeRewriter.RewriteOptional(rewriter, Force, "RollbackStatement.Force");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Work", Work),
+        new("ToSavepoint", ToSavepoint),
+        new("Force", Force),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13088,6 +15252,11 @@ public partial class RollbackStatement
 
 public partial class RowMovementAttribute
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Enabled", Enabled),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13131,6 +15300,13 @@ public partial class SampleClause
         Percent = SqlNodeRewriter.RewriteRequired(rewriter, Percent, "SampleClause.Percent");
         Seed = SqlNodeRewriter.RewriteOptional(rewriter, Seed, "SampleClause.Seed");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Block", Block),
+        new("Percent", Percent),
+        new("Seed", Seed),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -13177,6 +15353,12 @@ public partial class SavepointStatement
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "SavepointStatement.Name");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13222,6 +15404,13 @@ public partial class SearchClause
         SqlNodeRewriter.RewriteList(rewriter, By, "SearchClause.By");
         SetColumn = SqlNodeRewriter.RewriteRequired(rewriter, SetColumn, "SearchClause.SetColumn");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("DepthFirst", DepthFirst),
+        new("By", By),
+        new("SetColumn", SetColumn),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -13286,6 +15475,19 @@ public partial class SelectStatement
         SqlNodeRewriter.RewriteList(rewriter, WithDeclarations, "SelectStatement.WithDeclarations");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("With", With),
+        new("Body", Body),
+        new("OrderSiblings", OrderSiblings),
+        new("OrderBy", OrderBy),
+        new("Offset", Offset),
+        new("Fetch", Fetch),
+        new("ForUpdate", ForUpdate),
+        new("WithDeclarations", WithDeclarations),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13343,6 +15545,12 @@ public partial class SequenceOption
         Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "SequenceOption.Value");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Value", Value),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13388,6 +15596,12 @@ public partial class SessionSetting
         SqlNodeRewriter.RewriteList(rewriter, Name, "SessionSetting.Name");
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "SessionSetting.Value");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Value", Value),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -13435,6 +15649,13 @@ public partial class SetClause
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "SetClause.Value");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Row", Row),
+        new("Columns", Columns),
+        new("Value", Value),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13479,6 +15700,14 @@ public partial class SetConstraintsStatement
     {
         SqlNodeRewriter.RewriteNested(rewriter, Constraints, "SetConstraintsStatement.Constraints");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("All", All),
+        new("Constraints", Constraints),
+        new("Deferred", Deferred),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -13530,6 +15759,14 @@ public partial class SetOperation
         Right = SqlNodeRewriter.RewriteRequired(rewriter, Right, "SetOperation.Right");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Left", Left),
+        new("Operator", Operator),
+        new("All", All),
+        new("Right", Right),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13579,6 +15816,15 @@ public partial class SetRoleStatement
         SqlNodeRewriter.RewriteList(rewriter, Except, "SetRoleStatement.Except");
         SqlNodeRewriter.RewriteList(rewriter, Roles, "SetRoleStatement.Roles");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("None", None),
+        new("All", All),
+        new("Except", Except),
+        new("Roles", Roles),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -13632,6 +15878,15 @@ public partial class SetTransactionStatement
         Name = SqlNodeRewriter.RewriteOptional(rewriter, Name, "SetTransactionStatement.Name");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Access", Access),
+        new("Isolation", Isolation),
+        new("RollbackSegment", RollbackSegment),
+        new("Name", Name),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13681,6 +15936,13 @@ public partial class SqlPlusCommand
         SqlNodeRewriter.RewriteList(rewriter, Arguments, "SqlPlusCommand.Arguments");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Command", Command),
+        new("Arguments", Arguments),
+        new("Labels", Labels),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13726,6 +15988,11 @@ public partial class SqlScript
         SqlNodeRewriter.RewriteList(rewriter, Statements, "SqlScript.Statements");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Statements", Statements),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13766,6 +16033,11 @@ public partial class StarExpression
     {
         SqlNodeRewriter.RewriteList(rewriter, Qualifier, "StarExpression.Qualifier");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Qualifier", Qualifier),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -13808,6 +16080,11 @@ public partial class StarSelectItem
         SqlNodeRewriter.RewriteList(rewriter, Qualifier, "StarSelectItem.Qualifier");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Qualifier", Qualifier),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13849,6 +16126,11 @@ public partial class StorageAttribute
         SqlNodeRewriter.RewriteList(rewriter, Options, "StorageAttribute.Options");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Options", Options),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -13889,6 +16171,12 @@ public partial class StorageOption
     {
         Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "StorageOption.Value");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Value", Value),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -13948,6 +16236,19 @@ public partial class SubprogramDeclaration
         External = SqlNodeRewriter.RewriteOptional(rewriter, External, "SubprogramDeclaration.External");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IsFunction", IsFunction),
+        new("Modifiers", Modifiers),
+        new("Name", Name),
+        new("Parameters", Parameters),
+        new("ReturnType", ReturnType),
+        new("ReturnSelfAsResult", ReturnSelfAsResult),
+        new("Options", Options),
+        new("Body", Body),
+        new("External", External),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14005,6 +16306,11 @@ public partial class SubqueryExpression
         Query = SqlNodeRewriter.RewriteRequired(rewriter, Query, "SubqueryExpression.Query");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Query", Query),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14048,6 +16354,13 @@ public partial class SubqueryTable
         Query = SqlNodeRewriter.RewriteRequired(rewriter, Query, "SubqueryTable.Query");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "SubqueryTable.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Lateral", Lateral),
+        new("Query", Query),
+        new("Alias", Alias),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -14097,6 +16410,12 @@ public partial class SubscriptRange
         To = SqlNodeRewriter.RewriteRequired(rewriter, To, "SubscriptRange.To");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("From", From),
+        new("To", To),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14123,6 +16442,13 @@ public partial class SubscriptRange
 
 public partial class SubstitutionVariable
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Persistent", Persistent),
+        new("Prefix", Prefix, SpellingOnly: true),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14176,6 +16502,15 @@ public partial class SubtypeDeclaration
         RangeHigh = SqlNodeRewriter.RewriteOptional(rewriter, RangeHigh, "SubtypeDeclaration.RangeHigh");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("BaseType", BaseType),
+        new("RangeLow", RangeLow),
+        new("RangeHigh", RangeHigh),
+        new("NotNull", NotNull),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14208,6 +16543,11 @@ public partial class SubtypeDeclaration
 
 public partial class SymbolItem
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Symbol", Symbol),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14263,6 +16603,18 @@ public partial class TableConstraint
         SqlNodeRewriter.RewriteList(rewriter, RefColumns, "TableConstraint.RefColumns");
         State = SqlNodeRewriter.RewriteOptional(rewriter, State, "TableConstraint.State");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Kind", Kind),
+        new("Columns", Columns),
+        new("Check", Check),
+        new("RefTable", RefTable),
+        new("RefColumns", RefColumns),
+        new("OnDelete", OnDelete),
+        new("State", State),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -14322,6 +16674,12 @@ public partial class TableFunction
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "TableFunction.Alias");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Expression", Expression),
+        new("Alias", Alias),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14374,6 +16732,16 @@ public partial class TablespaceAction
         SqlNodeRewriter.RewriteList(rewriter, Syntax, "TablespaceAction.Syntax");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Files", Files),
+        new("Target", Target),
+        new("Mode", Mode),
+        new("NewName", NewName),
+        new("Syntax", Syntax),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14425,6 +16793,12 @@ public partial class TablespaceAttribute
         Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "TablespaceAttribute.Name");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Default", Default),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14471,6 +16845,13 @@ public partial class TimingPointSection
         SqlNodeRewriter.RewriteList(rewriter, Handlers, "TimingPointSection.Handlers");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Point", Point),
+        new("Statements", Statements),
+        new("Handlers", Handlers),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14515,6 +16896,13 @@ public partial class TriggerEvent
     {
         SqlNodeRewriter.RewriteList(rewriter, Columns, "TriggerEvent.Columns");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Columns", Columns),
+        new("EventName", EventName),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -14564,6 +16952,13 @@ public partial class TrimExpression
         Source = SqlNodeRewriter.RewriteRequired(rewriter, Source, "TrimExpression.Source");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Spec", Spec),
+        new("Characters", Characters),
+        new("Source", Source),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14608,6 +17003,16 @@ public partial class TruncateStatement
     {
         SqlNodeRewriter.RewriteList(rewriter, Name, "TruncateStatement.Name");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Name", Name),
+        new("MaterializedViewLog", MaterializedViewLog),
+        new("Storage", Storage),
+        new("Cascade", Cascade),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -14660,6 +17065,12 @@ public partial class UnaryExpression
         Operand = SqlNodeRewriter.RewriteRequired(rewriter, Operand, "UnaryExpression.Operand");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Operator", Operator),
+        new("Operand", Operand),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14705,6 +17116,12 @@ public partial class UnpivotInItem
         SqlNodeRewriter.RewriteList(rewriter, Columns, "UnpivotInItem.Columns");
         AliasValue = SqlNodeRewriter.RewriteOptional(rewriter, AliasValue, "UnpivotInItem.AliasValue");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Columns", Columns),
+        new("AliasValue", AliasValue),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -14760,6 +17177,16 @@ public partial class UnpivotTable
         SqlNodeRewriter.RewriteList(rewriter, InItems, "UnpivotTable.InItems");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "UnpivotTable.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Source", Source),
+        new("IncludeNulls", IncludeNulls),
+        new("ValueColumns", ValueColumns),
+        new("ForColumns", ForColumns),
+        new("InItems", InItems),
+        new("Alias", Alias),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -14832,6 +17259,20 @@ public partial class UpdateStatement
         SqlNodeRewriter.RewriteList(rewriter, ReturningInto, "UpdateStatement.ReturningInto");
         ErrorLogging = SqlNodeRewriter.RewriteOptional(rewriter, ErrorLogging, "UpdateStatement.ErrorLogging");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Target", Target),
+        new("Set", Set),
+        new("From", From),
+        new("Where", Where),
+        new("Hint", Hint),
+        new("Returning", Returning),
+        new("ReturningBulkCollect", ReturningBulkCollect),
+        new("ReturningInto", ReturningInto),
+        new("ErrorLogging", ErrorLogging),
+        new("Labels", Labels),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -14919,6 +17360,28 @@ public partial class UserClause
         SqlNodeRewriter.RewriteList(rewriter, Syntax, "UserClause.Syntax");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Password", Password),
+        new("ReplacePassword", ReplacePassword),
+        new("ExternalName", ExternalName),
+        new("Local", Local),
+        new("Tablespace", Tablespace),
+        new("Quota", Quota),
+        new("Unlimited", Unlimited),
+        new("Profile", Profile),
+        new("Proxy", Proxy),
+        new("EnterpriseUsers", EnterpriseUsers),
+        new("RoleSet", RoleSet),
+        new("Roles", Roles),
+        new("ExceptRoles", ExceptRoles),
+        new("AuthenticationRequired", AuthenticationRequired),
+        new("Container", Container),
+        new("Force", Force),
+        new("Syntax", Syntax),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -14994,6 +17457,12 @@ public partial class UsingArgument
         Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "UsingArgument.Value");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Mode", Mode),
+        new("Value", Value),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -15036,6 +17505,11 @@ public partial class UsingCharsetClause
     {
         Charset = SqlNodeRewriter.RewriteRequired(rewriter, Charset, "UsingCharsetClause.Charset");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Charset", Charset),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -15084,6 +17558,13 @@ public partial class UsingIndexClause
         SqlNodeRewriter.RewriteList(rewriter, Attributes, "UsingIndexClause.Attributes");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("IndexName", IndexName),
+        new("Create", Create),
+        new("Attributes", Attributes),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -15129,6 +17610,11 @@ public partial class UsingListClause
         SqlNodeRewriter.RewriteList(rewriter, Items, "UsingListClause.Items");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Items", Items),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -15169,6 +17655,12 @@ public partial class ValueClause
     {
         Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "ValueClause.Value");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Kind", Kind),
+        new("Value", Value),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -15219,6 +17711,13 @@ public partial class ValuesOfControl
         When = SqlNodeRewriter.RewriteOptional(rewriter, When, "ValuesOfControl.When");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Collection", Collection),
+        new("While", While),
+        new("When", When),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -15263,6 +17762,11 @@ public partial class ValuesQuery
     {
         SqlNodeRewriter.RewriteNested(rewriter, Rows, "ValuesQuery.Rows");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Rows", Rows),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -15310,6 +17814,13 @@ public partial class ValuesTable
         SqlNodeRewriter.RewriteList(rewriter, ColumnAliases, "ValuesTable.ColumnAliases");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "ValuesTable.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Rows", Rows),
+        new("ColumnAliases", ColumnAliases),
+        new("Alias", Alias),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -15361,6 +17872,15 @@ public partial class VariableDeclaration
         Type = SqlNodeRewriter.RewriteRequired(rewriter, Type, "VariableDeclaration.Type");
         Default = SqlNodeRewriter.RewriteOptional(rewriter, Default, "VariableDeclaration.Default");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Constant", Constant),
+        new("Type", Type),
+        new("NotNull", NotNull),
+        new("Default", Default),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -15414,6 +17934,12 @@ public partial class ViewColumn
         Annotations = SqlNodeRewriter.RewriteOptional(rewriter, Annotations, "ViewColumn.Annotations");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("Annotations", Annotations),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -15460,6 +17986,12 @@ public partial class WhenClause
         Then = SqlNodeRewriter.RewriteRequired(rewriter, Then, "WhenClause.Then");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("When", When),
+        new("Then", Then),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -15505,6 +18037,13 @@ public partial class WindowFrame
         StartBound = SqlNodeRewriter.RewriteRequired(rewriter, StartBound, "WindowFrame.StartBound");
         EndBound = SqlNodeRewriter.RewriteOptional(rewriter, EndBound, "WindowFrame.EndBound");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Unit", Unit),
+        new("StartBound", StartBound),
+        new("EndBound", EndBound),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -15560,6 +18099,14 @@ public partial class WindowSpec
         Frame = SqlNodeRewriter.RewriteOptional(rewriter, Frame, "WindowSpec.Frame");
     }
 
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Name", Name),
+        new("PartitionBy", PartitionBy),
+        new("OrderBy", OrderBy),
+        new("Frame", Frame),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -15590,6 +18137,13 @@ public partial class WindowSpec
 
 public partial class WordItem
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Value", Value),
+        new("Quoted", Quoted),
+        new("Text", Text, SpellingOnly: true),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -15617,6 +18171,14 @@ public partial class WordItem
 
 public partial class WrapperClause
 {
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("With", With),
+        new("Conditional", Conditional),
+        new("Unconditional", Unconditional),
+        new("Array", Array),
+    ];
+
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
 
@@ -15666,6 +18228,13 @@ public partial class XmlNamespace
         Uri = SqlNodeRewriter.RewriteRequired(rewriter, Uri, "XmlNamespace.Uri");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "XmlNamespace.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Uri", Uri),
+        new("Alias", Alias),
+        new("IsDefault", IsDefault),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
@@ -15723,6 +18292,15 @@ public partial class XmlTable
         SqlNodeRewriter.RewriteList(rewriter, Columns, "XmlTable.Columns");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "XmlTable.Alias");
     }
+
+    internal override NodeProperty[] NodeProperties() =>
+    [
+        new("Namespaces", Namespaces),
+        new("XQuery", XQuery),
+        new("Passing", Passing),
+        new("Columns", Columns),
+        new("Alias", Alias),
+    ];
 
     /// <inheritdoc/>
     public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);

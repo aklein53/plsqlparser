@@ -60,10 +60,28 @@ public class GeneratedCodeTests(Xunit.Abstractions.ITestOutputHelper output)
         "SELECT JSON_OBJECT('a' VALUE 1), LISTAGG(n, ',') WITHIN GROUP (ORDER BY n) FROM t",
     ];
 
+    /// <summary>Reference implementation the generated members are checked against (reflection is fine in tests).</summary>
+    private static System.Reflection.PropertyInfo[] ReflectedProperties(Type t) =>
+        t.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            .Where(p => p.DeclaringType != typeof(SqlNode) && p.GetIndexParameters().Length == 0).ToArray();
+
     private static IEnumerable<SqlNode> ReflectedChildren(SqlNode n)
     {
-        foreach (var p in AstReflection.NodeProperties(n.GetType()))
+        foreach (var p in ReflectedProperties(n.GetType()))
             foreach (var c in Flatten(p.GetValue(n))) yield return c;
+    }
+
+    [Fact]
+    public void NodeProperties_MatchReflection()
+    {
+        foreach (var sql in Samples)
+            foreach (var n in SqlParser.Parse(sql).Script.Descendants())
+            {
+                var expected = ReflectedProperties(n.GetType()).Select(p => (p.Name, Value: p.GetValue(n), NullableBool: p.PropertyType == typeof(bool?),
+                    SpellingOnly: p.IsDefined(typeof(SpellingOnlyAttribute), false))).ToList();
+                var actual = n.NodeProperties().Select(p => (p.Name, p.Value, p.NullableBool, p.SpellingOnly)).ToList();
+                Assert.Equal(expected, actual);
+            }
     }
 
     private static IEnumerable<SqlNode> Flatten(object? v)

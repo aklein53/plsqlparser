@@ -54,6 +54,9 @@ public abstract partial class SqlNode
 
     internal virtual SqlNode CloneCore() => (SqlNode)MemberwiseClone();
 
+    /// <summary>The node's own properties (not the span members) in declaration order; generated per node type.</summary>
+    internal virtual NodeProperty[] NodeProperties() => [];
+
     internal virtual bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending) => true;
 
     /// <summary>Deep copy of this node and everything below it (scalars, spelling-only text, spans and children). Recursive: do not use on chains deeper than a few thousand links.</summary>

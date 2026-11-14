@@ -98,9 +98,9 @@ public static class AstJson
             w.WriteEndObject();
         }
         stack.Push(EndObject);
-        var props = AstReflection.NodeProperties(node.GetType());
+        var props = node.NodeProperties();
         for (int i = props.Length - 1; i >= 0; i--)
-            stack.Push(new Prop(Camel(props[i].Name), props[i].GetValue(node)));
+            stack.Push(new Prop(Camel(props[i].Name), props[i].Value));
     }
 
     private static string Camel(string s) => char.ToLowerInvariant(s[0]) + s[1..];

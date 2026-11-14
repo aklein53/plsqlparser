@@ -101,16 +101,16 @@ public static class AstPrinter
     /// <summary>Writes the members from index <paramref name="skip"/> on, then the closing parenthesis.</summary>
     private static void WriteProps(StringBuilder sb, SqlNode n, int skip)
     {
-        var props = AstReflection.NodeProperties(n.GetType());
+        var props = n.NodeProperties();
         for (int pi = skip; pi < props.Length; pi++)
         {
             var p = props[pi];
-            if (p.IsDefined(typeof(SpellingOnlyAttribute), false)) continue;
-            var v = p.GetValue(n);
+            if (p.SpellingOnly) continue;
+            var v = p.Value;
             if (v == null) continue;
             if (v is bool bv)
             {
-                if (p.PropertyType == typeof(bool?)) sb.Append(' ').Append(Camel(p.Name)).Append('=').Append(bv ? "true" : "false");
+                if (p.NullableBool) sb.Append(' ').Append(Camel(p.Name)).Append('=').Append(bv ? "true" : "false");
                 else if (bv) sb.Append(' ').Append(Camel(p.Name));
                 continue;
             }

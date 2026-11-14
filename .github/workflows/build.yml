@@ -32,6 +32,10 @@ jobs:
           dotnet pack src/OracleSqlParser --configuration Release --no-build --output ./artifacts
           dotnet pack src/OracleSqlParser.Guard --configuration Release --no-build --output ./artifacts
           dotnet pack src/OracleSqlParser.Cli --configuration Release --no-build --output ./artifacts
+      - name: Native AOT smoke test (after pack, so it cannot affect the packed build)
+        run: |
+          dotnet publish tests/OracleSqlParser.AotSmoke --configuration Release --output ./aot-smoke
+          ./aot-smoke/OracleSqlParser.AotSmoke
       - uses: actions/upload-artifact@v4
         with:
           name: package
