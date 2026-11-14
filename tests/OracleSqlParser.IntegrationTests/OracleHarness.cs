@@ -11,6 +11,8 @@ public static class OracleHarness
     // Errors raised after Oracle has parsed the statement (missing objects / privileges / state): syntax was accepted.
     private static readonly HashSet<int> SemanticOra =
     [
+        12014, // materialized view base table lacks a primary key (fast-refresh eligibility, checked after parsing)
+        29548, // Java system class problem: the Free image has no usable JVM, so ALTER JAVA reaches the runtime and fails there
         942,   // table or view does not exist (name resolution; runs before most clause-level checks, hence PlsqlOnlyForms uses a real table)
         904,   // invalid identifier (column not found; resolved after the statement parsed)
         1031,  // insufficient privileges

@@ -343,10 +343,11 @@ public sealed partial class SqlScriptGenerator
             var parts = new List<Action>();
             if (s.Deferrable != null) { var v = s.Deferrable.Value; parts.Add(() => Add(v ? "DEFERRABLE" : "NOT DEFERRABLE")); }
             if (s.InitiallyDeferred != null) { var v = s.InitiallyDeferred.Value; parts.Add(() => Add(v ? "INITIALLY DEFERRED" : "INITIALLY IMMEDIATE")); }
-            if (s.Enable != null) { var v = s.Enable.Value; parts.Add(() => Add(v ? "ENABLE" : "DISABLE")); }
-            if (s.Validate != null) { var v = s.Validate.Value; parts.Add(() => Add(v ? "VALIDATE" : "NOVALIDATE")); }
+            // Oracle's documented constraint_state order; ALTER VIEW rejects RELY after DISABLE
             if (s.Rely != null) { var v = s.Rely.Value; parts.Add(() => Add(v ? "RELY" : "NORELY")); }
             if (s.UsingIndex != null) parts.Add(() => UsingIndex(s.UsingIndex));
+            if (s.Enable != null) { var v = s.Enable.Value; parts.Add(() => Add(v ? "ENABLE" : "DISABLE")); }
+            if (s.Validate != null) { var v = s.Validate.Value; parts.Add(() => Add(v ? "VALIDATE" : "NOVALIDATE")); }
             if (s.ExceptionsInto.Count > 0) parts.Add(() => { Add("EXCEPTIONS INTO "); Name(s.ExceptionsInto); });
             bool first = true;
             foreach (var p in parts) { if (!first) Sp(); first = false; p(); }
