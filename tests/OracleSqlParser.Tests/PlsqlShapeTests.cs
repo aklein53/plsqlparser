@@ -296,6 +296,55 @@ BEGIN NULL; END;");
         "(Block statements=[(AssignmentStatement target=X value=(ChainedCall target=(FunctionCall name=[F] arguments=[(Argument value=X)]) arguments=[(Argument value=Y)]))])")]
     public void ChainedCallsInPlsql(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
+    // ** is PL/SQL-only. Inside procedural code it parses (and binds tighter than unary minus); in SQL it is an error.
+    [Theory]
+    [InlineData("BEGIN x := -a ** 2; END;", "(Block statements=[(AssignmentStatement target=X value=(- (** A 2)))])")]
+    [InlineData("BEGIN x := 2 ** 3; END;", "(Block statements=[(AssignmentStatement target=X value=(** 2 3))])")]
+    [InlineData("DECLARE c CONSTANT NUMBER := 2 ** 3; BEGIN NULL; END;", "(Block hasDeclare declarations=[(VariableDeclaration name=C constant type=(DataType name=NUMBER) default=(** 2 3))] statements=[(NullStatement)])")]
+    [InlineData("WITH FUNCTION f RETURN NUMBER IS BEGIN RETURN 2 ** 3; END; SELECT f FROM dual", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=F)] from=[(NamedTable name=[DUAL])]) withDeclarations=[(SubprogramDeclaration isFunction name=[F] returnType=(DataType name=NUMBER) body=(Block statements=[(ReturnStatement value=(** 2 3))]))])")]
+    public void ExponentInPlsql(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("SELECT 2 ** 3 FROM dual")]
+    [InlineData("SELECT * FROM t WHERE a ** 2 = 1")]
+    [InlineData("SELECT 5 % 2 FROM dual")]
+    [InlineData("BEGIN x := 5 % 2; END;")]
+    [InlineData("BEGIN SELECT 2 ** 3 INTO x FROM dual; END;")]
+    [InlineData("BEGIN x := (SELECT 2 ** 3 FROM dual); END;")]
+    [InlineData("INSERT INTO t (a) VALUES (2 ** 3)")]
+    [InlineData("CREATE TABLE t (a NUMBER DEFAULT 2 ** 3)")]
+    [InlineData("CREATE VIEW v AS SELECT 2 ** 3 AS x FROM dual")]
+    [InlineData("BEGIN x := ; END; SELECT 2 ** 3 FROM dual")] // the context is restored after a failed PL/SQL block
+    public void ExponentIsRejectedInSql(string sql)
+    {
+        var r = SqlParser.Parse(sql); // returns the errors rather than throwing
+        Assert.False(r.Success, sql);
+    }
+
+    [Fact]
+    public void ExponentRejectionNamesTheOperator()
+    {
+        var r = SqlParser.Parse("SELECT 2 ** 3 FROM dual");
+        Assert.Contains(r.Errors, e => e.Message.Contains("'**' is a PL/SQL operator"));
+    }
+
+    [Fact]
+    public void ExpressionParserRejectsExponentAsSql()
+    {
+        Assert.Throws<ParseException>(() => SqlParser.ParseExpression("2 ** 3"));
+    }
+
+    [Theory]
+    [InlineData("EXEC p(2 ** 3)")]
+    [InlineData("CREATE FUNCTION f(p NUMBER := 2 ** 3) RETURN NUMBER IS BEGIN RETURN 2 ** p; END;")]
+    [InlineData("CREATE PACKAGE pk AS c CONSTANT NUMBER := 2 ** 3; END;")]
+    [InlineData("BEGIN EXECUTE IMMEDIATE 'x' USING 2 ** 3; END;")]
+    public void ExponentInPlsqlContextsParses(string sql)
+    {
+        var r = SqlParser.Parse(sql);
+        Assert.True(r.Success, string.Join("; ", r.Errors));
+    }
+
     [Fact]
     public void Positions_ForNodes()
     {

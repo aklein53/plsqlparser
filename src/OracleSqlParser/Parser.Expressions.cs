@@ -230,6 +230,7 @@ public sealed partial class SqlParser
         int prog110 = -1;
         while (IsOp("**") && Progress(ref prog110))
         {
+            if (!_plsql) throw Fail("'**' is a PL/SQL operator and is not valid in SQL (use POWER)");
             Next();
             left = Fin(new BinaryExpression { Left = left, Operator = "**", Right = ParsePostfix() }, start);
         }

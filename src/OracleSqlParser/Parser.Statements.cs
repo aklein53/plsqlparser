@@ -48,7 +48,7 @@ public sealed partial class SqlParser
             case "EXEC" or "EXECUTE" when !IsKwAt(1, "IMMEDIATE"):
             {
                 Next();
-                return Fin(new ExecStatement { Call = ParsePostfix() }, start);
+                using (SetContext(true)) return Fin(new ExecStatement { Call = ParsePostfix() }, start); // SQL*Plus EXEC runs as a PL/SQL call
             }
         }
         if (SqlPlusCommands.Contains(Cur.Value)) return ParseSqlPlusCommand(start, Next().Value);

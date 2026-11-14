@@ -43,7 +43,10 @@ public sealed partial class SqlParser
         return new ParseResult { Source = sql, Script = script, Errors = errors, Tokens = tokens };
     }
 
-    /// <summary>Parses a single expression; throws ParseException on error.</summary>
+    /// <summary>
+    /// Parses a single SQL expression; throws ParseException on error. The SQL context applies, so PL/SQL-only
+    /// operators such as ** are rejected (see <see cref="Parse(string)"/>).
+    /// </summary>
     public static Expression ParseExpression(string sql) => ParseExpression(sql, null);
 
     /// <summary>Parses a single expression with explicit options; throws ParseException on error.</summary>
@@ -117,6 +120,28 @@ public sealed partial class SqlParser
     }
 
     private void Leave() => _depth--;
+
+    /// <summary>
+    /// True while parsing PL/SQL procedural code, where the exponent operator ** is valid. SQL statements and SQL
+    /// expressions (including subqueries and SQL embedded in PL/SQL) turn it off, so ** is rejected there.
+    /// </summary>
+    private bool _plsql;
+
+    /// <summary>
+    /// Sets <see cref="_plsql"/> until disposed: <c>using var _ = SetContext(true);</c> at the top of a method.
+    /// Disposing restores the previous setting, so a parse error thrown inside does not leak the context.
+    /// </summary>
+    private PlsqlContext SetContext(bool plsql)
+    {
+        var saved = new PlsqlContext(this, _plsql);
+        _plsql = plsql;
+        return saved;
+    }
+
+    private readonly struct PlsqlContext(SqlParser parser, bool saved) : IDisposable
+    {
+        public void Dispose() => parser._plsql = saved;
+    }
 
     /// <summary>
     /// Shared loop guard: call at the top of every iteration of an open-ended loop. Throws if the previous
@@ -287,6 +312,7 @@ public sealed partial class SqlParser
 
     private Statement ParseStatementCore()
     {
+        using var _ = SetContext(false);
         if (IsKw("SELECT") || IsKw("WITH") || IsOp("(")) return ParseSelectStatement();
         if (IsKw("INSERT")) return ParseInsert();
         if (IsKw("UPDATE")) return ParseUpdate();
@@ -306,6 +332,7 @@ public sealed partial class SqlParser
 
     private SelectStatement ParseSelectStatement()
     {
+        using var _ = SetContext(false);
         Enter();
         var r = ParseSelectStatementCore();
         Leave();

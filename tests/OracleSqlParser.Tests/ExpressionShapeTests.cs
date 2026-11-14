@@ -8,7 +8,6 @@ public class ExpressionShapeTests
     [InlineData("a OR b AND c", "(OR A (AND B C))")]
     [InlineData("1 + 2 * 3", "(+ 1 (* 2 3))")]
     [InlineData("(1 + 2) * 3", "(* (paren (+ 1 2)) 3)")]
-    [InlineData("-a ** 2", "(- (** A 2))")]
     [InlineData("a - -1", "(- A (- 1))")]
     [InlineData("a || b || 'c'", "(|| (|| A B) 'c')")]
     [InlineData("NOT a = b", "(NOT (= A B))")]
