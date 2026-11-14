@@ -302,6 +302,42 @@ public sealed partial class AlterRoleStatement : Statement
     public GrantContainer? Container { get; set; }
 }
 
+// ---------- CREATE / ALTER PROFILE ----------
+
+/// <summary>The keyword value of a profile limit: UNLIMITED, DEFAULT or NULL.</summary>
+public enum ProfileKeyword { Unlimited, Default, Null }
+
+/// <summary>
+/// One resource or password parameter of a profile: a name with an integer or expression (<see cref="Value"/>),
+/// a keyword (<see cref="Keyword"/>), or a function name (PASSWORD_VERIFY_FUNCTION).
+/// </summary>
+public sealed partial class ProfileLimit : SqlNode
+{
+    public Identifier Name { get; set; } = null!;
+    public Expression? Value { get; set; }
+    public ProfileKeyword? Keyword { get; set; }
+    /// <summary>PASSWORD_VERIFY_FUNCTION [schema.]function.</summary>
+    public List<Identifier> Function { get; set; } = [];
+}
+
+public sealed partial class CreateProfileStatement : Statement
+{
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<ProfileLimit> Limits { get; set; } = [];
+    public GrantContainer? Container { get; set; }
+}
+
+public sealed partial class AlterProfileStatement : Statement
+{
+    public bool IfExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<ProfileLimit> Limits { get; set; } = [];
+    public GrantContainer? Container { get; set; }
+    /// <summary>ALTER PROFILE ... CASCADE: apply the new limits to users already assigned the profile.</summary>
+    public bool Cascade { get; set; }
+}
+
 // ---------- Generic object DDL (typed header + token-tree body) ----------
 
 public enum ObjectKind

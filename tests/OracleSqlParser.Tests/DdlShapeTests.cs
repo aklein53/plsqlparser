@@ -197,6 +197,15 @@ public class DdlShapeTests
     [InlineData("ALTER ROLE r IDENTIFIED GLOBALLY CONTAINER = CURRENT", "(AlterRoleStatement name=R authentication=Global container=Current)")]
     public void CreateAlterRole(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
+    [Theory]
+    [InlineData("CREATE PROFILE app_p LIMIT SESSIONS_PER_USER 10 CPU_PER_SESSION UNLIMITED FAILED_LOGIN_ATTEMPTS DEFAULT PASSWORD_LIFE_TIME 60/24 PASSWORD_VERIFY_FUNCTION sec.verify_fn",
+        "(CreateProfileStatement name=APP_P limits=[(ProfileLimit name=SESSIONS_PER_USER value=10) (ProfileLimit name=CPU_PER_SESSION keyword=Unlimited) (ProfileLimit name=FAILED_LOGIN_ATTEMPTS keyword=Default) (ProfileLimit name=PASSWORD_LIFE_TIME value=(/ 60 24)) (ProfileLimit name=PASSWORD_VERIFY_FUNCTION function=[SEC VERIFY_FN])])")]
+    [InlineData("CREATE PROFILE IF NOT EXISTS p", "(CreateProfileStatement ifNotExists name=P)")]
+    [InlineData("ALTER PROFILE p LIMIT PASSWORD_LIFE_TIME UNLIMITED CONTAINER = ALL CASCADE",
+        "(AlterProfileStatement name=P limits=[(ProfileLimit name=PASSWORD_LIFE_TIME keyword=Unlimited)] container=All cascade)")]
+    [InlineData("ALTER PROFILE p LIMIT PASSWORD_VERIFY_FUNCTION NULL", "(AlterProfileStatement name=P limits=[(ProfileLimit name=PASSWORD_VERIFY_FUNCTION keyword=Null)])")]
+    public void CreateAlterProfile(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
     [Fact]
     public void CreateJava_Source()
     {

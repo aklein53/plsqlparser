@@ -157,6 +157,7 @@ public sealed partial class SqlScriptGenerator
                 case AlterTableAction ata: AlterAction(ata); break;
                 case IndexColumn ic: IndexCol(ic); break;
                 case TriggerEvent te: TriggerEv(te); break;
+                case ProfileLimit pl: ProfileLimitText(pl); break;
                 case UserClause uc: UserClauseText(uc); break;
                 case SequenceOption so: SeqOption(so); break;
                 case ConstraintState cs: ConstraintStateText(cs); break;

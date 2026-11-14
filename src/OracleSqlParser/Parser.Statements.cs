@@ -574,6 +574,57 @@ public sealed partial class SqlParser
         return GrantContainer.Current;
     }
 
+    // ---- CREATE / ALTER PROFILE ----
+
+    private Statement ParseCreateProfile(Token start, bool orReplace, bool pub)
+    {
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE PROFILE");
+        var st = new CreateProfileStatement { IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        ParseProfileBody(st.Limits, out var container, out _, allowCascade: false);
+        st.Container = container;
+        return Fin(st, start);
+    }
+
+    private Statement ParseAlterProfile(Token start, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to ALTER PROFILE");
+        var st = new AlterProfileStatement { IfExists = TryIfExists() };
+        st.Name = ParseIdentifier();
+        ParseProfileBody(st.Limits, out var container, out var cascade, allowCascade: true);
+        st.Container = container;
+        st.Cascade = cascade;
+        return Fin(st, start);
+    }
+
+    /// <summary>[LIMIT] {name value}... [CONTAINER = ...] [CASCADE]. The clauses may follow each other in any order.</summary>
+    private void ParseProfileBody(List<ProfileLimit> limits, out GrantContainer? container, out bool cascade, bool allowCascade)
+    {
+        container = null;
+        cascade = false;
+        AcceptKw("LIMIT");
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog))
+        {
+            if (IsKw("CONTAINER") && IsOpAt(1, "=")) container = TryParseContainer();
+            else if (allowCascade && AcceptKw("CASCADE")) cascade = true;
+            else limits.Add(ParseProfileLimit());
+        }
+    }
+
+    private ProfileLimit ParseProfileLimit()
+    {
+        var s = Cur;
+        var l = new ProfileLimit { Name = ParseIdentifier() };
+        if (AcceptKw("UNLIMITED")) l.Keyword = ProfileKeyword.Unlimited;
+        else if (AcceptKw("DEFAULT")) l.Keyword = ProfileKeyword.Default;
+        else if (AcceptKw("NULL")) l.Keyword = ProfileKeyword.Null;
+        else if (l.Name.Value == "PASSWORD_VERIFY_FUNCTION") l.Function = ParseDottedName();
+        else l.Value = ParseAdditive();
+        return Fin(l, s);
+    }
+
     // ---- DROP / ALTER (generic) ----
 
     private Statement ParseDrop()
@@ -610,6 +661,7 @@ public sealed partial class SqlParser
         if (kind == ObjectKind.Session) return ParseAlterSession(start);
         if (kind == ObjectKind.User) return ParseAlterUser(start, pub);
         if (kind == ObjectKind.Role) return ParseAlterRole(start, pub);
+        if (kind == ObjectKind.Profile) return ParseAlterProfile(start, pub);
         var st = new AlterObjectStatement { Kind = kind, Public = pub };
         st.IfExists = TryIfExists();
         if (ObjectKindHasName(kind) && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) st.Name = ParseDottedName();
@@ -704,6 +756,7 @@ public sealed partial class SqlParser
         TryParseObjectKind(out var kind);
         switch (kind)
         {
+            case ObjectKind.Profile: return ParseCreateProfile(start, orReplace, pub);
             case ObjectKind.Role: return ParseCreateRole(start, orReplace, pub);
             case ObjectKind.User: return ParseCreateUser(start, orReplace, pub);
             case ObjectKind.Table: return ParseCreateTable(start, orReplace, gtt, ptt, dup, imm, blk);

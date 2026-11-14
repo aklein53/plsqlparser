@@ -142,6 +142,58 @@ public partial class AlterObjectStatement
     }
 }
 
+public partial class AlterProfileStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Limits is not null) foreach (var x in Limits) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Limits is not null) foreach (var x in Limits) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "AlterProfileStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Limits, "AlterProfileStatement.Limits");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterProfileStatement();
+        CopySpan(this, c);
+        c.IfExists = IfExists;
+        c.Name = CloneChild(Name)!;
+        c.Limits = CloneList(Limits);
+        c.Container = Container;
+        c.Cascade = Cascade;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterProfileStatement)other;
+        return IfExists == o.IfExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Limits, o.Limits, pending)
+            && Container == o.Container
+            && Cascade == o.Cascade
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class AlterRoleStatement
 {
     /// <inheritdoc/>
@@ -2409,6 +2461,56 @@ public partial class CreatePackageStatement
             && Pair(Options, o.Options, pending)
             && PairList(Declarations, o.Declarations, pending)
             && Pair(EndName, o.EndName, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateProfileStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Limits is not null) foreach (var x in Limits) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Limits is not null) foreach (var x in Limits) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateProfileStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Limits, "CreateProfileStatement.Limits");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateProfileStatement();
+        CopySpan(this, c);
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Limits = CloneList(Limits);
+        c.Container = Container;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateProfileStatement)other;
+        return IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Limits, o.Limits, pending)
+            && Container == o.Container
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -8768,6 +8870,57 @@ public partial class ProcedureCallStatement
         var o = (ProcedureCallStatement)other;
         return Pair(Call, o.Call, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class ProfileLimit
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Value is not null) yield return Value;
+        if (Function is not null) foreach (var x in Function) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        Value?.Accept(visitor);
+        if (Function is not null) foreach (var x in Function) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "ProfileLimit.Name");
+        Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "ProfileLimit.Value");
+        SqlNodeRewriter.RewriteList(rewriter, Function, "ProfileLimit.Function");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ProfileLimit();
+        CopySpan(this, c);
+        c.Name = CloneChild(Name)!;
+        c.Value = CloneChild(Value);
+        c.Keyword = Keyword;
+        c.Function = CloneList(Function);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ProfileLimit)other;
+        return Pair(Name, o.Name, pending)
+            && Pair(Value, o.Value, pending)
+            && Keyword == o.Keyword
+            && PairList(Function, o.Function, pending);
     }
 }
 

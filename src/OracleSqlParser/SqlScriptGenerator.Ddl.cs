@@ -74,6 +74,18 @@ public sealed partial class SqlScriptGenerator
                     RoleIdentificationText(ar.Authentication, ar.Password, ar.Package);
                     ContainerClause(ar.Container);
                     break;
+                case CreateProfileStatement cp:
+                    Add("CREATE PROFILE");
+                    if (cp.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cp.Name);
+                    ProfileBody(cp.Limits, cp.Container, false);
+                    break;
+                case AlterProfileStatement ap:
+                    Add("ALTER PROFILE");
+                    if (ap.IfExists) Add(" IF EXISTS");
+                    Sp(); Id(ap.Name);
+                    ProfileBody(ap.Limits, ap.Container, ap.Cascade);
+                    break;
                 case CreateUserStatement cu:
                     Add("CREATE USER");
                     if (cu.IfNotExists) Add(" IF NOT EXISTS");
@@ -145,6 +157,28 @@ public sealed partial class SqlScriptGenerator
         private void ContainerClause(GrantContainer? c)
         {
             if (c != null) Add(" CONTAINER = " + (c == GrantContainer.All ? "ALL" : "CURRENT"));
+        }
+
+        // ---------- CREATE / ALTER PROFILE ----------
+
+        private void ProfileBody(List<ProfileLimit> limits, GrantContainer? container, bool cascade)
+        {
+            if (limits.Count > 0)
+            {
+                Add(" LIMIT");
+                foreach (var l in limits) { Sp(); ProfileLimitText(l); }
+            }
+            ContainerClause(container);
+            if (cascade) Add(" CASCADE");
+        }
+
+        private void ProfileLimitText(ProfileLimit l)
+        {
+            Id(l.Name);
+            Sp();
+            if (l.Keyword != null) Add(l.Keyword switch { ProfileKeyword.Unlimited => "UNLIMITED", ProfileKeyword.Default => "DEFAULT", _ => "NULL" });
+            else if (l.Function.Count > 0) Name(l.Function);
+            else Expr(l.Value!);
         }
 
         // ---------- CREATE / ALTER USER ----------
