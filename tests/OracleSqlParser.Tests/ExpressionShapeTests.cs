@@ -139,4 +139,25 @@ public class ExpressionShapeTests
     [InlineData("CURSOR(SELECT 1 FROM dual)", "(CursorExpression query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[DUAL])])))")]
     [InlineData("EXISTS (SELECT 1 FROM dual)", "(ExistsExpression subquery=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[DUAL])])))")]
     public void Postfix_And_Misc(string sql, string expected) => Assert.Equal(expected, Shape.Expr(sql));
+
+    [Theory]
+    [InlineData("(a - b) DAY TO SECOND","(IntervalExpression value=(paren (- A B)) from=Day to=Second)")]
+    [InlineData("(SYSTIMESTAMP - SYSTIMESTAMP) DAY(9) TO SECOND", "(IntervalExpression value=(paren (- SYSTIMESTAMP SYSTIMESTAMP)) from=Day fromPrecision=9 to=Second)")]
+    [InlineData("(a - b) DAY(2) TO SECOND(6)", "(IntervalExpression value=(paren (- A B)) from=Day fromPrecision=2 to=Second toPrecision=6)")]
+    [InlineData("(a - b) YEAR TO MONTH", "(IntervalExpression value=(paren (- A B)) from=Year to=Month)")]
+    [InlineData("(a - b) YEAR(4) TO MONTH", "(IntervalExpression value=(paren (- A B)) from=Year fromPrecision=4 to=Month)")]
+    [InlineData("x + (a - b) DAY TO SECOND", "(+ X (IntervalExpression value=(paren (- A B)) from=Day to=Second))")]
+    public void IntervalExpressions(string sql, string expected) => Assert.Equal(expected, Shape.Expr(sql));
+
+    [Theory]
+    [InlineData("SELECT (a - b) day FROM t", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=(paren (- A B)) alias=DAY)] from=[(NamedTable name=[T])]))")]
+    [InlineData("SELECT (a - b) year FROM t", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=(paren (- A B)) alias=YEAR)] from=[(NamedTable name=[T])]))")]
+    public void IntervalWordsStillWorkAsAliases(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("SELECT (a - b) DAY TO MONTH FROM t")]   // DAY only goes with SECOND, YEAR only with MONTH
+    [InlineData("SELECT (a - b) YEAR TO SECOND FROM t")]
+    [InlineData("SELECT a - b DAY TO SECOND FROM t")]     // operand must be parenthesized
+    public void IntervalExpressionsRejectInvalidForms(string sql) => Assert.False(SqlParser.Parse(sql).Success);
+
 }

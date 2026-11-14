@@ -259,6 +259,7 @@ public sealed partial class SqlParser
                 Next();
                 e = Fin(new CollateExpression { Value = e, Collation = ParseIdentifier() }, start);
             }
+            else if (e is ParenthesizedExpression && AtIntervalExpression()) e = ParseIntervalExpression(e, start);
             else break;
         }
         return e;
@@ -973,6 +974,31 @@ public sealed partial class SqlParser
             il.ToPrecision = ParseIntervalPrecision();
         }
         return Fin(il, start);
+    }
+
+    /// <summary>
+    /// True at <c>DAY [(p)] TO</c> or <c>YEAR [(p)] TO</c>. DAY and YEAR are not reserved, so the lookahead requires
+    /// the TO that makes this an interval suffix; otherwise they remain an alias or a name.
+    /// </summary>
+    private bool AtIntervalExpression()
+    {
+        if (!(IsKw("DAY") || IsKw("YEAR"))) return false;
+        if (IsKwAt(1, "TO")) return true;
+        return IsOpAt(1, "(") && PeekTok(2).Type == TokenType.Number && IsOpAt(3, ")") && IsKwAt(4, "TO");
+    }
+
+    /// <summary>Parses the suffix of <c>(a - b) DAY(p) TO SECOND(fs)</c> or <c>(a - b) YEAR(p) TO MONTH</c>.</summary>
+    private Expression ParseIntervalExpression(Expression value, Token start)
+    {
+        var ie = new IntervalExpression { Value = value };
+        ie.From = ParseIntervalUnit();
+        ie.FromPrecision = ParseIntervalPrecision();
+        ExpectKw("TO");
+        ie.To = ParseIntervalUnit();
+        bool valid = ie.From == IntervalUnit.Day ? ie.To == IntervalUnit.Second : ie.From == IntervalUnit.Year && ie.To == IntervalUnit.Month;
+        if (!valid) throw Fail("Interval expressions are DAY TO SECOND or YEAR TO MONTH");
+        ie.ToPrecision = ParseIntervalPrecision();
+        return Fin(ie, start);
     }
 
     private IntervalUnit ParseIntervalUnit()

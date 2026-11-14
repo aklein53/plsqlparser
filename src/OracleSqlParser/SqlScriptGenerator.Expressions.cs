@@ -137,6 +137,12 @@ public sealed partial class SqlScriptGenerator
                     break;
                 case CollateExpression co: Child(co.Value, 9); Add(" COLLATE "); Id(co.Collation); break;
                 case IntervalLiteral il: Interval(il); break;
+                case IntervalExpression ix:
+                    Expr(ix.Value); Add(" " + ix.From.ToString().ToUpperInvariant());
+                    if (ix.FromPrecision != null) Add($"({ix.FromPrecision})");
+                    Add(" TO " + ix.To.ToString().ToUpperInvariant());
+                    if (ix.ToPrecision != null) Add($"({ix.ToPrecision})");
+                    break;
                 case FunctionCall fc: Function(fc); break;
                 case MethodCall mc: Expr(mc.Target); Add("."); Id(mc.Name); Add("("); Sep(mc.Arguments, Arg); Add(")"); break;
                 case MemberAccess ma: Expr(ma.Target); Add("."); Id(ma.Member); break;

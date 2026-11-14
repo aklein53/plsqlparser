@@ -4952,6 +4952,53 @@ public partial class InsertStatement
     }
 }
 
+public partial class IntervalExpression
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Value is not null) yield return Value;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Value?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "IntervalExpression.Value");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new IntervalExpression();
+        CopySpan(this, c);
+        c.Value = CloneChild(Value)!;
+        c.From = From;
+        c.FromPrecision = FromPrecision;
+        c.To = To;
+        c.ToPrecision = ToPrecision;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (IntervalExpression)other;
+        return Pair(Value, o.Value, pending)
+            && From == o.From
+            && FromPrecision == o.FromPrecision
+            && To == o.To
+            && ToPrecision == o.ToPrecision;
+    }
+}
+
 public partial class IntervalLiteral
 {
     /// <inheritdoc/>
