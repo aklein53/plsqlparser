@@ -3,6 +3,9 @@
 Policy validation and access-restriction rewriting for user-supplied Oracle SELECT queries, built on
 [OracleSqlParser](https://github.com/aklein53/plsqlparser) (namespace `OracleSqlParser.Guard`).
 
+Targets net8.0 and net10.0. It depends on the `OracleSqlParser` package, which NuGet installs automatically at the same
+version, so installing this package alone is enough.
+
 All public types are marked `[Experimental("PLSQLGUARD001")]`: using them is a compile error until you opt in with
 `<NoWarn>PLSQLGUARD001</NoWarn>` (or `#pragma warning disable PLSQLGUARD001`). The API may change or be removed.
 

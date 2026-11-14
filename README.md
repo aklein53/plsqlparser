@@ -1,7 +1,7 @@
 # OracleSqlParser
 
 A hand-written lexer and recursive-descent parser for Oracle SQL that builds an abstract syntax tree
-(similar in spirit to Microsoft's `TSqlParser`/ScriptDom). Targets net8.0 and net10.0, no runtime dependencies.
+(similar in spirit to Microsoft's `TSqlParser`/ScriptDom). Targets net8.0 and net10.0 with no NuGet package dependencies (SourceLink is build-time only).
 
 ## Installing
 
@@ -17,7 +17,7 @@ The packages were renamed to match the namespace: `PlsqlParser` is now `OracleSq
 `OracleSqlParser.Guard`. To migrate, replace the package reference (`dotnet remove package PlsqlParser`, then
 `dotnet add package OracleSqlParser --prerelease`). Namespaces are unchanged, so no `using` directives change.
 
-Targets `net8.0` and `net10.0`. Versions are published as pre-releases (`0.1.0-preview.N`) until the API stabilises.
+Versions are published as pre-releases (`0.1.0-preview.N`) until the API stabilises.
 
 ## Releasing
 
