@@ -44,6 +44,12 @@ public class DmlAndSessionShapeTests
         "(UpdateStatement target=(NamedTable name=[T]) set=[(SetClause columns=[A] value=1)] returning=[(ReturningItem expression=OLD) (ReturningItem expression=NEW)] returningInto=[:o :n])")]
     [InlineData("UPDATE t SET a = 1 RETURNING NEW SUM(a) INTO :n",
         "(UpdateStatement target=(NamedTable name=[T]) set=[(SetClause columns=[A] value=1)] returning=[(ReturningItem image=New expression=(FunctionCall name=[SUM] arguments=[(Argument value=A)]))] returningInto=[:n])")]
+    [InlineData("UPDATE t SET t.a = u.a FROM u WHERE t.id = u.id",
+        "(UpdateStatement target=(NamedTable name=[T]) set=[(SetClause columns=[T.A] value=U.A)] from=[(NamedTable name=[U])] where=(= T.ID U.ID))")]
+    [InlineData("DELETE FROM t FROM u WHERE t.id = u.id",
+        "(DeleteStatement target=(NamedTable name=[T]) from=[(NamedTable name=[U])] where=(= T.ID U.ID))")]
+    [InlineData("DELETE FROM t x FROM t y JOIN u ON y.id = u.id WHERE x.id = y.id",
+        "(DeleteStatement target=(NamedTable name=[T] alias=X) from=[(JoinTable left=(NamedTable name=[T] alias=Y) kind=Inner right=(NamedTable name=[U]) on=(= Y.ID U.ID))] where=(= X.ID Y.ID))")]
     [InlineData("DELETE FROM t RETURNING OLD a INTO :o",
         "(DeleteStatement target=(NamedTable name=[T]) returning=[(ReturningItem image=Old expression=A)] returningInto=[:o])")]
     public void UpdatesAndDeletes(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));

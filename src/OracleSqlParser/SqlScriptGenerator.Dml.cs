@@ -144,6 +144,7 @@ public sealed partial class SqlScriptGenerator
         {
             Add("DELETE"); DmlHint(d);
             Add(" FROM "); Table(d.Target);
+            if (d.From.Count > 0) { ClauseStart(_o.NewLineBeforeFromClause); Add("FROM "); Sep(d.From, Table); }
             if (d.Where != null) { ClauseStart(_o.NewLineBeforeWhereClause); Add("WHERE "); Expr(d.Where); }
             DmlTail(d);
         }

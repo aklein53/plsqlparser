@@ -335,6 +335,8 @@ public sealed partial class SetClause : SqlNode
 public sealed partial class DeleteStatement : DmlStatement
 {
     public TableReference Target { get; set; } = null!;
+    /// <summary>23ai: DELETE FROM target FROM table_references (direct joins).</summary>
+    public List<TableReference> From { get; set; } = [];
     public Expression? Where { get; set; }
 }
 

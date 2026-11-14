@@ -2800,6 +2800,7 @@ public partial class DeleteStatement
     public override IEnumerable<SqlNode> GetChildren()
     {
         if (Target is not null) yield return Target;
+        if (From is not null) foreach (var x in From) yield return x;
         if (Where is not null) yield return Where;
         if (Hint is not null) yield return Hint;
         if (Returning is not null) foreach (var x in Returning) yield return x;
@@ -2811,6 +2812,7 @@ public partial class DeleteStatement
     public override void AcceptChildren(SqlNodeVisitor visitor)
     {
         Target?.Accept(visitor);
+        if (From is not null) foreach (var x in From) x.Accept(visitor);
         Where?.Accept(visitor);
         Hint?.Accept(visitor);
         if (Returning is not null) foreach (var x in Returning) x.Accept(visitor);
@@ -2821,6 +2823,7 @@ public partial class DeleteStatement
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
     {
         Target = SqlNodeRewriter.RewriteRequired(rewriter, Target, "DeleteStatement.Target");
+        SqlNodeRewriter.RewriteList(rewriter, From, "DeleteStatement.From");
         Where = SqlNodeRewriter.RewriteOptional(rewriter, Where, "DeleteStatement.Where");
         Hint = SqlNodeRewriter.RewriteOptional(rewriter, Hint, "DeleteStatement.Hint");
         SqlNodeRewriter.RewriteList(rewriter, Returning, "DeleteStatement.Returning");
@@ -2838,6 +2841,7 @@ public partial class DeleteStatement
         var c = new DeleteStatement();
         CopySpan(this, c);
         c.Target = CloneChild(Target)!;
+        c.From = CloneList(From);
         c.Where = CloneChild(Where);
         c.Hint = CloneChild(Hint);
         c.Returning = CloneList(Returning);
@@ -2852,6 +2856,7 @@ public partial class DeleteStatement
     {
         var o = (DeleteStatement)other;
         return Pair(Target, o.Target, pending)
+            && PairList(From, o.From, pending)
             && Pair(Where, o.Where, pending)
             && Pair(Hint, o.Hint, pending)
             && PairList(Returning, o.Returning, pending)

@@ -740,6 +740,7 @@ public sealed partial class SqlParser
         if (Cur.Type == TokenType.Hint) st.Hint = ParseHint(Next());
         AcceptKw("FROM");
         st.Target = ParseTablePrimary();
+        if (AcceptKw("FROM")) { do st.From.Add(ParseJoinedTable()); while (AcceptOp(",")); }
         if (AcceptKw("WHERE")) st.Where = ParseWhereCondition();
         ParseDmlTail(st);
         return Fin(st, start);
