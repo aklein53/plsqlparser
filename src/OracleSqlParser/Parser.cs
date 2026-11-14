@@ -523,9 +523,23 @@ public sealed partial class SqlParser
     private Identifier? ParseOptionalAlias()
     {
         if (IsKw("AS") && !IsKwAt(1, "OF")) { Next(); return ParseIdentifier(); }
-        if (CanBeImplicitAlias(Cur)) return ParseIdentifier();
+        if (CanBeImplicitAlias(Cur) || IsContextualAlias()) return ParseIdentifier();
         return null;
     }
+
+    /// <summary>
+    /// Non-reserved words that can also start a clause (LEFT, PIVOT, SAMPLE, FETCH, ...) are aliases when the clause
+    /// they would start cannot begin at this point, judged by one token of lookahead.
+    /// </summary>
+    private bool IsContextualAlias() => Cur.Type == TokenType.Identifier && Cur.Value switch
+    {
+        "LEFT" or "RIGHT" or "FULL" => !IsKwAt(1, "JOIN") && !IsKwAt(1, "OUTER"),
+        "PIVOT" => !IsOpAt(1, "(") && !IsKwAt(1, "XML"),
+        "UNPIVOT" => !IsOpAt(1, "(") && !IsKwAt(1, "INCLUDE") && !IsKwAt(1, "EXCLUDE"),
+        "SAMPLE" => !IsOpAt(1, "(") && !IsKwAt(1, "BLOCK"),
+        "FETCH" => !(IsKwAt(1, "FIRST") || IsKwAt(1, "NEXT") || IsKwAt(1, "EXACT") || IsKwAt(1, "APPROX") || IsKwAt(1, "APPROXIMATE")),
+        _ => false,
+    };
 
     private List<OrderByItem> ParseOrderByList()
     {

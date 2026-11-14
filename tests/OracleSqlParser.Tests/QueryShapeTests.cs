@@ -51,6 +51,20 @@ public class QueryShapeTests
         "(JoinTable left=(JoinTable left=(NamedTable name=[A]) kind=Full right=(NamedTable name=[B]) on=(= 1 1)) kind=Right right=(NamedTable name=[C]) on=(= 2 2))")]
     public void Joins(string sql, string expected) => Assert.Equal(expected, Shape.Of<JoinTable>(sql));
 
+    // Non-reserved words that also start a clause: an alias where the clause cannot start, the clause elsewhere.
+    [Theory]
+    [InlineData("SELECT 1 pivot, 2 left, 3 sample, 4 fetch FROM dual",
+        "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1 alias=PIVOT) (ExpressionSelectItem expression=2 alias=LEFT) (ExpressionSelectItem expression=3 alias=SAMPLE) (ExpressionSelectItem expression=4 alias=FETCH)] from=[(NamedTable name=[DUAL])]))")]
+    [InlineData("SELECT * FROM t sample", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] alias=SAMPLE)]))")]
+    [InlineData("SELECT * FROM t pivot", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] alias=PIVOT)]))")]
+    [InlineData("SELECT * FROM t left", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] alias=LEFT)]))")]
+    [InlineData("SELECT * FROM t fetch", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] alias=FETCH)]))")]
+    [InlineData("SELECT * FROM t SAMPLE (10) sample", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] sample=(SampleClause percent=10) alias=SAMPLE)]))")]
+    [InlineData("SELECT * FROM t sample (10)", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] sample=(SampleClause percent=10))]))")]
+    [InlineData("SELECT * FROM t LEFT JOIN u ON 1 = 1", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(JoinTable left=(NamedTable name=[T]) kind=Left right=(NamedTable name=[U]) on=(= 1 1))]))")]
+    [InlineData("SELECT * FROM t FETCH FIRST 1 ROW ONLY", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T])]) fetch=(FetchClause count=1))")]
+    public void ContextualKeywordAliases(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
     [Theory]
     [InlineData("SELECT * FROM a PARTITION BY (a.x) JOIN b ON a.id = b.id")] // only outer joins take a partition clause
     [InlineData("SELECT * FROM a PARTITION BY (a.x) FULL OUTER JOIN b ON a.id = b.id")] // FULL outer joins cannot be partitioned
