@@ -1209,6 +1209,7 @@ public partial class ColumnDefinition
         c.Type = CloneChild(Type);
         c.Default = CloneChild(Default);
         c.DefaultOnNull = DefaultOnNull;
+        c.DefaultOnNullFor = DefaultOnNullFor;
         c.Identity = CloneChild(Identity);
         c.VirtualExpression = CloneChild(VirtualExpression);
         c.Constraints = CloneList(Constraints);
@@ -1227,6 +1228,7 @@ public partial class ColumnDefinition
             && Pair(Type, o.Type, pending)
             && Pair(Default, o.Default, pending)
             && DefaultOnNull == o.DefaultOnNull
+            && DefaultOnNullFor == o.DefaultOnNullFor
             && Pair(Identity, o.Identity, pending)
             && Pair(VirtualExpression, o.VirtualExpression, pending)
             && PairList(Constraints, o.Constraints, pending)

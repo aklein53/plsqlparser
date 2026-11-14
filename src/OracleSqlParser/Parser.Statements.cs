@@ -631,7 +631,16 @@ public sealed partial class SqlParser
             if (IsKw("DEFAULT"))
             {
                 Next();
-                if (IsKw("ON") && IsKwAt(1, "NULL")) { Next(); Next(); cd.DefaultOnNull = true; if (IsKw("FOR")) { Next(); ExpectKw("INSERT"); if (AcceptKw("AND")) ExpectKw("UPDATE"); } }
+                if (IsKw("ON") && IsKwAt(1, "NULL"))
+                {
+                    Next(); Next(); cd.DefaultOnNull = true;
+                    if (AcceptKw("FOR"))
+                    {
+                        ExpectKw("INSERT");
+                        if (AcceptKw("AND")) { ExpectKw("UPDATE"); cd.DefaultOnNullFor = OnNullScope.InsertAndUpdate; }
+                        else { AcceptKw("ONLY"); cd.DefaultOnNullFor = OnNullScope.InsertOnly; }
+                    }
+                }
                 cd.Default = ParseExpr();
             }
             else if (IsKw("GENERATED"))

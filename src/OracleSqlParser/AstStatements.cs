@@ -386,6 +386,9 @@ public sealed partial class CreateTableStatement : Statement
 
 public enum IdentityMode { Always, ByDefault }
 
+/// <summary>The DML statements a DEFAULT ON NULL value applies to.</summary>
+public enum OnNullScope { InsertOnly, InsertAndUpdate }
+
 public sealed partial class IdentityClause : SqlNode
 {
     public IdentityMode Mode { get; set; }
@@ -407,6 +410,8 @@ public sealed partial class ColumnDefinition : SqlNode
     public DataType? Type { get; set; }
     public Expression? Default { get; set; }
     public bool DefaultOnNull { get; set; }
+    /// <summary>DEFAULT ON NULL FOR INSERT ONLY / FOR INSERT AND UPDATE; null when no FOR clause is given.</summary>
+    public OnNullScope? DefaultOnNullFor { get; set; }
     public IdentityClause? Identity { get; set; }
     public Expression? VirtualExpression { get; set; }
     public List<TableConstraint> Constraints { get; set; } = [];

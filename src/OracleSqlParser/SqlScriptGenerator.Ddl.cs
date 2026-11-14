@@ -206,7 +206,12 @@ public sealed partial class SqlScriptGenerator
             Id(c.Name);
             if (c.Type != null) { Sp(); Type(c.Type); }
             if (c.Collation != null) { Add(" COLLATE "); Id(c.Collation); }
-            if (c.Default != null) { Add(c.DefaultOnNull ? " DEFAULT ON NULL " : " DEFAULT "); Expr(c.Default); }
+            if (c.Default != null)
+            {
+                Add(c.DefaultOnNull ? " DEFAULT ON NULL" : " DEFAULT");
+                if (c.DefaultOnNullFor is { } scope) Add(scope == OnNullScope.InsertOnly ? " FOR INSERT ONLY" : " FOR INSERT AND UPDATE");
+                Add(" "); Expr(c.Default);
+            }
             if (c.Identity != null)
             {
                 Add(" GENERATED " + (c.Identity.Mode == IdentityMode.Always ? "ALWAYS" : "BY DEFAULT" + (c.Identity.OnNull ? " ON NULL" : "")) + " AS IDENTITY");
