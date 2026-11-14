@@ -212,6 +212,347 @@ public sealed partial class SqlPlusCommand : Statement
     public List<SyntaxItem> Arguments { get; set; } = [];
 }
 
+// ---------- CREATE / ALTER USER ----------
+
+public enum UserClauseKind
+{
+    IdentifiedBy, IdentifiedExternally, IdentifiedGlobally, NoAuthentication, DefaultTablespace, TemporaryTablespace,
+    Quota, Profile, PasswordExpire, AccountLock, AccountUnlock, DefaultRole, Container, EnableEditions, DisableEditions,
+    ReadOnly, ReadWrite, GrantConnectThrough, RevokeConnectThrough, Other,
+}
+
+/// <summary>Role-list keyword form: an explicit list, ALL [EXCEPT list], or NONE.</summary>
+public enum RoleSetKind { Roles, All, None }
+
+/// <summary>
+/// One clause of CREATE USER / ALTER USER, in source order. Clauses without a dedicated kind are kept as
+/// <see cref="UserClauseKind.Other"/> with their single token (<see cref="Syntax"/>) so the statement still round-trips.
+/// </summary>
+public sealed partial class UserClause : SqlNode
+{
+    public UserClauseKind Kind { get; set; }
+    /// <summary>IDENTIFIED BY password. Printed as typed (passwords are case-sensitive even when unquoted).</summary>
+    public Identifier? Password { get; set; }
+    /// <summary>IDENTIFIED BY password REPLACE old_password.</summary>
+    public Identifier? ReplacePassword { get; set; }
+    /// <summary>IDENTIFIED EXTERNALLY/GLOBALLY AS 'name'.</summary>
+    public Expression? ExternalName { get; set; }
+    /// <summary>LOCAL TEMPORARY TABLESPACE.</summary>
+    public bool Local { get; set; }
+    /// <summary>Tablespace of DEFAULT/TEMPORARY TABLESPACE and QUOTA ... ON.</summary>
+    public Identifier? Tablespace { get; set; }
+    /// <summary>QUOTA size, e.g. 100M (sizes lex as one number token).</summary>
+    public Expression? Quota { get; set; }
+    public bool Unlimited { get; set; }
+    public Identifier? Profile { get; set; }
+    /// <summary>Proxy user for GRANT/REVOKE CONNECT THROUGH.</summary>
+    public Identifier? Proxy { get; set; }
+    public bool EnterpriseUsers { get; set; }
+    /// <summary>DEFAULT ROLE list, or WITH ROLE / WITH NO ROLES of a GRANT CONNECT THROUGH.</summary>
+    public RoleSetKind? RoleSet { get; set; }
+    public List<Identifier> Roles { get; set; } = [];
+    public List<Identifier> ExceptRoles { get; set; } = [];
+    public bool AuthenticationRequired { get; set; }
+    /// <summary>CONTAINER = CURRENT | ALL.</summary>
+    public GrantContainer? Container { get; set; }
+    /// <summary>ENABLE EDITIONS FORCE.</summary>
+    public bool Force { get; set; }
+    /// <summary>The unmodelled token of an <see cref="UserClauseKind.Other"/> clause.</summary>
+    public List<SyntaxItem> Syntax { get; set; } = [];
+}
+
+public sealed partial class CreateUserStatement : Statement
+{
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<UserClause> Clauses { get; set; } = [];
+}
+
+public sealed partial class AlterUserStatement : Statement
+{
+    public bool IfExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<UserClause> Clauses { get; set; } = [];
+}
+
+// ---------- CREATE / ALTER ROLE ----------
+
+public enum RoleAuthentication { NotIdentified, Password, Package, External, Global }
+
+public sealed partial class CreateRoleStatement : Statement
+{
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    /// <summary>NOT IDENTIFIED, IDENTIFIED BY/USING/EXTERNALLY/GLOBALLY, or null when absent.</summary>
+    public RoleAuthentication? Authentication { get; set; }
+    /// <summary>IDENTIFIED BY password. Printed as typed (passwords are case-sensitive even when unquoted).</summary>
+    public Identifier? Password { get; set; }
+    /// <summary>IDENTIFIED USING [schema.]package.</summary>
+    public List<Identifier> Package { get; set; } = [];
+    public GrantContainer? Container { get; set; }
+}
+
+public sealed partial class AlterRoleStatement : Statement
+{
+    public bool IfExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public RoleAuthentication? Authentication { get; set; }
+    public Identifier? Password { get; set; }
+    public List<Identifier> Package { get; set; } = [];
+    public GrantContainer? Container { get; set; }
+}
+
+// ---------- CREATE / ALTER PROFILE ----------
+
+/// <summary>The keyword value of a profile limit: UNLIMITED, DEFAULT or NULL.</summary>
+public enum ProfileKeyword { Unlimited, Default, Null }
+
+/// <summary>
+/// One resource or password parameter of a profile: a name with an integer or expression (<see cref="Value"/>),
+/// a keyword (<see cref="Keyword"/>), or a function name (PASSWORD_VERIFY_FUNCTION).
+/// </summary>
+public sealed partial class ProfileLimit : SqlNode
+{
+    public Identifier Name { get; set; } = null!;
+    public Expression? Value { get; set; }
+    public ProfileKeyword? Keyword { get; set; }
+    /// <summary>PASSWORD_VERIFY_FUNCTION [schema.]function.</summary>
+    public List<Identifier> Function { get; set; } = [];
+}
+
+public sealed partial class CreateProfileStatement : Statement
+{
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<ProfileLimit> Limits { get; set; } = [];
+    public GrantContainer? Container { get; set; }
+}
+
+public sealed partial class AlterProfileStatement : Statement
+{
+    public bool IfExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<ProfileLimit> Limits { get; set; } = [];
+    public GrantContainer? Container { get; set; }
+    /// <summary>ALTER PROFILE ... CASCADE: apply the new limits to users already assigned the profile.</summary>
+    public bool Cascade { get; set; }
+}
+
+// ---------- CREATE DIRECTORY / DATABASE LINK / CONTEXT ----------
+
+public sealed partial class CreateDirectoryStatement : Statement
+{
+    public bool OrReplace { get; set; }
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public SharingKind? Sharing { get; set; }
+    /// <summary>AS 'path'.</summary>
+    public Expression Path { get; set; } = null!;
+}
+
+public sealed partial class CreateDatabaseLinkStatement : Statement
+{
+    public bool OrReplace { get; set; }
+    public bool IfNotExists { get; set; }
+    public bool Public { get; set; }
+    public bool Shared { get; set; }
+    public List<Identifier> Name { get; set; } = [];
+    /// <summary>CONNECT TO user [IDENTIFIED BY password].</summary>
+    public Identifier? ConnectUser { get; set; }
+    /// <summary>Printed as typed (passwords are case-sensitive even when unquoted).</summary>
+    public Identifier? ConnectPassword { get; set; }
+    /// <summary>CONNECT TO CURRENT_USER.</summary>
+    public bool CurrentUser { get; set; }
+    /// <summary>AUTHENTICATED BY user IDENTIFIED BY password (shared links).</summary>
+    public Identifier? AuthenticatedUser { get; set; }
+    public Identifier? AuthenticatedPassword { get; set; }
+    /// <summary>USING 'connect_string'.</summary>
+    public Expression? Using { get; set; }
+    /// <summary>Clauses this model does not cover (e.g. CONNECT WITH credential), as a token tree.</summary>
+    public List<SyntaxItem> OtherClauses { get; set; } = [];
+}
+
+public enum ContextInit { Externally, Globally }
+
+public sealed partial class CreateContextStatement : Statement
+{
+    public bool OrReplace { get; set; }
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<Identifier> Package { get; set; } = [];
+    public ContextInit? Initialized { get; set; }
+    public bool AccessedGlobally { get; set; }
+}
+
+// ---------- CREATE / ALTER TABLESPACE ----------
+
+public enum TablespaceType { Permanent, Temporary, Undo }
+public enum ExtentPolicy { Autoallocate, Uniform }
+public enum SegmentSpaceMode { Auto, Manual }
+public enum OfflineMode { Normal, Temporary, Immediate }
+
+/// <summary>A datafile or tempfile: 'name' [SIZE n] [REUSE] [AUTOEXTEND ON|OFF [NEXT n] [MAXSIZE n|UNLIMITED]].</summary>
+public sealed partial class DatafileSpec : SqlNode
+{
+    /// <summary>TEMPFILE rather than DATAFILE.</summary>
+    public bool Tempfile { get; set; }
+    public Expression? Path { get; set; }
+    public Expression? Size { get; set; }
+    public bool Reuse { get; set; }
+    /// <summary>AUTOEXTEND ON (true) or OFF (false); null when the clause is absent.</summary>
+    public bool? Autoextend { get; set; }
+    public Expression? NextSize { get; set; }
+    public Expression? MaxSize { get; set; }
+    public bool MaxSizeUnlimited { get; set; }
+}
+
+public sealed partial class CreateTablespaceStatement : Statement
+{
+    /// <summary>BIGFILE (true) or SMALLFILE (false); null when neither is given.</summary>
+    public bool? Bigfile { get; set; }
+    public TablespaceType? Kind { get; set; }
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    /// <summary>DATAFILE or TEMPFILE specs (one keyword per clause, comma-separated specs).</summary>
+    public List<DatafileSpec> Files { get; set; } = [];
+    /// <summary>LOGGING (true) or NOLOGGING (false).</summary>
+    public bool? Logging { get; set; }
+    /// <summary>FORCE LOGGING (with Logging = true).</summary>
+    public bool ForceLogging { get; set; }
+    /// <summary>ONLINE (true) or OFFLINE (false).</summary>
+    public bool? Online { get; set; }
+    /// <summary>EXTENT MANAGEMENT LOCAL [...].</summary>
+    public bool ExtentManagementLocal { get; set; }
+    public ExtentPolicy? ExtentPolicy { get; set; }
+    public Expression? UniformSize { get; set; }
+    public SegmentSpaceMode? SegmentSpace { get; set; }
+    public bool Encryption { get; set; }
+    public Expression? EncryptionUsing { get; set; }
+    /// <summary>DEFAULT STORAGE (ENCRYPT).</summary>
+    public bool DefaultStorageEncrypt { get; set; }
+    /// <summary>Rarely used options (BLOCKSIZE, FLASHBACK, RETENTION, ...) as a token tree.</summary>
+    public List<SyntaxItem> OtherClauses { get; set; } = [];
+}
+
+public enum TablespaceActionKind
+{
+    AddDatafile, AddTempfile, Resize, Autoextend, Online, Offline, ReadOnly, ReadWrite, RenameTo, Logging, NoLogging,
+    BeginBackup, EndBackup, Other,
+}
+
+/// <summary>One action of ALTER TABLESPACE. File-level actions (RESIZE, AUTOEXTEND, ONLINE/OFFLINE of a file) set <see cref="Target"/>.</summary>
+public sealed partial class TablespaceAction : SqlNode
+{
+    public TablespaceActionKind Kind { get; set; }
+    /// <summary>ADD DATAFILE/TEMPFILE specs.</summary>
+    public List<DatafileSpec> Files { get; set; } = [];
+    public DatafileSpec? Target { get; set; }
+    /// <summary>OFFLINE [NORMAL | TEMPORARY | IMMEDIATE] of the tablespace.</summary>
+    public OfflineMode? Mode { get; set; }
+    public Identifier? NewName { get; set; }
+    /// <summary>The unmodelled token of an <see cref="TablespaceActionKind.Other"/> action.</summary>
+    public List<SyntaxItem> Syntax { get; set; } = [];
+}
+
+public sealed partial class AlterTablespaceStatement : Statement
+{
+    public bool IfExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<TablespaceAction> Actions { get; set; } = [];
+}
+
+// ---------- AUDIT / NOAUDIT / AUDIT POLICY ----------
+
+/// <summary>A traditional audit option as a keyword phrase: SELECT, CREATE TABLE, ALL.</summary>
+public sealed partial class AuditOption : SqlNode
+{
+    public string Name { get; set; } = "";
+}
+
+/// <summary>The object of ON: [schema.]object, DIRECTORY name, or DEFAULT.</summary>
+public sealed partial class AuditObject : SqlNode
+{
+    public bool Default { get; set; }
+    public bool Directory { get; set; }
+    public List<Identifier> Name { get; set; } = [];
+}
+
+public enum AuditBy { Access, Session }
+
+/// <summary>
+/// AUDIT / NOAUDIT. Traditional form: options [ON object] [BY users | BY ACCESS|SESSION] [WHENEVER [NOT] SUCCESSFUL].
+/// Unified form: POLICY name [BY users | EXCEPT users] or CONTEXT NAMESPACE ns ATTRIBUTES a, b [BY users].
+/// </summary>
+public sealed partial class AuditStatement : Statement
+{
+    public bool Noaudit { get; set; }
+    /// <summary>AUDIT POLICY name (unified).</summary>
+    public Identifier? Policy { get; set; }
+    /// <summary>AUDIT CONTEXT NAMESPACE ns (unified).</summary>
+    public Identifier? ContextNamespace { get; set; }
+    public List<Identifier> ContextAttributes { get; set; } = [];
+    /// <summary>Traditional audit options.</summary>
+    public List<AuditOption> Options { get; set; } = [];
+    /// <summary>Traditional ON object.</summary>
+    public AuditObject? On { get; set; }
+    public List<Identifier> ByUsers { get; set; } = [];
+    /// <summary>BY USERS WITH ROLES role, ... (unified).</summary>
+    public List<Identifier> WithRoles { get; set; } = [];
+    /// <summary>BY USERS WITH GRANTED ROLES rather than WITH ROLES.</summary>
+    public bool GrantedRoles { get; set; }
+    /// <summary>EXCEPT user, ... (unified policies).</summary>
+    public List<Identifier> ExceptUsers { get; set; } = [];
+    /// <summary>BY ACCESS or BY SESSION (traditional).</summary>
+    public AuditBy? By { get; set; }
+    /// <summary>WHENEVER [NOT] SUCCESSFUL: true = SUCCESSFUL, false = NOT SUCCESSFUL.</summary>
+    public bool? Successful { get; set; }
+}
+
+public enum AuditPolicyListKind { Privileges, Actions, Roles }
+
+/// <summary>When an audit policy condition is evaluated.</summary>
+public enum AuditEvaluation { Statement, Session, Instance }
+
+/// <summary>One item of a PRIVILEGES or ACTIONS list: an optional COMPONENT=name, a keyword phrase, and an optional ON object.</summary>
+public sealed partial class AuditPolicyItem : SqlNode
+{
+    public Identifier? Component { get; set; }
+    public string Name { get; set; } = "";
+    public AuditObject? On { get; set; }
+}
+
+/// <summary>A PRIVILEGES, ACTIONS or ROLES list of CREATE/ALTER AUDIT POLICY. ALTER ... DROP sets <see cref="Drop"/>.</summary>
+public sealed partial class AuditPolicyList : SqlNode
+{
+    public AuditPolicyListKind Kind { get; set; }
+    public bool Drop { get; set; }
+    public List<AuditPolicyItem> Items { get; set; } = [];
+    public List<Identifier> Roles { get; set; } = [];
+}
+
+public sealed partial class CreateAuditPolicyStatement : Statement
+{
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<AuditPolicyList> Lists { get; set; } = [];
+    /// <summary>WHEN 'condition' EVALUATE PER ...</summary>
+    public Expression? Condition { get; set; }
+    public AuditEvaluation? Evaluate { get; set; }
+    public bool OnlyToplevel { get; set; }
+    public GrantContainer? Container { get; set; }
+}
+
+public sealed partial class AlterAuditPolicyStatement : Statement
+{
+    public bool IfExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<AuditPolicyList> Lists { get; set; } = [];
+    public Expression? Condition { get; set; }
+    public AuditEvaluation? Evaluate { get; set; }
+    /// <summary>ALTER AUDIT POLICY ... CONDITION DROP.</summary>
+    public bool DropCondition { get; set; }
+}
+
 // ---------- Generic object DDL (typed header + token-tree body) ----------
 
 public enum ObjectKind
@@ -246,7 +587,7 @@ public sealed partial class AlterObjectStatement : Statement
     public List<SyntaxItem> Body { get; set; } = [];
 }
 
-/// <summary>Statements such as AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT (token-tree body).</summary>
+/// <summary>Statements such as ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE (token-tree body).</summary>
 public sealed partial class AdminStatement : Statement
 {
     public string Verb { get; set; } = "";

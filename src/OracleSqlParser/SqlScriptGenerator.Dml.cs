@@ -34,7 +34,12 @@ public sealed partial class SqlScriptGenerator
                 case CreateObjectStatement or AlterObjectStatement or DropStatement or CreateTableStatement or CreateIndexStatement
                     or CreateViewStatement or CreateSequenceStatement or CreateSynonymStatement or AlterTableStatement or CreatePropertyGraphStatement
                     or CreateDomainStatement or AlterDomainStatement
-                    or CreateJavaStatement or CreateLibraryStatement:
+                    or CreateJavaStatement or CreateLibraryStatement or CreateUserStatement or AlterUserStatement
+                    or CreateRoleStatement or AlterRoleStatement
+                    or CreateProfileStatement or AlterProfileStatement
+                    or CreateDirectoryStatement or CreateDatabaseLinkStatement or CreateContextStatement
+                    or CreateTablespaceStatement or AlterTablespaceStatement
+                    or CreateAuditPolicyStatement or AlterAuditPolicyStatement or AuditStatement:
                     Ddl(st); break;
                 // PL/SQL
                 case Block or CreateProgramStatement or CreatePackageStatement or CreatePackageBodyStatement or CreateTriggerStatement

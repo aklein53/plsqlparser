@@ -333,9 +333,45 @@ public class SqlScriptGeneratorTests
     [Fact]
     public void TokenTreeWords_FollowIdentifierCasing()
     {
-        const string sql = "alter user Bob account lock";
-        Assert.Equal("ALTER USER Bob account lock", Gen(sql));
-        Assert.Equal("ALTER USER BOB ACCOUNT LOCK", Gen(sql, new() { IdentifierCasing = IdentifierCasing.Uppercase }));
+        // ALTER SYSTEM stays a token tree by design (DBA administration)
+        const string sql = "alter system flush Shared_Pool";
+        Assert.Equal("ALTER SYSTEM flush Shared_Pool", Gen(sql));
+        Assert.Equal("ALTER SYSTEM FLUSH SHARED_POOL", Gen(sql, new() { IdentifierCasing = IdentifierCasing.Uppercase }));
+    }
+
+    [Fact]
+    public void AlterAuditPolicy_DropModeIsNotFlipped()
+    {
+        // ACTIONS inherits DROP from the list before it; the printer must not turn it into ADD.
+        Assert.Equal("ALTER AUDIT POLICY p DROP PRIVILEGES CREATE SESSION ACTIONS DELETE ON hr.emp",
+            Gen("ALTER AUDIT POLICY p DROP PRIVILEGES CREATE SESSION ACTIONS DELETE ON hr.emp"));
+        Assert.Equal("ALTER AUDIT POLICY p DROP PRIVILEGES CREATE SESSION ADD ACTIONS DELETE ON hr.emp",
+            Gen("ALTER AUDIT POLICY p DROP PRIVILEGES CREATE SESSION ADD ACTIONS DELETE ON hr.emp"));
+    }
+
+    [Fact]
+    public void Tablespace_OmfDatafileAndForceLogging_RoundTrip()
+    {
+        Assert.Equal("ALTER TABLESPACE ts ADD DATAFILE SIZE 10M", Gen("ALTER TABLESPACE ts ADD DATAFILE SIZE 10M"));
+        Assert.Equal("CREATE TABLESPACE ts DATAFILE 'f' SIZE 1M FORCE LOGGING", Gen("CREATE TABLESPACE ts DATAFILE 'f' SIZE 1M FORCE LOGGING"));
+        Assert.Equal("ALTER TABLESPACE ts RESIZE 80G", Gen("ALTER TABLESPACE ts RESIZE 80G"));
+    }
+
+    [Fact]
+    public void CreateRole_RoundTripsIdentificationAndContainer()
+    {
+        const string sql = "create role Ops identified by Secret container = all";
+        Assert.Equal("CREATE ROLE Ops IDENTIFIED BY Secret CONTAINER = ALL", Gen(sql));
+        Assert.Equal("CREATE ROLE OPS IDENTIFIED BY Secret CONTAINER = ALL", Gen(sql, new() { IdentifierCasing = IdentifierCasing.Uppercase }));
+    }
+
+    [Fact]
+    public void AlterUser_PasswordIsNeverRecased()
+    {
+        // Passwords are case-sensitive even when unquoted, so the uppercase option must not touch them.
+        const string sql = "alter user Bob identified by Pw account lock";
+        Assert.Equal("ALTER USER Bob IDENTIFIED BY Pw ACCOUNT LOCK", Gen(sql));
+        Assert.Equal("ALTER USER BOB IDENTIFIED BY Pw ACCOUNT LOCK", Gen(sql, new() { IdentifierCasing = IdentifierCasing.Uppercase }));
     }
 
     [Fact]

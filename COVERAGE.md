@@ -33,10 +33,17 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 | ALTER TABLE | `AlterTableStatement` | typed (ADD/DROP/TRUNCATE/SPLIT/MERGE/EXCHANGE/MOVE/RENAME PARTITION, MODIFY PARTITION ADD/DROP VALUES, SET INTERVAL; other maintenance actions: `Syntax` token tree) | DdlShape, SmokeCorpus |
 | DROP (any object kind) | `DropStatement` | typed | DdlShape |
 | CREATE PROCEDURE/FUNCTION/PACKAGE [BODY]/TRIGGER/TYPE [BODY]/LIBRARY/JAVA | `CreateProgramStatement` … | typed | PlsqlShape, DdlShape |
-| CREATE of any other object (USER, ROLE, PROFILE, TABLESPACE, DATABASE LINK, DIRECTORY, CLUSTER, CONTEXT, DIMENSION, EDITION, OPERATOR, INDEXTYPE, OUTLINE, JSON DUALITY VIEW, MV LOG, ZONEMAP, ANALYTIC VIEW, ...) | `CreateObjectStatement` | header+tree |
-| ALTER of any object other than TABLE/SESSION/INDEX/SEQUENCE/MATERIALIZED VIEW/DOMAIN and the typed compiled-unit forms ( TRIGGER, PROCEDURE, USER, SYSTEM, DATABASE, ...) | `AlterObjectStatement` | header+tree |
+| CREATE of any other object (CLUSTER, DIMENSION, EDITION, OPERATOR, INDEXTYPE, OUTLINE, JSON DUALITY VIEW, MV LOG, ZONEMAP, ANALYTIC VIEW, ...) | `CreateObjectStatement` | header+tree |
+| ALTER of any object other than TABLE/SESSION/INDEX/SEQUENCE/MATERIALIZED VIEW/DOMAIN/USER/ROLE/PROFILE/TABLESPACE/AUDIT POLICY and the typed compiled-unit forms (SYSTEM, DATABASE, TYPE attribute clauses, ...) | `AlterObjectStatement` | header+tree |
 | ANALYZE TABLE/INDEX/CLUSTER (COMPUTE/ESTIMATE/DELETE STATISTICS, VALIDATE STRUCTURE, LIST CHAINED ROWS; FOR clauses and other forms in a token tree) | `AnalyzeStatement` | typed (trailing clauses: `OtherClauses` token tree) | DmlAndSessionShape, SmokeCorpus |
-| AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE | `AdminStatement` | header+tree |
+| CREATE USER / ALTER USER (IDENTIFIED, DEFAULT/TEMPORARY TABLESPACE, QUOTA, PROFILE, PASSWORD EXPIRE, ACCOUNT, DEFAULT ROLE, CONTAINER, EDITIONS, READ ONLY/WRITE, GRANT/REVOKE CONNECT THROUGH) | `CreateUserStatement`, `AlterUserStatement` (`UserClause` per clause; unmodelled tokens as `Other`) | typed | DdlShape, SqlScriptGenerator |
+| CREATE ROLE / ALTER ROLE (NOT IDENTIFIED, IDENTIFIED BY/USING/EXTERNALLY/GLOBALLY, CONTAINER) | `CreateRoleStatement`, `AlterRoleStatement` | typed | DdlShape, SqlScriptGenerator |
+| CREATE PROFILE / ALTER PROFILE (LIMIT name value | UNLIMITED | DEFAULT | NULL, PASSWORD_VERIFY_FUNCTION, CONTAINER, CASCADE) | `CreateProfileStatement`, `AlterProfileStatement`, `ProfileLimit` | typed | DdlShape, SqlScriptGenerator |
+| CREATE DIRECTORY, CREATE [SHARED] [PUBLIC] DATABASE LINK (CONNECT TO user IDENTIFIED BY / CURRENT_USER, AUTHENTICATED BY, USING), CREATE CONTEXT (INITIALIZED, ACCESSED GLOBALLY) | `CreateDirectoryStatement`, `CreateDatabaseLinkStatement`, `CreateContextStatement` | typed | DdlShape |
+| CREATE [BIGFILE|SMALLFILE] [TEMPORARY|UNDO] TABLESPACE (DATAFILE/TEMPFILE specs, LOGGING, ONLINE, EXTENT MANAGEMENT LOCAL, SEGMENT SPACE MANAGEMENT, ENCRYPTION; rarer options in `OtherClauses`), ALTER TABLESPACE (ADD DATAFILE/TEMPFILE, RESIZE, AUTOEXTEND, ONLINE/OFFLINE, READ ONLY/WRITE, RENAME TO, [NO]LOGGING, BEGIN/END BACKUP) | `CreateTablespaceStatement`, `AlterTablespaceStatement`, `TablespaceAction`, `DatafileSpec` | typed | DdlShape |
+| ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE | `AdminStatement` | header+tree |
+| AUDIT / NOAUDIT, traditional (options, ON object, BY users or ACCESS/SESSION, WHENEVER [NOT] SUCCESSFUL) and unified (POLICY ... BY/EXCEPT, CONTEXT NAMESPACE ... ATTRIBUTES, BY USERS WITH ROLES) | `AuditStatement`, `AuditOption`, `AuditObject` | typed | DdlShape, DmlAndSessionShape |
+| CREATE AUDIT POLICY / ALTER AUDIT POLICY (PRIVILEGES, ACTIONS incl. COMPONENT= and ON object, ROLES, ADD/DROP lists, WHEN ... EVALUATE PER, ONLY TOPLEVEL, CONTAINER, CONDITION DROP) | `CreateAuditPolicyStatement`, `AlterAuditPolicyStatement`, `AuditPolicyList`, `AuditPolicyItem` | typed | DdlShape |
 
 ## PL/SQL
 

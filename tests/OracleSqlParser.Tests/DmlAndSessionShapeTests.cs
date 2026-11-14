@@ -139,7 +139,7 @@ public class DmlAndSessionShapeTests
     public void Grants(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
-    [InlineData("AUDIT SELECT ON emp BY ACCESS", "(AdminStatement verb=AUDIT body=[(WordItem value=SELECT) (WordItem value=ON) (WordItem value=EMP) (WordItem value=BY) (WordItem value=ACCESS)])")]
+    [InlineData("AUDIT SELECT ON emp BY ACCESS", "(AuditStatement options=[(AuditOption name=SELECT)] on=(AuditObject name=[EMP]) by=Access)")]
     [InlineData("ADMINISTER KEY MANAGEMENT CREATE KEYSTORE 'k' IDENTIFIED BY pw", "(AdminStatement verb=ADMINISTER body=[(WordItem value=KEY) (WordItem value=MANAGEMENT) (WordItem value=CREATE) (WordItem value=KEYSTORE) (LiteralItem kind=String value=k) (WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=PW)])")]
     public void AdminTokenTreeStatements(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 

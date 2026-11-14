@@ -60,6 +60,115 @@ public sealed partial class SqlScriptGenerator
                     if (ao.Body.Count > 0) { Sp(); SyntaxList(ao.Body); }
                     break;
                 case DropStatement dr: Drop(dr); break;
+                case CreateRoleStatement cr:
+                    Add("CREATE ROLE");
+                    if (cr.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cr.Name);
+                    RoleIdentificationText(cr.Authentication, cr.Password, cr.Package);
+                    ContainerClause(cr.Container);
+                    break;
+                case AlterRoleStatement ar:
+                    Add("ALTER ROLE");
+                    if (ar.IfExists) Add(" IF EXISTS");
+                    Sp(); Id(ar.Name);
+                    RoleIdentificationText(ar.Authentication, ar.Password, ar.Package);
+                    ContainerClause(ar.Container);
+                    break;
+                case AuditStatement au: AuditStatementText(au); break;
+                case CreateAuditPolicyStatement cap:
+                    Add("CREATE AUDIT POLICY");
+                    if (cap.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cap.Name);
+                    foreach (var pl in cap.Lists) { Sp(); AuditPolicyListText(pl, false); }
+                    if (cap.Condition != null) { Add(" WHEN "); AuditEvaluationText(cap.Condition, cap.Evaluate!.Value); }
+                    if (cap.OnlyToplevel) Add(" ONLY TOPLEVEL");
+                    ContainerClause(cap.Container);
+                    break;
+                case AlterAuditPolicyStatement aap:
+                    Add("ALTER AUDIT POLICY");
+                    if (aap.IfExists) Add(" IF EXISTS");
+                    Sp(); Id(aap.Name);
+                    bool? mode = null;
+                    foreach (var pl in aap.Lists) { Sp(); AuditPolicyListText(pl, mode != pl.Drop); mode = pl.Drop; }
+                    if (aap.DropCondition) Add(" CONDITION DROP");
+                    else if (aap.Condition != null) { Add(" CONDITION "); AuditEvaluationText(aap.Condition, aap.Evaluate!.Value); }
+                    break;
+                case CreateTablespaceStatement ct:
+                    Add("CREATE");
+                    if (ct.Bigfile != null) Add(ct.Bigfile.Value ? " BIGFILE" : " SMALLFILE");
+                    if (ct.Kind != null) Add(ct.Kind == TablespaceType.Temporary ? " TEMPORARY" : ct.Kind == TablespaceType.Undo ? " UNDO" : "");
+                    Add(" TABLESPACE");
+                    if (ct.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(ct.Name);
+                    TablespaceClauses(ct);
+                    break;
+                case AlterTablespaceStatement at:
+                    Add("ALTER TABLESPACE");
+                    if (at.IfExists) Add(" IF EXISTS");
+                    Sp(); Id(at.Name);
+                    foreach (var a in at.Actions) { Sp(); TablespaceActionText(a); }
+                    break;
+                case CreateDirectoryStatement cd:
+                    Add("CREATE");
+                    if (cd.OrReplace) Add(" OR REPLACE");
+                    Add(" DIRECTORY");
+                    if (cd.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cd.Name);
+                    SharingClause(cd.Sharing);
+                    Add(" AS "); Expr(cd.Path);
+                    break;
+                case CreateDatabaseLinkStatement dl:
+                    Add("CREATE");
+                    if (dl.OrReplace) Add(" OR REPLACE");
+                    if (dl.Shared) Add(" SHARED");
+                    if (dl.Public) Add(" PUBLIC");
+                    Add(" DATABASE LINK");
+                    if (dl.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Name(dl.Name);
+                    if (dl.CurrentUser) Add(" CONNECT TO CURRENT_USER");
+                    else if (dl.ConnectUser != null)
+                    {
+                        Add(" CONNECT TO "); Id(dl.ConnectUser);
+                        if (dl.ConnectPassword != null) { Add(" IDENTIFIED BY "); Verbatim(dl.ConnectPassword); }
+                    }
+                    if (dl.AuthenticatedUser != null) { Add(" AUTHENTICATED BY "); Id(dl.AuthenticatedUser); Add(" IDENTIFIED BY "); Verbatim(dl.AuthenticatedPassword!); }
+                    if (dl.Using != null) { Add(" USING "); Expr(dl.Using); }
+                    if (dl.OtherClauses.Count > 0) { Sp(); SyntaxList(dl.OtherClauses); }
+                    break;
+                case CreateContextStatement cx:
+                    Add("CREATE");
+                    if (cx.OrReplace) Add(" OR REPLACE");
+                    Add(" CONTEXT");
+                    if (cx.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cx.Name);
+                    Add(" USING "); Name(cx.Package);
+                    if (cx.Initialized != null) Add(cx.Initialized == ContextInit.Externally ? " INITIALIZED EXTERNALLY" : " INITIALIZED GLOBALLY");
+                    if (cx.AccessedGlobally) Add(" ACCESSED GLOBALLY");
+                    break;
+                case CreateProfileStatement cp:
+                    Add("CREATE PROFILE");
+                    if (cp.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cp.Name);
+                    ProfileBody(cp.Limits, cp.Container, false);
+                    break;
+                case AlterProfileStatement ap:
+                    Add("ALTER PROFILE");
+                    if (ap.IfExists) Add(" IF EXISTS");
+                    Sp(); Id(ap.Name);
+                    ProfileBody(ap.Limits, ap.Container, ap.Cascade);
+                    break;
+                case CreateUserStatement cu:
+                    Add("CREATE USER");
+                    if (cu.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cu.Name);
+                    foreach (var c in cu.Clauses) { Sp(); UserClauseText(c); }
+                    break;
+                case AlterUserStatement au:
+                    Add("ALTER USER");
+                    if (au.IfExists) Add(" IF EXISTS");
+                    Sp(); Id(au.Name);
+                    foreach (var c in au.Clauses) { Sp(); UserClauseText(c); }
+                    break;
                 case CreateTableStatement ct: CreateTable(ct); break;
                 case CreateIndexStatement ci: CreateIndex(ci); break;
                 case CreateViewStatement cv: CreateView(cv); break;
@@ -103,6 +212,264 @@ public sealed partial class SqlScriptGenerator
                     break;
                 default: throw Unsupported(st);
             }
+        }
+
+        // ---------- CREATE / ALTER ROLE ----------
+
+        private void RoleIdentificationText(RoleAuthentication? a, Identifier? password, List<Identifier> package)
+        {
+            switch (a)
+            {
+                case RoleAuthentication.NotIdentified: Add(" NOT IDENTIFIED"); break;
+                case RoleAuthentication.Password: Add(" IDENTIFIED BY "); Verbatim(password!); break;
+                case RoleAuthentication.Package: Add(" IDENTIFIED USING "); Name(package); break;
+                case RoleAuthentication.External: Add(" IDENTIFIED EXTERNALLY"); break;
+                case RoleAuthentication.Global: Add(" IDENTIFIED GLOBALLY"); break;
+            }
+        }
+
+        private void ContainerClause(GrantContainer? c)
+        {
+            if (c != null) Add(" CONTAINER = " + (c == GrantContainer.All ? "ALL" : "CURRENT"));
+        }
+
+        // ---------- CREATE / ALTER PROFILE ----------
+
+        private void ProfileBody(List<ProfileLimit> limits, GrantContainer? container, bool cascade)
+        {
+            if (limits.Count > 0)
+            {
+                Add(" LIMIT");
+                foreach (var l in limits) { Sp(); ProfileLimitText(l); }
+            }
+            ContainerClause(container);
+            if (cascade) Add(" CASCADE");
+        }
+
+        private void ProfileLimitText(ProfileLimit l)
+        {
+            Id(l.Name);
+            Sp();
+            if (l.Keyword != null) Add(l.Keyword switch { ProfileKeyword.Unlimited => "UNLIMITED", ProfileKeyword.Default => "DEFAULT", _ => "NULL" });
+            else if (l.Function.Count > 0) Name(l.Function);
+            else Expr(l.Value!);
+        }
+
+        // ---------- CREATE / ALTER TABLESPACE ----------
+
+        /// <summary>[name] [SIZE n] [REUSE] [AUTOEXTEND ...]: the CREATE and ADD forms. The file name is optional (Oracle Managed Files).</summary>
+        private void DatafileSpecText(DatafileSpec f)
+        {
+            bool first = true;
+            void Part(Action part) { if (!first) Sp(); first = false; part(); }
+            if (f.Path != null) Part(() => Expr(f.Path!));
+            if (f.Size != null) Part(() => { Add("SIZE "); Expr(f.Size!); });
+            if (f.Reuse) Part(() => Add("REUSE"));
+            if (f.Autoextend != null) Part(() => AutoextendText(f));
+        }
+
+        /// <summary>AUTOEXTEND ON|OFF [NEXT n] [MAXSIZE ...]; the caller writes the separator before it.</summary>
+        private void AutoextendText(DatafileSpec f)
+        {
+            Add(f.Autoextend == true ? "AUTOEXTEND ON" : "AUTOEXTEND OFF");
+            if (f.NextSize != null) { Add(" NEXT "); Expr(f.NextSize); }
+            if (f.MaxSizeUnlimited) Add(" MAXSIZE UNLIMITED");
+            else if (f.MaxSize != null) { Add(" MAXSIZE "); Expr(f.MaxSize); }
+        }
+
+        private void TablespaceActionText(TablespaceAction a)
+        {
+            switch (a.Kind)
+            {
+                case TablespaceActionKind.AddDatafile: Add("ADD DATAFILE"); FileSpecs(a.Files); break;
+                case TablespaceActionKind.AddTempfile: Add("ADD TEMPFILE"); FileSpecs(a.Files); break;
+                case TablespaceActionKind.Resize:
+                    if (a.Target!.Path != null) { FileTarget(a.Target!); Sp(); }
+                    Add("RESIZE "); Expr(a.Target!.Size!);
+                    break;
+                case TablespaceActionKind.Autoextend:
+                    if (a.Target!.Path != null) { FileTarget(a.Target!); Sp(); }
+                    AutoextendText(a.Target!);
+                    break;
+                case TablespaceActionKind.Online: if (a.Target != null) { FileTarget(a.Target); Add(" ONLINE"); } else Add("ONLINE"); break;
+                case TablespaceActionKind.Offline:
+                    if (a.Target != null) { FileTarget(a.Target); Add(" OFFLINE"); break; }
+                    Add("OFFLINE");
+                    if (a.Mode != null) Add(" " + a.Mode.Value.ToString().ToUpperInvariant());
+                    break;
+                case TablespaceActionKind.ReadOnly: Add("READ ONLY"); break;
+                case TablespaceActionKind.ReadWrite: Add("READ WRITE"); break;
+                case TablespaceActionKind.RenameTo: Add("RENAME TO "); Id(a.NewName!); break;
+                case TablespaceActionKind.Logging: Add("LOGGING"); break;
+                case TablespaceActionKind.NoLogging: Add("NOLOGGING"); break;
+                case TablespaceActionKind.BeginBackup: Add("BEGIN BACKUP"); break;
+                case TablespaceActionKind.EndBackup: Add("END BACKUP"); break;
+                default: SyntaxList(a.Syntax); break;
+            }
+        }
+
+        private void FileSpecs(List<DatafileSpec> files)
+        {
+            for (int i = 0; i < files.Count; i++)
+            {
+                if (i > 0) Add(",");
+                Sp();
+                DatafileSpecText(files[i]);
+            }
+        }
+
+        private void FileTarget(DatafileSpec f)
+        {
+            Add(f.Tempfile ? "TEMPFILE " : "DATAFILE ");
+            Expr(f.Path!);
+        }
+
+        private void TablespaceClauses(CreateTablespaceStatement ct)
+        {
+            if (ct.Files.Count > 0)
+            {
+                Add(ct.Files[0].Tempfile ? " TEMPFILE " : " DATAFILE ");
+                Sep(ct.Files, DatafileSpecText);
+            }
+            if (ct.Logging != null) Add(ct.Logging.Value ? (ct.ForceLogging ? " FORCE LOGGING" : " LOGGING") : " NOLOGGING");
+            if (ct.Online != null) Add(ct.Online.Value ? " ONLINE" : " OFFLINE");
+            if (ct.ExtentManagementLocal)
+            {
+                Add(" EXTENT MANAGEMENT LOCAL");
+                if (ct.ExtentPolicy == ExtentPolicy.Autoallocate) Add(" AUTOALLOCATE");
+                else if (ct.ExtentPolicy == ExtentPolicy.Uniform)
+                {
+                    Add(" UNIFORM");
+                    if (ct.UniformSize != null) { Add(" SIZE "); Expr(ct.UniformSize); }
+                }
+            }
+            if (ct.SegmentSpace != null) Add(ct.SegmentSpace == SegmentSpaceMode.Auto ? " SEGMENT SPACE MANAGEMENT AUTO" : " SEGMENT SPACE MANAGEMENT MANUAL");
+            if (ct.Encryption)
+            {
+                Add(" ENCRYPTION");
+                if (ct.EncryptionUsing != null) { Add(" USING "); Expr(ct.EncryptionUsing); }
+                if (ct.DefaultStorageEncrypt) Add(" DEFAULT STORAGE (ENCRYPT)");
+            }
+            if (ct.OtherClauses.Count > 0) { Sp(); SyntaxList(ct.OtherClauses); }
+        }
+
+        // ---------- AUDIT / NOAUDIT / AUDIT POLICY ----------
+
+        private void AuditStatementText(AuditStatement au)
+        {
+            Add(au.Noaudit ? "NOAUDIT" : "AUDIT");
+            if (au.Policy != null) { Add(" POLICY "); Id(au.Policy); }
+            else if (au.ContextNamespace != null)
+            {
+                Add(" CONTEXT NAMESPACE "); Id(au.ContextNamespace);
+                if (au.ContextAttributes.Count > 0) { Add(" ATTRIBUTES "); IdList(au.ContextAttributes); }
+            }
+            else if (au.Options.Count > 0) { Sp(); Sep(au.Options, AuditOptionText); }
+            if (au.On != null) { Add(" ON "); AuditObjectText(au.On); }
+            if (au.ByUsers.Count > 0) { Add(" BY "); IdList(au.ByUsers); }
+            if (au.WithRoles.Count > 0) { Add(au.GrantedRoles ? " BY USERS WITH GRANTED ROLES " : " BY USERS WITH ROLES "); IdList(au.WithRoles); }
+            if (au.ExceptUsers.Count > 0) { Add(" EXCEPT "); IdList(au.ExceptUsers); }
+            if (au.By != null) Add(au.By == AuditBy.Access ? " BY ACCESS" : " BY SESSION");
+            if (au.Successful != null) Add(au.Successful.Value ? " WHENEVER SUCCESSFUL" : " WHENEVER NOT SUCCESSFUL");
+        }
+
+        private void AuditOptionText(AuditOption o) => Add(o.Name);
+
+        private void AuditObjectText(AuditObject o)
+        {
+            if (o.Default) { Add("DEFAULT"); return; }
+            if (o.Directory) Add("DIRECTORY ");
+            Name(o.Name);
+        }
+
+        private void AuditPolicyListText(AuditPolicyList l, bool alter)
+        {
+            if (alter) Add(l.Drop ? "DROP " : "ADD ");
+            Add(l.Kind switch { AuditPolicyListKind.Privileges => "PRIVILEGES ", AuditPolicyListKind.Actions => "ACTIONS ", _ => "ROLES " });
+            if (l.Kind == AuditPolicyListKind.Roles) IdList(l.Roles);
+            else Sep(l.Items, AuditPolicyItemText);
+        }
+
+        private void AuditPolicyItemText(AuditPolicyItem it)
+        {
+            if (it.Component != null) { Add("COMPONENT="); Id(it.Component); if (it.Name.Length > 0) Sp(); }
+            Add(it.Name);
+            if (it.On != null) { Add(" ON "); AuditObjectText(it.On); }
+        }
+
+        private void AuditEvaluationText(Expression cond, AuditEvaluation ev)
+        {
+            Expr(cond);
+            Add(" EVALUATE PER " + ev.ToString().ToUpperInvariant());
+        }
+
+        // ---------- CREATE / ALTER USER ----------
+
+        /// <summary>Printed as typed, not through IdentifierCasing: passwords are case-sensitive even when unquoted.</summary>
+        private void Verbatim(Identifier i) => Raw(i.Quoted ? "\"" + i.Value.Replace("\"", "\"\"") + "\"" : i.Text ?? i.Value);
+
+        private void UserClauseText(UserClause c)
+        {
+            switch (c.Kind)
+            {
+                case UserClauseKind.IdentifiedBy:
+                    Add("IDENTIFIED BY "); Verbatim(c.Password!);
+                    if (c.ReplacePassword != null) { Add(" REPLACE "); Verbatim(c.ReplacePassword); }
+                    break;
+                case UserClauseKind.IdentifiedExternally: Add("IDENTIFIED EXTERNALLY"); ExternalNameText(c); break;
+                case UserClauseKind.IdentifiedGlobally: Add("IDENTIFIED GLOBALLY"); ExternalNameText(c); break;
+                case UserClauseKind.NoAuthentication: Add("NO AUTHENTICATION"); break;
+                case UserClauseKind.DefaultTablespace: Add("DEFAULT TABLESPACE "); Id(c.Tablespace!); break;
+                case UserClauseKind.TemporaryTablespace:
+                    if (c.Local) Add("LOCAL ");
+                    Add("TEMPORARY TABLESPACE "); Id(c.Tablespace!);
+                    break;
+                case UserClauseKind.Quota:
+                    Add("QUOTA ");
+                    if (c.Unlimited) Add("UNLIMITED"); else Expr(c.Quota!);
+                    Add(" ON "); Id(c.Tablespace!);
+                    break;
+                case UserClauseKind.Profile: Add("PROFILE "); Id(c.Profile!); break;
+                case UserClauseKind.PasswordExpire: Add("PASSWORD EXPIRE"); break;
+                case UserClauseKind.AccountLock: Add("ACCOUNT LOCK"); break;
+                case UserClauseKind.AccountUnlock: Add("ACCOUNT UNLOCK"); break;
+                case UserClauseKind.DefaultRole: Add("DEFAULT ROLE "); RoleSetText(c); break;
+                case UserClauseKind.Container: Add("CONTAINER = " + (c.Container == GrantContainer.All ? "ALL" : "CURRENT")); break;
+                case UserClauseKind.EnableEditions: Add("ENABLE EDITIONS"); if (c.Force) Add(" FORCE"); break;
+                case UserClauseKind.DisableEditions: Add("DISABLE EDITIONS"); break;
+                case UserClauseKind.ReadOnly: Add("READ ONLY"); break;
+                case UserClauseKind.ReadWrite: Add("READ WRITE"); break;
+                case UserClauseKind.GrantConnectThrough: Add("GRANT CONNECT THROUGH "); ProxyText(c, true); break;
+                case UserClauseKind.RevokeConnectThrough: Add("REVOKE CONNECT THROUGH "); ProxyText(c, false); break;
+                default: SyntaxList(c.Syntax); break;
+            }
+        }
+
+        private void ExternalNameText(UserClause c)
+        {
+            if (c.ExternalName != null) { Add(" AS "); Expr(c.ExternalName); }
+        }
+
+        private void RoleSetText(UserClause c)
+        {
+            switch (c.RoleSet)
+            {
+                case RoleSetKind.All:
+                    Add("ALL");
+                    if (c.ExceptRoles.Count > 0) { Add(" EXCEPT "); IdList(c.ExceptRoles); }
+                    break;
+                case RoleSetKind.None: Add("NONE"); break;
+                default: IdList(c.Roles); break;
+            }
+        }
+
+        private void ProxyText(UserClause c, bool grant)
+        {
+            if (c.EnterpriseUsers) Add("ENTERPRISE USERS"); else Id(c.Proxy!);
+            if (!grant) return;
+            if (c.RoleSet == RoleSetKind.None) Add(" WITH NO ROLES");
+            else if (c.RoleSet != null) { Add(" WITH ROLE "); RoleSetText(c); }
+            if (c.AuthenticationRequired) Add(" AUTHENTICATION REQUIRED");
         }
 
         private void Drop(DropStatement d)

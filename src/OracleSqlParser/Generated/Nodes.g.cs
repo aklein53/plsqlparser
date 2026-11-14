@@ -90,6 +90,63 @@ public partial class AdminStatement
     }
 }
 
+public partial class AlterAuditPolicyStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Lists is not null) foreach (var x in Lists) yield return x;
+        if (Condition is not null) yield return Condition;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Lists is not null) foreach (var x in Lists) x.Accept(visitor);
+        Condition?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "AlterAuditPolicyStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Lists, "AlterAuditPolicyStatement.Lists");
+        Condition = SqlNodeRewriter.RewriteOptional(rewriter, Condition, "AlterAuditPolicyStatement.Condition");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterAuditPolicyStatement();
+        CopySpan(this, c);
+        c.IfExists = IfExists;
+        c.Name = CloneChild(Name)!;
+        c.Lists = CloneList(Lists);
+        c.Condition = CloneChild(Condition);
+        c.Evaluate = Evaluate;
+        c.DropCondition = DropCondition;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterAuditPolicyStatement)other;
+        return IfExists == o.IfExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Lists, o.Lists, pending)
+            && Pair(Condition, o.Condition, pending)
+            && Evaluate == o.Evaluate
+            && DropCondition == o.DropCondition
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class AlterCompileStatement
 {
     /// <inheritdoc/>
@@ -477,6 +534,115 @@ public partial class AlterObjectStatement
     }
 }
 
+public partial class AlterProfileStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Limits is not null) foreach (var x in Limits) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Limits is not null) foreach (var x in Limits) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "AlterProfileStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Limits, "AlterProfileStatement.Limits");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterProfileStatement();
+        CopySpan(this, c);
+        c.IfExists = IfExists;
+        c.Name = CloneChild(Name)!;
+        c.Limits = CloneList(Limits);
+        c.Container = Container;
+        c.Cascade = Cascade;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterProfileStatement)other;
+        return IfExists == o.IfExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Limits, o.Limits, pending)
+            && Container == o.Container
+            && Cascade == o.Cascade
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class AlterRoleStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Password is not null) yield return Password;
+        if (Package is not null) foreach (var x in Package) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        Password?.Accept(visitor);
+        if (Package is not null) foreach (var x in Package) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "AlterRoleStatement.Name");
+        Password = SqlNodeRewriter.RewriteOptional(rewriter, Password, "AlterRoleStatement.Password");
+        SqlNodeRewriter.RewriteList(rewriter, Package, "AlterRoleStatement.Package");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterRoleStatement();
+        CopySpan(this, c);
+        c.IfExists = IfExists;
+        c.Name = CloneChild(Name)!;
+        c.Authentication = Authentication;
+        c.Password = CloneChild(Password);
+        c.Package = CloneList(Package);
+        c.Container = Container;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterRoleStatement)other;
+        return IfExists == o.IfExists
+            && Pair(Name, o.Name, pending)
+            && Authentication == o.Authentication
+            && Pair(Password, o.Password, pending)
+            && PairList(Package, o.Package, pending)
+            && Container == o.Container
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class AlterSequenceStatement
 {
     /// <inheritdoc/>
@@ -747,6 +913,54 @@ public partial class AlterTableStatement
     }
 }
 
+public partial class AlterTablespaceStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Actions is not null) foreach (var x in Actions) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Actions is not null) foreach (var x in Actions) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "AlterTablespaceStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Actions, "AlterTablespaceStatement.Actions");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterTablespaceStatement();
+        CopySpan(this, c);
+        c.IfExists = IfExists;
+        c.Name = CloneChild(Name)!;
+        c.Actions = CloneList(Actions);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterTablespaceStatement)other;
+        return IfExists == o.IfExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Actions, o.Actions, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class AlterTriggerStatement
 {
     /// <inheritdoc/>
@@ -791,6 +1005,54 @@ public partial class AlterTriggerStatement
         return PairList(Name, o.Name, pending)
             && Enable == o.Enable
             && Pair(RenameTo, o.RenameTo, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class AlterUserStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Clauses is not null) foreach (var x in Clauses) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Clauses is not null) foreach (var x in Clauses) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "AlterUserStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Clauses, "AlterUserStatement.Clauses");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterUserStatement();
+        CopySpan(this, c);
+        c.IfExists = IfExists;
+        c.Name = CloneChild(Name)!;
+        c.Clauses = CloneList(Clauses);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterUserStatement)other;
+        return IfExists == o.IfExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Clauses, o.Clauses, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -1071,6 +1333,249 @@ public partial class AtTimeZoneExpression
         return Pair(Value, o.Value, pending)
             && Local == o.Local
             && Pair(Zone, o.Zone, pending);
+    }
+}
+
+public partial class AuditObject
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AuditObject.Name");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AuditObject();
+        CopySpan(this, c);
+        c.Default = Default;
+        c.Directory = Directory;
+        c.Name = CloneList(Name);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AuditObject)other;
+        return Default == o.Default
+            && Directory == o.Directory
+            && PairList(Name, o.Name, pending);
+    }
+}
+
+public partial class AuditOption
+{
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AuditOption();
+        CopySpan(this, c);
+        c.Name = Name;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AuditOption)other;
+        return Name == o.Name;
+    }
+}
+
+public partial class AuditPolicyItem
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Component is not null) yield return Component;
+        if (On is not null) yield return On;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Component?.Accept(visitor);
+        On?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Component = SqlNodeRewriter.RewriteOptional(rewriter, Component, "AuditPolicyItem.Component");
+        On = SqlNodeRewriter.RewriteOptional(rewriter, On, "AuditPolicyItem.On");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AuditPolicyItem();
+        CopySpan(this, c);
+        c.Component = CloneChild(Component);
+        c.Name = Name;
+        c.On = CloneChild(On);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AuditPolicyItem)other;
+        return Pair(Component, o.Component, pending)
+            && Name == o.Name
+            && Pair(On, o.On, pending);
+    }
+}
+
+public partial class AuditPolicyList
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Items is not null) foreach (var x in Items) yield return x;
+        if (Roles is not null) foreach (var x in Roles) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Items is not null) foreach (var x in Items) x.Accept(visitor);
+        if (Roles is not null) foreach (var x in Roles) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Items, "AuditPolicyList.Items");
+        SqlNodeRewriter.RewriteList(rewriter, Roles, "AuditPolicyList.Roles");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AuditPolicyList();
+        CopySpan(this, c);
+        c.Kind = Kind;
+        c.Drop = Drop;
+        c.Items = CloneList(Items);
+        c.Roles = CloneList(Roles);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AuditPolicyList)other;
+        return Kind == o.Kind
+            && Drop == o.Drop
+            && PairList(Items, o.Items, pending)
+            && PairList(Roles, o.Roles, pending);
+    }
+}
+
+public partial class AuditStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Policy is not null) yield return Policy;
+        if (ContextNamespace is not null) yield return ContextNamespace;
+        if (ContextAttributes is not null) foreach (var x in ContextAttributes) yield return x;
+        if (Options is not null) foreach (var x in Options) yield return x;
+        if (On is not null) yield return On;
+        if (ByUsers is not null) foreach (var x in ByUsers) yield return x;
+        if (WithRoles is not null) foreach (var x in WithRoles) yield return x;
+        if (ExceptUsers is not null) foreach (var x in ExceptUsers) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Policy?.Accept(visitor);
+        ContextNamespace?.Accept(visitor);
+        if (ContextAttributes is not null) foreach (var x in ContextAttributes) x.Accept(visitor);
+        if (Options is not null) foreach (var x in Options) x.Accept(visitor);
+        On?.Accept(visitor);
+        if (ByUsers is not null) foreach (var x in ByUsers) x.Accept(visitor);
+        if (WithRoles is not null) foreach (var x in WithRoles) x.Accept(visitor);
+        if (ExceptUsers is not null) foreach (var x in ExceptUsers) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Policy = SqlNodeRewriter.RewriteOptional(rewriter, Policy, "AuditStatement.Policy");
+        ContextNamespace = SqlNodeRewriter.RewriteOptional(rewriter, ContextNamespace, "AuditStatement.ContextNamespace");
+        SqlNodeRewriter.RewriteList(rewriter, ContextAttributes, "AuditStatement.ContextAttributes");
+        SqlNodeRewriter.RewriteList(rewriter, Options, "AuditStatement.Options");
+        On = SqlNodeRewriter.RewriteOptional(rewriter, On, "AuditStatement.On");
+        SqlNodeRewriter.RewriteList(rewriter, ByUsers, "AuditStatement.ByUsers");
+        SqlNodeRewriter.RewriteList(rewriter, WithRoles, "AuditStatement.WithRoles");
+        SqlNodeRewriter.RewriteList(rewriter, ExceptUsers, "AuditStatement.ExceptUsers");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AuditStatement();
+        CopySpan(this, c);
+        c.Noaudit = Noaudit;
+        c.Policy = CloneChild(Policy);
+        c.ContextNamespace = CloneChild(ContextNamespace);
+        c.ContextAttributes = CloneList(ContextAttributes);
+        c.Options = CloneList(Options);
+        c.On = CloneChild(On);
+        c.ByUsers = CloneList(ByUsers);
+        c.WithRoles = CloneList(WithRoles);
+        c.GrantedRoles = GrantedRoles;
+        c.ExceptUsers = CloneList(ExceptUsers);
+        c.By = By;
+        c.Successful = Successful;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AuditStatement)other;
+        return Noaudit == o.Noaudit
+            && Pair(Policy, o.Policy, pending)
+            && Pair(ContextNamespace, o.ContextNamespace, pending)
+            && PairList(ContextAttributes, o.ContextAttributes, pending)
+            && PairList(Options, o.Options, pending)
+            && Pair(On, o.On, pending)
+            && PairList(ByUsers, o.ByUsers, pending)
+            && PairList(WithRoles, o.WithRoles, pending)
+            && GrantedRoles == o.GrantedRoles
+            && PairList(ExceptUsers, o.ExceptUsers, pending)
+            && By == o.By
+            && Successful == o.Successful
+            && SameStrings(Labels, o.Labels);
     }
 }
 
@@ -2580,6 +3085,252 @@ public partial class ContinueStatement
     }
 }
 
+public partial class CreateAuditPolicyStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Lists is not null) foreach (var x in Lists) yield return x;
+        if (Condition is not null) yield return Condition;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Lists is not null) foreach (var x in Lists) x.Accept(visitor);
+        Condition?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateAuditPolicyStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Lists, "CreateAuditPolicyStatement.Lists");
+        Condition = SqlNodeRewriter.RewriteOptional(rewriter, Condition, "CreateAuditPolicyStatement.Condition");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateAuditPolicyStatement();
+        CopySpan(this, c);
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Lists = CloneList(Lists);
+        c.Condition = CloneChild(Condition);
+        c.Evaluate = Evaluate;
+        c.OnlyToplevel = OnlyToplevel;
+        c.Container = Container;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateAuditPolicyStatement)other;
+        return IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Lists, o.Lists, pending)
+            && Pair(Condition, o.Condition, pending)
+            && Evaluate == o.Evaluate
+            && OnlyToplevel == o.OnlyToplevel
+            && Container == o.Container
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateContextStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Package is not null) foreach (var x in Package) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Package is not null) foreach (var x in Package) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateContextStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Package, "CreateContextStatement.Package");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateContextStatement();
+        CopySpan(this, c);
+        c.OrReplace = OrReplace;
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Package = CloneList(Package);
+        c.Initialized = Initialized;
+        c.AccessedGlobally = AccessedGlobally;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateContextStatement)other;
+        return OrReplace == o.OrReplace
+            && IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Package, o.Package, pending)
+            && Initialized == o.Initialized
+            && AccessedGlobally == o.AccessedGlobally
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateDatabaseLinkStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (ConnectUser is not null) yield return ConnectUser;
+        if (ConnectPassword is not null) yield return ConnectPassword;
+        if (AuthenticatedUser is not null) yield return AuthenticatedUser;
+        if (AuthenticatedPassword is not null) yield return AuthenticatedPassword;
+        if (Using is not null) yield return Using;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        ConnectUser?.Accept(visitor);
+        ConnectPassword?.Accept(visitor);
+        AuthenticatedUser?.Accept(visitor);
+        AuthenticatedPassword?.Accept(visitor);
+        Using?.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "CreateDatabaseLinkStatement.Name");
+        ConnectUser = SqlNodeRewriter.RewriteOptional(rewriter, ConnectUser, "CreateDatabaseLinkStatement.ConnectUser");
+        ConnectPassword = SqlNodeRewriter.RewriteOptional(rewriter, ConnectPassword, "CreateDatabaseLinkStatement.ConnectPassword");
+        AuthenticatedUser = SqlNodeRewriter.RewriteOptional(rewriter, AuthenticatedUser, "CreateDatabaseLinkStatement.AuthenticatedUser");
+        AuthenticatedPassword = SqlNodeRewriter.RewriteOptional(rewriter, AuthenticatedPassword, "CreateDatabaseLinkStatement.AuthenticatedPassword");
+        Using = SqlNodeRewriter.RewriteOptional(rewriter, Using, "CreateDatabaseLinkStatement.Using");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreateDatabaseLinkStatement.OtherClauses");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateDatabaseLinkStatement();
+        CopySpan(this, c);
+        c.OrReplace = OrReplace;
+        c.IfNotExists = IfNotExists;
+        c.Public = Public;
+        c.Shared = Shared;
+        c.Name = CloneList(Name);
+        c.ConnectUser = CloneChild(ConnectUser);
+        c.ConnectPassword = CloneChild(ConnectPassword);
+        c.CurrentUser = CurrentUser;
+        c.AuthenticatedUser = CloneChild(AuthenticatedUser);
+        c.AuthenticatedPassword = CloneChild(AuthenticatedPassword);
+        c.Using = CloneChild(Using);
+        c.OtherClauses = CloneList(OtherClauses);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateDatabaseLinkStatement)other;
+        return OrReplace == o.OrReplace
+            && IfNotExists == o.IfNotExists
+            && Public == o.Public
+            && Shared == o.Shared
+            && PairList(Name, o.Name, pending)
+            && Pair(ConnectUser, o.ConnectUser, pending)
+            && Pair(ConnectPassword, o.ConnectPassword, pending)
+            && CurrentUser == o.CurrentUser
+            && Pair(AuthenticatedUser, o.AuthenticatedUser, pending)
+            && Pair(AuthenticatedPassword, o.AuthenticatedPassword, pending)
+            && Pair(Using, o.Using, pending)
+            && PairList(OtherClauses, o.OtherClauses, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateDirectoryStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Path is not null) yield return Path;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        Path?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateDirectoryStatement.Name");
+        Path = SqlNodeRewriter.RewriteRequired(rewriter, Path, "CreateDirectoryStatement.Path");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateDirectoryStatement();
+        CopySpan(this, c);
+        c.OrReplace = OrReplace;
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Sharing = Sharing;
+        c.Path = CloneChild(Path)!;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateDirectoryStatement)other;
+        return OrReplace == o.OrReplace
+            && IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && Sharing == o.Sharing
+            && Pair(Path, o.Path, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class CreateDomainStatement
 {
     /// <inheritdoc/>
@@ -3079,6 +3830,56 @@ public partial class CreatePackageStatement
     }
 }
 
+public partial class CreateProfileStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Limits is not null) foreach (var x in Limits) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Limits is not null) foreach (var x in Limits) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateProfileStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Limits, "CreateProfileStatement.Limits");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateProfileStatement();
+        CopySpan(this, c);
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Limits = CloneList(Limits);
+        c.Container = Container;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateProfileStatement)other;
+        return IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Limits, o.Limits, pending)
+            && Container == o.Container
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class CreateProgramStatement
 {
     /// <inheritdoc/>
@@ -3178,6 +3979,63 @@ public partial class CreatePropertyGraphStatement
             && PairList(VertexTables, o.VertexTables, pending)
             && PairList(EdgeTables, o.EdgeTables, pending)
             && PairList(OtherClauses, o.OtherClauses, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateRoleStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Password is not null) yield return Password;
+        if (Package is not null) foreach (var x in Package) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        Password?.Accept(visitor);
+        if (Package is not null) foreach (var x in Package) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateRoleStatement.Name");
+        Password = SqlNodeRewriter.RewriteOptional(rewriter, Password, "CreateRoleStatement.Password");
+        SqlNodeRewriter.RewriteList(rewriter, Package, "CreateRoleStatement.Package");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateRoleStatement();
+        CopySpan(this, c);
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Authentication = Authentication;
+        c.Password = CloneChild(Password);
+        c.Package = CloneList(Package);
+        c.Container = Container;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateRoleStatement)other;
+        return IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && Authentication == o.Authentication
+            && Pair(Password, o.Password, pending)
+            && PairList(Package, o.Package, pending)
+            && Container == o.Container
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -3371,6 +4229,89 @@ public partial class CreateTableStatement
             && OnCommit == o.OnCommit
             && PairList(Attributes, o.Attributes, pending)
             && Pair(AsQuery, o.AsQuery, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateTablespaceStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Files is not null) foreach (var x in Files) yield return x;
+        if (UniformSize is not null) yield return UniformSize;
+        if (EncryptionUsing is not null) yield return EncryptionUsing;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Files is not null) foreach (var x in Files) x.Accept(visitor);
+        UniformSize?.Accept(visitor);
+        EncryptionUsing?.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateTablespaceStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Files, "CreateTablespaceStatement.Files");
+        UniformSize = SqlNodeRewriter.RewriteOptional(rewriter, UniformSize, "CreateTablespaceStatement.UniformSize");
+        EncryptionUsing = SqlNodeRewriter.RewriteOptional(rewriter, EncryptionUsing, "CreateTablespaceStatement.EncryptionUsing");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreateTablespaceStatement.OtherClauses");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateTablespaceStatement();
+        CopySpan(this, c);
+        c.Bigfile = Bigfile;
+        c.Kind = Kind;
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Files = CloneList(Files);
+        c.Logging = Logging;
+        c.ForceLogging = ForceLogging;
+        c.Online = Online;
+        c.ExtentManagementLocal = ExtentManagementLocal;
+        c.ExtentPolicy = ExtentPolicy;
+        c.UniformSize = CloneChild(UniformSize);
+        c.SegmentSpace = SegmentSpace;
+        c.Encryption = Encryption;
+        c.EncryptionUsing = CloneChild(EncryptionUsing);
+        c.DefaultStorageEncrypt = DefaultStorageEncrypt;
+        c.OtherClauses = CloneList(OtherClauses);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateTablespaceStatement)other;
+        return Bigfile == o.Bigfile
+            && Kind == o.Kind
+            && IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Files, o.Files, pending)
+            && Logging == o.Logging
+            && ForceLogging == o.ForceLogging
+            && Online == o.Online
+            && ExtentManagementLocal == o.ExtentManagementLocal
+            && ExtentPolicy == o.ExtentPolicy
+            && Pair(UniformSize, o.UniformSize, pending)
+            && SegmentSpace == o.SegmentSpace
+            && Encryption == o.Encryption
+            && Pair(EncryptionUsing, o.EncryptionUsing, pending)
+            && DefaultStorageEncrypt == o.DefaultStorageEncrypt
+            && PairList(OtherClauses, o.OtherClauses, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -3620,6 +4561,54 @@ public partial class CreateTypeStatement
             && Pair(ElementType, o.ElementType, pending)
             && Pair(Limit, o.Limit, pending)
             && PairList(SuperType, o.SuperType, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateUserStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Clauses is not null) foreach (var x in Clauses) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Clauses is not null) foreach (var x in Clauses) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateUserStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Clauses, "CreateUserStatement.Clauses");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateUserStatement();
+        CopySpan(this, c);
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Clauses = CloneList(Clauses);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateUserStatement)other;
+        return IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Clauses, o.Clauses, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -3991,6 +4980,68 @@ public partial class DataType
             && PairList(Arguments, o.Arguments, pending)
             && Semantics == o.Semantics
             && Attribute == o.Attribute;
+    }
+}
+
+public partial class DatafileSpec
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Path is not null) yield return Path;
+        if (Size is not null) yield return Size;
+        if (NextSize is not null) yield return NextSize;
+        if (MaxSize is not null) yield return MaxSize;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Path?.Accept(visitor);
+        Size?.Accept(visitor);
+        NextSize?.Accept(visitor);
+        MaxSize?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Path = SqlNodeRewriter.RewriteOptional(rewriter, Path, "DatafileSpec.Path");
+        Size = SqlNodeRewriter.RewriteOptional(rewriter, Size, "DatafileSpec.Size");
+        NextSize = SqlNodeRewriter.RewriteOptional(rewriter, NextSize, "DatafileSpec.NextSize");
+        MaxSize = SqlNodeRewriter.RewriteOptional(rewriter, MaxSize, "DatafileSpec.MaxSize");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new DatafileSpec();
+        CopySpan(this, c);
+        c.Tempfile = Tempfile;
+        c.Path = CloneChild(Path);
+        c.Size = CloneChild(Size);
+        c.Reuse = Reuse;
+        c.Autoextend = Autoextend;
+        c.NextSize = CloneChild(NextSize);
+        c.MaxSize = CloneChild(MaxSize);
+        c.MaxSizeUnlimited = MaxSizeUnlimited;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (DatafileSpec)other;
+        return Tempfile == o.Tempfile
+            && Pair(Path, o.Path, pending)
+            && Pair(Size, o.Size, pending)
+            && Reuse == o.Reuse
+            && Autoextend == o.Autoextend
+            && Pair(NextSize, o.NextSize, pending)
+            && Pair(MaxSize, o.MaxSize, pending)
+            && MaxSizeUnlimited == o.MaxSizeUnlimited;
     }
 }
 
@@ -10005,6 +11056,57 @@ public partial class ProcedureCallStatement
     }
 }
 
+public partial class ProfileLimit
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Value is not null) yield return Value;
+        if (Function is not null) foreach (var x in Function) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        Value?.Accept(visitor);
+        if (Function is not null) foreach (var x in Function) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "ProfileLimit.Name");
+        Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "ProfileLimit.Value");
+        SqlNodeRewriter.RewriteList(rewriter, Function, "ProfileLimit.Function");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ProfileLimit();
+        CopySpan(this, c);
+        c.Name = CloneChild(Name)!;
+        c.Value = CloneChild(Value);
+        c.Keyword = Keyword;
+        c.Function = CloneList(Function);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ProfileLimit)other;
+        return Pair(Name, o.Name, pending)
+            && Pair(Value, o.Value, pending)
+            && Keyword == o.Keyword
+            && PairList(Function, o.Function, pending);
+    }
+}
+
 public partial class ProgramOptions
 {
     /// <inheritdoc/>
@@ -12206,6 +13308,64 @@ public partial class TableFunction
     }
 }
 
+public partial class TablespaceAction
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Files is not null) foreach (var x in Files) yield return x;
+        if (Target is not null) yield return Target;
+        if (NewName is not null) yield return NewName;
+        if (Syntax is not null) foreach (var x in Syntax) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Files is not null) foreach (var x in Files) x.Accept(visitor);
+        Target?.Accept(visitor);
+        NewName?.Accept(visitor);
+        if (Syntax is not null) foreach (var x in Syntax) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Files, "TablespaceAction.Files");
+        Target = SqlNodeRewriter.RewriteOptional(rewriter, Target, "TablespaceAction.Target");
+        NewName = SqlNodeRewriter.RewriteOptional(rewriter, NewName, "TablespaceAction.NewName");
+        SqlNodeRewriter.RewriteList(rewriter, Syntax, "TablespaceAction.Syntax");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new TablespaceAction();
+        CopySpan(this, c);
+        c.Kind = Kind;
+        c.Files = CloneList(Files);
+        c.Target = CloneChild(Target);
+        c.Mode = Mode;
+        c.NewName = CloneChild(NewName);
+        c.Syntax = CloneList(Syntax);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (TablespaceAction)other;
+        return Kind == o.Kind
+            && PairList(Files, o.Files, pending)
+            && Pair(Target, o.Target, pending)
+            && Mode == o.Mode
+            && Pair(NewName, o.NewName, pending)
+            && PairList(Syntax, o.Syntax, pending);
+    }
+}
+
 public partial class TablespaceAttribute
 {
     /// <inheritdoc/>
@@ -12652,6 +13812,106 @@ public partial class UpdateStatement
             && PairList(ReturningInto, o.ReturningInto, pending)
             && Pair(ErrorLogging, o.ErrorLogging, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class UserClause
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Password is not null) yield return Password;
+        if (ReplacePassword is not null) yield return ReplacePassword;
+        if (ExternalName is not null) yield return ExternalName;
+        if (Tablespace is not null) yield return Tablespace;
+        if (Quota is not null) yield return Quota;
+        if (Profile is not null) yield return Profile;
+        if (Proxy is not null) yield return Proxy;
+        if (Roles is not null) foreach (var x in Roles) yield return x;
+        if (ExceptRoles is not null) foreach (var x in ExceptRoles) yield return x;
+        if (Syntax is not null) foreach (var x in Syntax) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Password?.Accept(visitor);
+        ReplacePassword?.Accept(visitor);
+        ExternalName?.Accept(visitor);
+        Tablespace?.Accept(visitor);
+        Quota?.Accept(visitor);
+        Profile?.Accept(visitor);
+        Proxy?.Accept(visitor);
+        if (Roles is not null) foreach (var x in Roles) x.Accept(visitor);
+        if (ExceptRoles is not null) foreach (var x in ExceptRoles) x.Accept(visitor);
+        if (Syntax is not null) foreach (var x in Syntax) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Password = SqlNodeRewriter.RewriteOptional(rewriter, Password, "UserClause.Password");
+        ReplacePassword = SqlNodeRewriter.RewriteOptional(rewriter, ReplacePassword, "UserClause.ReplacePassword");
+        ExternalName = SqlNodeRewriter.RewriteOptional(rewriter, ExternalName, "UserClause.ExternalName");
+        Tablespace = SqlNodeRewriter.RewriteOptional(rewriter, Tablespace, "UserClause.Tablespace");
+        Quota = SqlNodeRewriter.RewriteOptional(rewriter, Quota, "UserClause.Quota");
+        Profile = SqlNodeRewriter.RewriteOptional(rewriter, Profile, "UserClause.Profile");
+        Proxy = SqlNodeRewriter.RewriteOptional(rewriter, Proxy, "UserClause.Proxy");
+        SqlNodeRewriter.RewriteList(rewriter, Roles, "UserClause.Roles");
+        SqlNodeRewriter.RewriteList(rewriter, ExceptRoles, "UserClause.ExceptRoles");
+        SqlNodeRewriter.RewriteList(rewriter, Syntax, "UserClause.Syntax");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new UserClause();
+        CopySpan(this, c);
+        c.Kind = Kind;
+        c.Password = CloneChild(Password);
+        c.ReplacePassword = CloneChild(ReplacePassword);
+        c.ExternalName = CloneChild(ExternalName);
+        c.Local = Local;
+        c.Tablespace = CloneChild(Tablespace);
+        c.Quota = CloneChild(Quota);
+        c.Unlimited = Unlimited;
+        c.Profile = CloneChild(Profile);
+        c.Proxy = CloneChild(Proxy);
+        c.EnterpriseUsers = EnterpriseUsers;
+        c.RoleSet = RoleSet;
+        c.Roles = CloneList(Roles);
+        c.ExceptRoles = CloneList(ExceptRoles);
+        c.AuthenticationRequired = AuthenticationRequired;
+        c.Container = Container;
+        c.Force = Force;
+        c.Syntax = CloneList(Syntax);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (UserClause)other;
+        return Kind == o.Kind
+            && Pair(Password, o.Password, pending)
+            && Pair(ReplacePassword, o.ReplacePassword, pending)
+            && Pair(ExternalName, o.ExternalName, pending)
+            && Local == o.Local
+            && Pair(Tablespace, o.Tablespace, pending)
+            && Pair(Quota, o.Quota, pending)
+            && Unlimited == o.Unlimited
+            && Pair(Profile, o.Profile, pending)
+            && Pair(Proxy, o.Proxy, pending)
+            && EnterpriseUsers == o.EnterpriseUsers
+            && RoleSet == o.RoleSet
+            && PairList(Roles, o.Roles, pending)
+            && PairList(ExceptRoles, o.ExceptRoles, pending)
+            && AuthenticationRequired == o.AuthenticationRequired
+            && Container == o.Container
+            && Force == o.Force
+            && PairList(Syntax, o.Syntax, pending);
     }
 }
 

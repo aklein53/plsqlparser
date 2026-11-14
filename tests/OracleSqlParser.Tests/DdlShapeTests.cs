@@ -287,18 +287,113 @@ public class DdlShapeTests
     public void AlterTablePartitionMaintenance(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
-    [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateObjectStatement kind=User name=[BOB] body=[(WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=PW)])")]
-    [InlineData("CREATE ROLE r", "(CreateObjectStatement kind=Role name=[R])")]
-    [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'",
-        "(CreateObjectStatement kind=DatabaseLink name=[L] body=[(WordItem value=CONNECT) (WordItem value=TO) (WordItem value=U) (WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=P) (WordItem value=USING) (LiteralItem kind=String value=tns)])")]
-    [InlineData("CREATE OR REPLACE PUBLIC DATABASE LINK l USING 'x'", "(CreateObjectStatement kind=DatabaseLink orReplace public name=[L] body=[(WordItem value=USING) (LiteralItem kind=String value=x)])")]
-    [InlineData("CREATE DIRECTORY d AS '/tmp'", "(CreateObjectStatement kind=Directory name=[D] body=[(WordItem value=AS) (LiteralItem kind=String value=/tmp)])")]
-    [InlineData("CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M", "(CreateObjectStatement kind=Tablespace name=[TS] body=[(WordItem value=DATAFILE) (LiteralItem kind=String value=f.dbf) (WordItem value=SIZE) (LiteralItem kind=Number value=10M)])")]
+    [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateUserStatement name=BOB clauses=[(UserClause kind=IdentifiedBy password=PW)])")]
+    [InlineData("CREATE ROLE r", "(CreateRoleStatement name=R)")]
+    [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'", "(CreateDatabaseLinkStatement name=[L] connectUser=U connectPassword=P using='tns')")]
+    [InlineData("CREATE OR REPLACE PUBLIC DATABASE LINK l USING 'x'", "(CreateDatabaseLinkStatement orReplace public name=[L] using='x')")]
+    [InlineData("CREATE DIRECTORY d AS '/tmp'", "(CreateDirectoryStatement name=D path='/tmp')")]
+    [InlineData("CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M", "(CreateTablespaceStatement name=TS files=[(DatafileSpec path='f.dbf' size=10M)])")]
     [InlineData("CREATE JSON RELATIONAL DUALITY VIEW dv AS SELECT 1", "(CreateObjectStatement kind=JsonRelationalDualityView name=[DV] body=[(WordItem value=AS) (WordItem value=SELECT) (LiteralItem kind=Number value=1)])")]
     [InlineData("CREATE MATERIALIZED VIEW LOG ON t WITH PRIMARY KEY", "(CreateObjectStatement kind=MaterializedViewLog body=[(WordItem value=ON) (WordItem value=T) (WordItem value=WITH) (WordItem value=PRIMARY) (WordItem value=KEY)])")]
     [InlineData("ALTER SYSTEM FLUSH SHARED_POOL", "(AlterObjectStatement kind=System body=[(WordItem value=FLUSH) (WordItem value=SHARED_POOL)])")]
-    [InlineData("ALTER USER u ACCOUNT LOCK", "(AlterObjectStatement kind=User name=[U] body=[(WordItem value=ACCOUNT) (WordItem value=LOCK)])")]
     public void GenericObjectDdl(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("CREATE USER IF NOT EXISTS app IDENTIFIED BY \"Pw 1\" DEFAULT TABLESPACE users TEMPORARY TABLESPACE temp QUOTA UNLIMITED ON users PROFILE p PASSWORD EXPIRE ACCOUNT UNLOCK CONTAINER = ALL",
+        "(CreateUserStatement ifNotExists name=APP clauses=[(UserClause kind=IdentifiedBy password=\"Pw 1\") (UserClause kind=DefaultTablespace tablespace=USERS) (UserClause kind=TemporaryTablespace tablespace=TEMP) (UserClause kind=Quota tablespace=USERS unlimited) (UserClause kind=Profile profile=P) (UserClause kind=PasswordExpire) (UserClause kind=AccountUnlock) (UserClause kind=Container container=All)])")]
+    [InlineData("ALTER USER u IDENTIFIED BY pw QUOTA 100M ON data DEFAULT ROLE r1, r2 ENABLE EDITIONS FORCE",
+        "(AlterUserStatement name=U clauses=[(UserClause kind=IdentifiedBy password=PW) (UserClause kind=Quota tablespace=DATA quota=100M) (UserClause kind=DefaultRole roleSet=Roles roles=[R1 R2]) (UserClause kind=EnableEditions force)])")]
+    [InlineData("ALTER USER u DEFAULT ROLE ALL EXCEPT r1 TEMPORARY TABLESPACE temp",
+        "(AlterUserStatement name=U clauses=[(UserClause kind=DefaultRole roleSet=All exceptRoles=[R1]) (UserClause kind=TemporaryTablespace tablespace=TEMP)])")]
+    [InlineData("ALTER USER u GRANT CONNECT THROUGH sh WITH ROLE warehouse_user AUTHENTICATION REQUIRED",
+        "(AlterUserStatement name=U clauses=[(UserClause kind=GrantConnectThrough proxy=SH roleSet=Roles roles=[WAREHOUSE_USER] authenticationRequired)])")]
+    [InlineData("ALTER USER u GRANT CONNECT THROUGH sh WITH NO ROLES",
+        "(AlterUserStatement name=U clauses=[(UserClause kind=GrantConnectThrough proxy=SH roleSet=None)])")]
+    [InlineData("ALTER USER u REVOKE CONNECT THROUGH ENTERPRISE USERS",
+        "(AlterUserStatement name=U clauses=[(UserClause kind=RevokeConnectThrough enterpriseUsers)])")]
+    [InlineData("CREATE USER x IDENTIFIED EXTERNALLY AS 'CN=x'",
+        "(CreateUserStatement name=X clauses=[(UserClause kind=IdentifiedExternally externalName='CN=x')])")]
+    [InlineData("ALTER USER u ACCOUNT LOCK", "(AlterUserStatement name=U clauses=[(UserClause kind=AccountLock)])")]
+    [InlineData("ALTER USER u READ ONLY", "(AlterUserStatement name=U clauses=[(UserClause kind=ReadOnly)])")]
+    public void CreateAlterUser(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("CREATE ROLE IF NOT EXISTS r NOT IDENTIFIED CONTAINER = ALL", "(CreateRoleStatement ifNotExists name=R authentication=NotIdentified container=All)")]
+    [InlineData("CREATE ROLE r IDENTIFIED BY \"Pw\"", "(CreateRoleStatement name=R authentication=Password password=\"Pw\")")]
+    [InlineData("ALTER ROLE r IDENTIFIED USING sec.pkg", "(AlterRoleStatement name=R authentication=Package package=[SEC PKG])")]
+    [InlineData("ALTER ROLE r IDENTIFIED EXTERNALLY", "(AlterRoleStatement name=R authentication=External)")]
+    [InlineData("ALTER ROLE r IDENTIFIED GLOBALLY CONTAINER = CURRENT", "(AlterRoleStatement name=R authentication=Global container=Current)")]
+    public void CreateAlterRole(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("CREATE PROFILE app_p LIMIT SESSIONS_PER_USER 10 CPU_PER_SESSION UNLIMITED FAILED_LOGIN_ATTEMPTS DEFAULT PASSWORD_LIFE_TIME 60/24 PASSWORD_VERIFY_FUNCTION sec.verify_fn",
+        "(CreateProfileStatement name=APP_P limits=[(ProfileLimit name=SESSIONS_PER_USER value=10) (ProfileLimit name=CPU_PER_SESSION keyword=Unlimited) (ProfileLimit name=FAILED_LOGIN_ATTEMPTS keyword=Default) (ProfileLimit name=PASSWORD_LIFE_TIME value=(/ 60 24)) (ProfileLimit name=PASSWORD_VERIFY_FUNCTION function=[SEC VERIFY_FN])])")]
+    [InlineData("CREATE PROFILE IF NOT EXISTS p", "(CreateProfileStatement ifNotExists name=P)")]
+    [InlineData("ALTER PROFILE p LIMIT PASSWORD_LIFE_TIME UNLIMITED CONTAINER = ALL CASCADE",
+        "(AlterProfileStatement name=P limits=[(ProfileLimit name=PASSWORD_LIFE_TIME keyword=Unlimited)] container=All cascade)")]
+    [InlineData("ALTER PROFILE p LIMIT PASSWORD_VERIFY_FUNCTION NULL", "(AlterProfileStatement name=P limits=[(ProfileLimit name=PASSWORD_VERIFY_FUNCTION keyword=Null)])")]
+    public void CreateAlterProfile(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("CREATE OR REPLACE DIRECTORY d SHARING = NONE AS 'p'", "(CreateDirectoryStatement orReplace name=D sharing=None path='p')")]
+    [InlineData("CREATE SHARED PUBLIC DATABASE LINK sl CONNECT TO CURRENT_USER AUTHENTICATED BY au IDENTIFIED BY \"Au pw\" USING 'tns'",
+        "(CreateDatabaseLinkStatement public shared name=[SL] currentUser authenticatedUser=AU authenticatedPassword=\"Au pw\" using='tns')")]
+    [InlineData("CREATE OR REPLACE CONTEXT ns USING sec.pkg INITIALIZED GLOBALLY ACCESSED GLOBALLY",
+        "(CreateContextStatement orReplace name=NS package=[SEC PKG] initialized=Globally accessedGlobally)")]
+    [InlineData("CREATE CONTEXT ctx USING p INITIALIZED EXTERNALLY", "(CreateContextStatement name=CTX package=[P] initialized=Externally)")]
+    public void CreateDirectoryDbLinkContext(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("CREATE BIGFILE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M AUTOEXTEND ON NEXT 1M MAXSIZE UNLIMITED NOLOGGING ONLINE EXTENT MANAGEMENT LOCAL UNIFORM SIZE 1M SEGMENT SPACE MANAGEMENT AUTO",
+        "(CreateTablespaceStatement bigfile=true name=TS files=[(DatafileSpec path='f.dbf' size=10M autoextend=true nextSize=1M maxSizeUnlimited)] logging=false online=true extentManagementLocal extentPolicy=Uniform uniformSize=1M segmentSpace=Auto)")]
+    [InlineData("CREATE TEMPORARY TABLESPACE tmp TEMPFILE 't.dbf' SIZE 5M REUSE", "(CreateTablespaceStatement kind=Temporary name=TMP files=[(DatafileSpec tempfile path='t.dbf' size=5M reuse)])")]
+    [InlineData("CREATE UNDO TABLESPACE u DATAFILE 'u.dbf' SIZE 1G AUTOEXTEND OFF", "(CreateTablespaceStatement kind=Undo name=U files=[(DatafileSpec path='u.dbf' size=1G autoextend=false)])")]
+    [InlineData("CREATE SMALLFILE TABLESPACE t2 ENCRYPTION USING 'AES256' DEFAULT STORAGE (ENCRYPT) BLOCKSIZE 8K",
+        "(CreateTablespaceStatement bigfile=false name=T2 encryption encryptionUsing='AES256' defaultStorageEncrypt otherClauses=[(WordItem value=BLOCKSIZE) (LiteralItem kind=Number value=8K)])")]
+    [InlineData("ALTER TABLESPACE ts ADD DATAFILE 'a.dbf' SIZE 1M, 'b.dbf' SIZE 2M",
+        "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=AddDatafile files=[(DatafileSpec path='a.dbf' size=1M) (DatafileSpec path='b.dbf' size=2M)])])")]
+    [InlineData("ALTER TABLESPACE ts DATAFILE 'a.dbf' RESIZE 200M", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=Resize target=(DatafileSpec path='a.dbf' size=200M))])")]
+    [InlineData("ALTER TABLESPACE ts DATAFILE 'a.dbf' AUTOEXTEND ON NEXT 10M MAXSIZE 4G",
+        "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=Autoextend target=(DatafileSpec path='a.dbf' autoextend=true nextSize=10M maxSize=4G))])")]
+    [InlineData("ALTER TABLESPACE ts OFFLINE IMMEDIATE", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=Offline mode=Immediate)])")]
+    [InlineData("ALTER TABLESPACE ts READ ONLY BEGIN BACKUP", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=ReadOnly) (TablespaceAction kind=BeginBackup)])")]
+    [InlineData("ALTER TABLESPACE ts RENAME TO ts2", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=RenameTo newName=TS2)])")]
+    public void CreateAlterTablespace(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("AUDIT SELECT ON emp", "(AuditStatement options=[(AuditOption name=SELECT)] on=(AuditObject name=[EMP]))")]
+    [InlineData("NOAUDIT SELECT ON emp BY ACCESS", "(AuditStatement noaudit options=[(AuditOption name=SELECT)] on=(AuditObject name=[EMP]) by=Access)")]
+    [InlineData("AUDIT CREATE TABLE BY u", "(AuditStatement options=[(AuditOption name=CREATE TABLE)] byUsers=[U])")]
+    [InlineData("AUDIT ALL ON DEFAULT", "(AuditStatement options=[(AuditOption name=ALL)] on=(AuditObject default))")]
+    [InlineData("AUDIT ALL ON DIRECTORY d BY ACCESS WHENEVER SUCCESSFUL",
+        "(AuditStatement options=[(AuditOption name=ALL)] on=(AuditObject directory name=[D]) by=Access successful=true)")]
+    [InlineData("AUDIT POLICY p BY hr, sh WHENEVER NOT SUCCESSFUL", "(AuditStatement policy=P byUsers=[HR SH] successful=false)")]
+    [InlineData("AUDIT POLICY read_dir_pol EXCEPT hr", "(AuditStatement policy=READ_DIR_POL exceptUsers=[HR])")]
+    [InlineData("AUDIT POLICY p BY USERS WITH ROLES r1", "(AuditStatement policy=P withRoles=[R1])")]
+    [InlineData("AUDIT CONTEXT NAMESPACE userenv ATTRIBUTES current_user, db_name BY hr",
+        "(AuditStatement contextNamespace=USERENV contextAttributes=[CURRENT_USER DB_NAME] byUsers=[HR])")]
+    [InlineData("CREATE AUDIT POLICY p PRIVILEGES CREATE ANY TABLE, DROP ANY TABLE ACTIONS SELECT ON hr.emp WHEN 'x' EVALUATE PER STATEMENT ONLY TOPLEVEL",
+        "(CreateAuditPolicyStatement name=P lists=[(AuditPolicyList kind=Privileges items=[(AuditPolicyItem name=CREATE ANY TABLE) (AuditPolicyItem name=DROP ANY TABLE)]) (AuditPolicyList kind=Actions items=[(AuditPolicyItem name=SELECT on=(AuditObject name=[HR EMP]))])] condition='x' evaluate=Statement onlyToplevel)")]
+    [InlineData("CREATE AUDIT POLICY pol ACTIONS COMPONENT=DATAPUMP EXPORT ROLES r1",
+        "(CreateAuditPolicyStatement name=POL lists=[(AuditPolicyList kind=Actions items=[(AuditPolicyItem component=DATAPUMP name=EXPORT)]) (AuditPolicyList kind=Roles roles=[R1])])")]
+    [InlineData("ALTER AUDIT POLICY pol ADD PRIVILEGES CREATE SESSION DROP ROLES r2 CONDITION 'x' EVALUATE PER INSTANCE",
+        "(AlterAuditPolicyStatement name=POL lists=[(AuditPolicyList kind=Privileges items=[(AuditPolicyItem name=CREATE SESSION)]) (AuditPolicyList kind=Roles drop roles=[R2])] condition='x' evaluate=Instance)")]
+    [InlineData("ALTER AUDIT POLICY pol CONDITION DROP", "(AlterAuditPolicyStatement name=POL dropCondition)")]
+    public void AuditAndAuditPolicy(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("CREATE TABLESPACE ts DATAFILE SIZE 10M", "(CreateTablespaceStatement name=TS files=[(DatafileSpec size=10M)])")]
+    [InlineData("CREATE TABLESPACE ts DATAFILE 'x' SIZE 1M FORCE LOGGING", "(CreateTablespaceStatement name=TS files=[(DatafileSpec path='x' size=1M)] logging=true forceLogging)")]
+    [InlineData("ALTER TABLESPACE ts ADD DATAFILE;", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=AddDatafile files=[(DatafileSpec)])])")]
+    [InlineData("ALTER TABLESPACE ts RESIZE 80G", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=Resize target=(DatafileSpec size=80G))])")]
+    [InlineData("ALTER TABLESPACE ts AUTOEXTEND ON NEXT 1M", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=Autoextend target=(DatafileSpec autoextend=true nextSize=1M))])")]
+    [InlineData("ALTER TABLESPACE tbs_02 OFFLINE NORMAL", "(AlterTablespaceStatement name=TBS_02 actions=[(TablespaceAction kind=Offline mode=Normal)])")]
+    [InlineData("AUDIT POLICY p BY USERS WITH GRANTED ROLES r1", "(AuditStatement policy=P withRoles=[R1] grantedRoles)")]
+    [InlineData("ALTER AUDIT POLICY p DROP PRIVILEGES CREATE SESSION ACTIONS DELETE ON hr.emp",
+        "(AlterAuditPolicyStatement name=P lists=[(AuditPolicyList kind=Privileges drop items=[(AuditPolicyItem name=CREATE SESSION)]) (AuditPolicyList kind=Actions drop items=[(AuditPolicyItem name=DELETE on=(AuditObject name=[HR EMP]))])])")]
+    [InlineData("CREATE DATABASE LINK l CONNECT WITH cred USING 'x'",
+        "(CreateDatabaseLinkStatement name=[L] otherClauses=[(WordItem value=CONNECT) (WordItem value=WITH) (WordItem value=CRED) (WordItem value=USING) (LiteralItem kind=String value=x)])")]
+    public void FollowUpFixes(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Fact]
     public void CreateJava_Source()

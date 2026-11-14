@@ -40,7 +40,8 @@ public sealed partial class SqlParser
             case "PURGE": return ParsePurge();
             case "FLASHBACK" when IsKwAt(1, "TABLE"): return ParseFlashbackTable();
             case "ANALYZE": return ParseAnalyze(start);
-            case "AUDIT": case "NOAUDIT": case "ASSOCIATE": case "DISASSOCIATE": case "ADMINISTER": case "FLASHBACK":
+            case "AUDIT": case "NOAUDIT": return ParseAudit(start);
+            case "ASSOCIATE": case "DISASSOCIATE": case "ADMINISTER": case "FLASHBACK":
             {
                 var verb = Next().Value;
                 var body = ParseSyntaxItems(AtStatementEnd);
@@ -403,6 +404,602 @@ public sealed partial class SqlParser
     private bool TryIfNotExists() { if (IsKw("IF") && IsKwAt(1, "NOT") && IsKwAt(2, "EXISTS")) { Next(); Next(); Next(); return true; } return false; }
     private bool TryIfExists() { if (IsKw("IF") && IsKwAt(1, "EXISTS")) { Next(); Next(); return true; } return false; }
 
+    // ---- CREATE / ALTER USER ----
+
+    private bool IsNameAt(int n) => PeekTok(n).Type is TokenType.Identifier or TokenType.QuotedIdentifier;
+
+    private Statement ParseCreateUser(Token start, bool orReplace, bool pub)
+    {
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE USER");
+        var st = new CreateUserStatement { IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        st.Clauses = ParseUserClauses();
+        return Fin(st, start);
+    }
+
+    private Statement ParseAlterUser(Token start, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to ALTER USER");
+        var st = new AlterUserStatement { IfExists = TryIfExists() };
+        st.Name = ParseIdentifier();
+        st.Clauses = ParseUserClauses();
+        return Fin(st, start);
+    }
+
+    private List<UserClause> ParseUserClauses()
+    {
+        var list = new List<UserClause>();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog)) list.Add(ParseUserClause());
+        return list;
+    }
+
+    private UserClause ParseUserClause()
+    {
+        var s = Cur;
+        var c = new UserClause();
+        if (IsKw("IDENTIFIED") && IsKwAt(1, "BY") && IsNameAt(2) && !IsKwAt(2, "VALUES"))
+        {
+            Next(); Next();
+            c.Kind = UserClauseKind.IdentifiedBy;
+            c.Password = ParseIdentifier();
+            if (AcceptKw("REPLACE")) c.ReplacePassword = ParseIdentifier();
+        }
+        else if (IsKw("IDENTIFIED") && (IsKwAt(1, "EXTERNALLY") || IsKwAt(1, "GLOBALLY")))
+        {
+            Next();
+            c.Kind = Next().Value == "EXTERNALLY" ? UserClauseKind.IdentifiedExternally : UserClauseKind.IdentifiedGlobally;
+            if (AcceptKw("AS")) c.ExternalName = ParseAdditive();
+        }
+        else if (IsKw("NO") && IsKwAt(1, "AUTHENTICATION")) { Next(); Next(); c.Kind = UserClauseKind.NoAuthentication; }
+        else if (IsKw("DEFAULT") && IsKwAt(1, "TABLESPACE")) { Next(); Next(); c.Kind = UserClauseKind.DefaultTablespace; c.Tablespace = ParseIdentifier(); }
+        else if (IsKw("DEFAULT") && IsKwAt(1, "ROLE")) { Next(); Next(); c.Kind = UserClauseKind.DefaultRole; ParseRoleSet(c); }
+        else if ((IsKw("TEMPORARY") && IsKwAt(1, "TABLESPACE")) || (IsKw("LOCAL") && IsKwAt(1, "TEMPORARY") && IsKwAt(2, "TABLESPACE")))
+        {
+            c.Local = AcceptKw("LOCAL");
+            Next(); Next();
+            c.Kind = UserClauseKind.TemporaryTablespace;
+            c.Tablespace = ParseIdentifier();
+        }
+        else if (AcceptKw("QUOTA"))
+        {
+            c.Kind = UserClauseKind.Quota;
+            if (AcceptKw("UNLIMITED")) c.Unlimited = true; else c.Quota = ParseAdditive();
+            ExpectKw("ON");
+            c.Tablespace = ParseIdentifier();
+        }
+        else if (AcceptKw("PROFILE")) { c.Kind = UserClauseKind.Profile; c.Profile = ParseIdentifier(); }
+        else if (IsKw("PASSWORD") && IsKwAt(1, "EXPIRE")) { Next(); Next(); c.Kind = UserClauseKind.PasswordExpire; }
+        else if (IsKw("ACCOUNT") && (IsKwAt(1, "LOCK") || IsKwAt(1, "UNLOCK")))
+        {
+            Next();
+            c.Kind = Next().Value == "LOCK" ? UserClauseKind.AccountLock : UserClauseKind.AccountUnlock;
+        }
+        else if (IsKw("ENABLE") && IsKwAt(1, "EDITIONS")) { Next(); Next(); c.Kind = UserClauseKind.EnableEditions; c.Force = AcceptKw("FORCE"); }
+        else if (IsKw("DISABLE") && IsKwAt(1, "EDITIONS")) { Next(); Next(); c.Kind = UserClauseKind.DisableEditions; }
+        else if (IsKw("READ") && (IsKwAt(1, "ONLY") || IsKwAt(1, "WRITE")))
+        {
+            Next();
+            c.Kind = Next().Value == "ONLY" ? UserClauseKind.ReadOnly : UserClauseKind.ReadWrite;
+        }
+        else if (IsKw("CONTAINER") && IsOpAt(1, "="))
+        {
+            Next(); Next();
+            c.Kind = UserClauseKind.Container;
+            if (AcceptKw("ALL")) c.Container = GrantContainer.All;
+            else { ExpectKw("CURRENT"); c.Container = GrantContainer.Current; }
+        }
+        else if ((IsKw("GRANT") || IsKw("REVOKE")) && IsKwAt(1, "CONNECT") && IsKwAt(2, "THROUGH"))
+        {
+            bool grant = Next().Value == "GRANT";
+            Next(); Next();
+            c.Kind = grant ? UserClauseKind.GrantConnectThrough : UserClauseKind.RevokeConnectThrough;
+            if (AcceptKw("ENTERPRISE")) { ExpectKw("USERS"); c.EnterpriseUsers = true; }
+            else c.Proxy = ParseIdentifier();
+            if (grant)
+            {
+                if (IsKw("WITH") && IsKwAt(1, "NO") && IsKwAt(2, "ROLES")) { Next(); Next(); Next(); c.RoleSet = RoleSetKind.None; }
+                else if (AcceptKw("WITH")) { ExpectKw("ROLE"); ParseRoleSet(c); }
+                if (AcceptKw("AUTHENTICATION")) { ExpectKw("REQUIRED"); c.AuthenticationRequired = true; }
+            }
+        }
+        else
+        {
+            // Not modelled: keep one token so the clause order survives a round trip.
+            c.Kind = UserClauseKind.Other;
+            c.Syntax.Add(ParseSyntaxItem());
+        }
+        return Fin(c, s);
+    }
+
+    /// <summary>NONE | ALL [EXCEPT list] | list, as used by DEFAULT ROLE and WITH ROLE.</summary>
+    private void ParseRoleSet(UserClause c)
+    {
+        if (AcceptKw("NONE")) c.RoleSet = RoleSetKind.None;
+        else if (AcceptKw("ALL"))
+        {
+            c.RoleSet = RoleSetKind.All;
+            if (AcceptKw("EXCEPT")) c.ExceptRoles = ParseIdentifierList();
+        }
+        else { c.RoleSet = RoleSetKind.Roles; c.Roles = ParseIdentifierList(); }
+    }
+
+    // ---- CREATE / ALTER ROLE ----
+
+    private Statement ParseCreateRole(Token start, bool orReplace, bool pub)
+    {
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE ROLE");
+        var st = new CreateRoleStatement { IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        st.Authentication = ParseRoleIdentification(out var password, out var package);
+        st.Password = password;
+        st.Package = package;
+        st.Container = TryParseContainer();
+        return Fin(st, start);
+    }
+
+    private Statement ParseAlterRole(Token start, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to ALTER ROLE");
+        var st = new AlterRoleStatement { IfExists = TryIfExists() };
+        st.Name = ParseIdentifier();
+        st.Authentication = ParseRoleIdentification(out var password, out var package);
+        st.Password = password;
+        st.Package = package;
+        st.Container = TryParseContainer();
+        return Fin(st, start);
+    }
+
+    /// <summary>NOT IDENTIFIED | IDENTIFIED BY pw | IDENTIFIED USING pkg | IDENTIFIED EXTERNALLY | IDENTIFIED GLOBALLY.</summary>
+    private RoleAuthentication? ParseRoleIdentification(out Identifier? password, out List<Identifier> package)
+    {
+        password = null;
+        package = [];
+        if (IsKw("NOT") && IsKwAt(1, "IDENTIFIED")) { Next(); Next(); return RoleAuthentication.NotIdentified; }
+        if (!AcceptKw("IDENTIFIED")) return null;
+        if (AcceptKw("BY")) { password = ParseIdentifier(); return RoleAuthentication.Password; }
+        if (AcceptKw("USING")) { package = ParseDottedName(); return RoleAuthentication.Package; }
+        if (AcceptKw("EXTERNALLY")) return RoleAuthentication.External;
+        ExpectKw("GLOBALLY");
+        return RoleAuthentication.Global;
+    }
+
+    /// <summary>CONTAINER = CURRENT | ALL, when present.</summary>
+    private GrantContainer? TryParseContainer()
+    {
+        if (!(IsKw("CONTAINER") && IsOpAt(1, "="))) return null;
+        Next(); Next();
+        if (AcceptKw("ALL")) return GrantContainer.All;
+        ExpectKw("CURRENT");
+        return GrantContainer.Current;
+    }
+
+    // ---- CREATE / ALTER PROFILE ----
+
+    private Statement ParseCreateProfile(Token start, bool orReplace, bool pub)
+    {
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE PROFILE");
+        var st = new CreateProfileStatement { IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        ParseProfileBody(st.Limits, out var container, out _, allowCascade: false);
+        st.Container = container;
+        return Fin(st, start);
+    }
+
+    private Statement ParseAlterProfile(Token start, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to ALTER PROFILE");
+        var st = new AlterProfileStatement { IfExists = TryIfExists() };
+        st.Name = ParseIdentifier();
+        ParseProfileBody(st.Limits, out var container, out var cascade, allowCascade: true);
+        st.Container = container;
+        st.Cascade = cascade;
+        return Fin(st, start);
+    }
+
+    /// <summary>[LIMIT] {name value}... [CONTAINER = ...] [CASCADE]. The clauses may follow each other in any order.</summary>
+    private void ParseProfileBody(List<ProfileLimit> limits, out GrantContainer? container, out bool cascade, bool allowCascade)
+    {
+        container = null;
+        cascade = false;
+        AcceptKw("LIMIT");
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog))
+        {
+            if (IsKw("CONTAINER") && IsOpAt(1, "=")) container = TryParseContainer();
+            else if (allowCascade && AcceptKw("CASCADE")) cascade = true;
+            else limits.Add(ParseProfileLimit());
+        }
+    }
+
+    private ProfileLimit ParseProfileLimit()
+    {
+        var s = Cur;
+        var l = new ProfileLimit { Name = ParseIdentifier() };
+        if (AcceptKw("UNLIMITED")) l.Keyword = ProfileKeyword.Unlimited;
+        else if (AcceptKw("DEFAULT")) l.Keyword = ProfileKeyword.Default;
+        else if (AcceptKw("NULL")) l.Keyword = ProfileKeyword.Null;
+        else if (l.Name.Value == "PASSWORD_VERIFY_FUNCTION") l.Function = ParseDottedName();
+        else l.Value = ParseAdditive();
+        return Fin(l, s);
+    }
+
+    // ---- CREATE DIRECTORY / DATABASE LINK / CONTEXT ----
+
+    private Statement ParseCreateDirectory(Token start, bool orReplace, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to CREATE DIRECTORY");
+        var st = new CreateDirectoryStatement { OrReplace = orReplace, IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        st.Sharing = TryParseSharing();
+        ExpectKw("AS");
+        st.Path = ParseAdditive();
+        return Fin(st, start);
+    }
+
+    private Statement ParseCreateDatabaseLink(Token start, bool orReplace, bool pub, bool shared)
+    {
+        var st = new CreateDatabaseLinkStatement { OrReplace = orReplace, Public = pub, Shared = shared, IfNotExists = TryIfNotExists() };
+        st.Name = ParseDottedName();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        if (IsKw("CONNECT") && IsKwAt(1, "TO") && AcceptKw("CONNECT"))
+        {
+            ExpectKw("TO");
+            if (AcceptKw("CURRENT_USER")) st.CurrentUser = true;
+            else
+            {
+                st.ConnectUser = ParseIdentifier();
+                if (AcceptKw("IDENTIFIED")) { ExpectKw("BY"); st.ConnectPassword = ParseIdentifier(); }
+            }
+        }
+        if (AcceptKw("AUTHENTICATED"))
+        {
+            ExpectKw("BY");
+            st.AuthenticatedUser = ParseIdentifier();
+            ExpectKw("IDENTIFIED");
+            ExpectKw("BY");
+            st.AuthenticatedPassword = ParseIdentifier();
+        }
+        if (AcceptKw("USING")) st.Using = ParseAdditive();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog)) st.OtherClauses.Add(ParseSyntaxItem());
+        return Fin(st, start);
+    }
+
+    private Statement ParseCreateContext(Token start, bool orReplace, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to CREATE CONTEXT");
+        var st = new CreateContextStatement { OrReplace = orReplace, IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        ExpectKw("USING");
+        st.Package = ParseDottedName();
+        if (AcceptKw("INITIALIZED"))
+        {
+            if (AcceptKw("EXTERNALLY")) st.Initialized = ContextInit.Externally;
+            else { ExpectKw("GLOBALLY"); st.Initialized = ContextInit.Globally; }
+        }
+        if (AcceptKw("ACCESSED")) { ExpectKw("GLOBALLY"); st.AccessedGlobally = true; }
+        return Fin(st, start);
+    }
+
+    // ---- CREATE / ALTER TABLESPACE ----
+
+    private Statement ParseCreateTablespace(Token start, bool orReplace, bool pub, bool? bigfile, TablespaceType? kind)
+    {
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE TABLESPACE");
+        var st = new CreateTablespaceStatement { Bigfile = bigfile, Kind = kind, IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog)) ParseTablespaceOption(st);
+        return Fin(st, start);
+    }
+
+    private void ParseTablespaceOption(CreateTablespaceStatement st)
+    {
+        if (IsKw("DATAFILE") || IsKw("TEMPFILE"))
+        {
+            bool temp = Next().Value == "TEMPFILE";
+            do st.Files.Add(ParseDatafileSpec(temp)); while (AcceptOp(","));
+        }
+        else if (IsKw("FORCE") && IsKwAt(1, "LOGGING")) { Next(); Next(); st.Logging = true; st.ForceLogging = true; }
+        else if (AcceptKw("LOGGING")) st.Logging = true;
+        else if (AcceptKw("NOLOGGING")) st.Logging = false;
+        else if (AcceptKw("ONLINE")) st.Online = true;
+        else if (AcceptKw("OFFLINE")) st.Online = false;
+        else if (IsKw("EXTENT") && IsKwAt(1, "MANAGEMENT") && IsKwAt(2, "LOCAL"))
+        {
+            Next(); Next(); Next();
+            st.ExtentManagementLocal = true;
+            if (AcceptKw("AUTOALLOCATE")) st.ExtentPolicy = ExtentPolicy.Autoallocate;
+            else if (AcceptKw("UNIFORM"))
+            {
+                st.ExtentPolicy = ExtentPolicy.Uniform;
+                if (AcceptKw("SIZE")) st.UniformSize = ParseAdditive();
+            }
+        }
+        else if (IsKw("SEGMENT") && IsKwAt(1, "SPACE") && IsKwAt(2, "MANAGEMENT") && (IsKwAt(3, "AUTO") || IsKwAt(3, "MANUAL")))
+        {
+            Next(); Next(); Next();
+            st.SegmentSpace = Next().Value == "AUTO" ? SegmentSpaceMode.Auto : SegmentSpaceMode.Manual;
+        }
+        else if (AcceptKw("ENCRYPTION"))
+        {
+            st.Encryption = true;
+            if (AcceptKw("USING")) st.EncryptionUsing = ParseAdditive();
+            if (IsKw("DEFAULT") && IsKwAt(1, "STORAGE") && IsOpAt(2, "(") && IsKwAt(3, "ENCRYPT") && IsOpAt(4, ")"))
+            {
+                for (int i = 0; i < 5; i++) Next();
+                st.DefaultStorageEncrypt = true;
+            }
+        }
+        else st.OtherClauses.Add(ParseSyntaxItem());
+    }
+
+    /// <summary>'name' [SIZE n] [REUSE] [AUTOEXTEND ...] of a DATAFILE or TEMPFILE clause.</summary>
+    private DatafileSpec ParseDatafileSpec(bool tempfile)
+    {
+        var s = Cur;
+        var f = new DatafileSpec { Tempfile = tempfile, Path = Cur.Type == TokenType.String ? ParseAdditive() : null };
+        int prog = -1;
+        while (Progress(ref prog))
+        {
+            if (AcceptKw("SIZE")) f.Size = ParseAdditive();
+            else if (AcceptKw("REUSE")) f.Reuse = true;
+            else if (IsKw("AUTOEXTEND")) ParseAutoextend(f);
+            else break;
+        }
+        return Fin(f, s);
+    }
+
+    /// <summary>AUTOEXTEND ON|OFF [NEXT n] [MAXSIZE n | UNLIMITED].</summary>
+    private void ParseAutoextend(DatafileSpec f)
+    {
+        ExpectKw("AUTOEXTEND");
+        if (AcceptKw("OFF")) f.Autoextend = false;
+        else { ExpectKw("ON"); f.Autoextend = true; }
+        if (AcceptKw("NEXT")) f.NextSize = ParseAdditive();
+        if (AcceptKw("MAXSIZE"))
+        {
+            if (AcceptKw("UNLIMITED")) f.MaxSizeUnlimited = true;
+            else f.MaxSize = ParseAdditive();
+        }
+    }
+
+    private Statement ParseAlterTablespace(Token start, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to ALTER TABLESPACE");
+        var st = new AlterTablespaceStatement { IfExists = TryIfExists() };
+        st.Name = ParseIdentifier();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog)) st.Actions.Add(ParseTablespaceAction());
+        return Fin(st, start);
+    }
+
+    private TablespaceAction ParseTablespaceAction()
+    {
+        var s = Cur;
+        var a = new TablespaceAction();
+        if (IsKw("ADD") && (IsKwAt(1, "DATAFILE") || IsKwAt(1, "TEMPFILE")))
+        {
+            Next();
+            bool temp = Next().Value == "TEMPFILE";
+            a.Kind = temp ? TablespaceActionKind.AddTempfile : TablespaceActionKind.AddDatafile;
+            do a.Files.Add(ParseDatafileSpec(temp)); while (AcceptOp(","));
+        }
+        else if ((IsKw("DATAFILE") || IsKw("TEMPFILE")) && PeekTok(1).Type == TokenType.String
+                 && (IsKwAt(2, "RESIZE") || IsKwAt(2, "AUTOEXTEND") || IsKwAt(2, "ONLINE") || IsKwAt(2, "OFFLINE")))
+        {
+            bool temp = Next().Value == "TEMPFILE";
+            var t = new DatafileSpec { Tempfile = temp, Path = ParseAdditive() };
+            a.Target = t;
+            if (AcceptKw("RESIZE")) { a.Kind = TablespaceActionKind.Resize; t.Size = ParseAdditive(); }
+            else if (IsKw("AUTOEXTEND")) { a.Kind = TablespaceActionKind.Autoextend; ParseAutoextend(t); }
+            else if (AcceptKw("ONLINE")) a.Kind = TablespaceActionKind.Online;
+            else { ExpectKw("OFFLINE"); a.Kind = TablespaceActionKind.Offline; }
+        }
+        else if (AcceptKw("RESIZE")) { a.Kind = TablespaceActionKind.Resize; a.Target = new DatafileSpec { Size = ParseAdditive() }; }
+        else if (IsKw("AUTOEXTEND")) { a.Kind = TablespaceActionKind.Autoextend; a.Target = new DatafileSpec(); ParseAutoextend(a.Target); }
+        else if (AcceptKw("ONLINE")) a.Kind = TablespaceActionKind.Online;
+        else if (AcceptKw("OFFLINE"))
+        {
+            a.Kind = TablespaceActionKind.Offline;
+            if (AcceptKw("NORMAL")) a.Mode = OfflineMode.Normal;
+            else if (AcceptKw("TEMPORARY")) a.Mode = OfflineMode.Temporary;
+            else if (AcceptKw("IMMEDIATE")) a.Mode = OfflineMode.Immediate;
+        }
+        else if (IsKw("READ") && (IsKwAt(1, "ONLY") || IsKwAt(1, "WRITE")))
+        {
+            Next();
+            a.Kind = Next().Value == "ONLY" ? TablespaceActionKind.ReadOnly : TablespaceActionKind.ReadWrite;
+        }
+        else if (AcceptKw("RENAME")) { ExpectKw("TO"); a.Kind = TablespaceActionKind.RenameTo; a.NewName = ParseIdentifier(); }
+        else if (AcceptKw("LOGGING")) a.Kind = TablespaceActionKind.Logging;
+        else if (AcceptKw("NOLOGGING")) a.Kind = TablespaceActionKind.NoLogging;
+        else if (IsKw("BEGIN") && IsKwAt(1, "BACKUP")) { Next(); Next(); a.Kind = TablespaceActionKind.BeginBackup; }
+        else if (IsKw("END") && IsKwAt(1, "BACKUP")) { Next(); Next(); a.Kind = TablespaceActionKind.EndBackup; }
+        else
+        {
+            // Not modelled: keep one token so the action order survives a round trip.
+            a.Kind = TablespaceActionKind.Other;
+            a.Syntax.Add(ParseSyntaxItem());
+        }
+        return Fin(a, s);
+    }
+
+    // ---- AUDIT / NOAUDIT / AUDIT POLICY ----
+
+    private Statement ParseAudit(Token start)
+    {
+        var st = new AuditStatement { Noaudit = Next().Value == "NOAUDIT" };
+        if (AcceptKw("POLICY")) st.Policy = ParseIdentifier();
+        else if (AcceptKw("CONTEXT"))
+        {
+            ExpectKw("NAMESPACE");
+            st.ContextNamespace = ParseIdentifier();
+            if (AcceptKw("ATTRIBUTES")) st.ContextAttributes = ParseIdentifierList();
+        }
+        else
+        {
+            do st.Options.Add(ParseAuditOption()); while (AcceptOp(","));
+        }
+        ParseAuditTail(st);
+        return Fin(st, start);
+    }
+
+    /// <summary>The words of one traditional option, up to a comma or ON / BY / WHENEVER.</summary>
+    private AuditOption ParseAuditOption()
+    {
+        var s = Cur;
+        var words = new List<string>();
+        int prog = -1;
+        while (!AtStatementEnd() && !IsOp(",") && !IsKw("ON") && !IsKw("BY") && !IsKw("WHENEVER") && Progress(ref prog))
+            words.Add(Next().Value);
+        if (words.Count == 0) throw Fail($"Expected an audit option but found {Describe(Cur)}");
+        return Fin(new AuditOption { Name = string.Join(" ", words) }, s);
+    }
+
+    private void ParseAuditTail(AuditStatement st)
+    {
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog))
+        {
+            if (AcceptKw("ON")) st.On = ParseAuditObject();
+            else if (AcceptKw("EXCEPT")) st.ExceptUsers = ParseIdentifierList();
+            else if (AcceptKw("BY"))
+            {
+                if (AcceptKw("ACCESS")) st.By = AuditBy.Access;
+                else if (AcceptKw("SESSION")) st.By = AuditBy.Session;
+                else if (IsKw("USERS") && IsKwAt(1, "WITH")) { Next(); Next(); st.GrantedRoles = AcceptKw("GRANTED"); ExpectKw("ROLES"); st.WithRoles = ParseIdentifierList(); }
+                else st.ByUsers.AddRange(ParseIdentifierList());
+            }
+            else if (AcceptKw("WHENEVER"))
+            {
+                bool negated = AcceptKw("NOT");
+                ExpectKw("SUCCESSFUL");
+                st.Successful = !negated;
+            }
+            else throw Fail($"Unexpected {Describe(Cur)} in {(st.Noaudit ? "NOAUDIT" : "AUDIT")}");
+        }
+    }
+
+    private AuditObject ParseAuditObject()
+    {
+        var s = Cur;
+        var o = new AuditObject();
+        if (AcceptKw("DEFAULT")) o.Default = true;
+        else
+        {
+            if (AcceptKw("DIRECTORY")) o.Directory = true;
+            o.Name = ParseDottedName();
+        }
+        return Fin(o, s);
+    }
+
+    private Statement ParseCreateAuditPolicy(Token start, bool orReplace, bool pub)
+    {
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE AUDIT POLICY");
+        var st = new CreateAuditPolicyStatement { IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog))
+        {
+            if (IsKw("PRIVILEGES") || IsKw("ACTIONS") || IsKw("ROLES")) st.Lists.Add(ParseAuditPolicyList(false));
+            else if (AcceptKw("WHEN"))
+            {
+                var (cond, ev) = ParseConditionEvaluate();
+                st.Condition = cond;
+                st.Evaluate = ev;
+            }
+            else if (AcceptKw("ONLY")) { ExpectKw("TOPLEVEL"); st.OnlyToplevel = true; }
+            else if (IsKw("CONTAINER") && IsOpAt(1, "=")) st.Container = TryParseContainer();
+            else throw Fail($"Unexpected {Describe(Cur)} in CREATE AUDIT POLICY");
+        }
+        return Fin(st, start);
+    }
+
+    private Statement ParseAlterAuditPolicy(Token start, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to ALTER AUDIT POLICY");
+        var st = new AlterAuditPolicyStatement { IfExists = TryIfExists() };
+        st.Name = ParseIdentifier();
+        bool lastDrop = false;
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog))
+        {
+            if (AtAuditPolicyList()) { var list = ParseAuditPolicyList(lastDrop); st.Lists.Add(list); lastDrop = list.Drop; }
+            else if (AcceptKw("CONDITION"))
+            {
+                if (AcceptKw("DROP")) st.DropCondition = true;
+                else
+                {
+                    var (cond, ev) = ParseConditionEvaluate();
+                    st.Condition = cond;
+                    st.Evaluate = ev;
+                }
+            }
+            else throw Fail($"Unexpected {Describe(Cur)} in ALTER AUDIT POLICY");
+        }
+        return Fin(st, start);
+    }
+
+    /// <summary>ADD|DROP PRIVILEGES/ACTIONS/ROLES, or the bare keyword on CREATE. ADD and DROP are only list starters before one of these words.</summary>
+    private bool AtAuditPolicyList()
+    {
+        if (IsKw("ADD") || IsKw("DROP")) return IsKwAt(1, "PRIVILEGES") || IsKwAt(1, "ACTIONS") || IsKwAt(1, "ROLES");
+        return IsKw("PRIVILEGES") || IsKw("ACTIONS") || IsKw("ROLES");
+    }
+
+    private AuditPolicyList ParseAuditPolicyList(bool inheritedDrop)
+    {
+        var s = Cur;
+        var l = new AuditPolicyList { Drop = inheritedDrop };
+        if (AcceptKw("DROP")) l.Drop = true;
+        else if (AcceptKw("ADD")) l.Drop = false;
+        if (AcceptKw("PRIVILEGES")) l.Kind = AuditPolicyListKind.Privileges;
+        else if (AcceptKw("ACTIONS")) l.Kind = AuditPolicyListKind.Actions;
+        else { ExpectKw("ROLES"); l.Kind = AuditPolicyListKind.Roles; }
+        if (l.Kind == AuditPolicyListKind.Roles) l.Roles = ParseIdentifierList();
+        else do l.Items.Add(ParseAuditPolicyItem()); while (AcceptOp(","));
+        return Fin(l, s);
+    }
+
+    private AuditPolicyItem ParseAuditPolicyItem()
+    {
+        var s = Cur;
+        var it = new AuditPolicyItem();
+        if (IsKw("COMPONENT") && IsOpAt(1, "=")) { Next(); Next(); it.Component = ParseIdentifier(); }
+        var words = new List<string>();
+        int prog = -1;
+        while (!AtAuditPolicyItemEnd() && Progress(ref prog)) words.Add(Next().Value);
+        if (words.Count == 0 && it.Component == null) throw Fail($"Expected a privilege or action but found {Describe(Cur)}");
+        it.Name = string.Join(" ", words);
+        if (AcceptKw("ON")) it.On = ParseAuditObject();
+        return Fin(it, s);
+    }
+
+    private bool AtAuditPolicyItemEnd() =>
+        AtStatementEnd() || IsOp(",") || IsKw("ON") || IsKw("WHEN") || IsKw("ONLY") || IsKw("CONTAINER") || IsKw("CONDITION") || AtAuditPolicyList();
+
+    /// <summary>'condition' EVALUATE PER STATEMENT | SESSION | INSTANCE.</summary>
+    private (Expression, AuditEvaluation) ParseConditionEvaluate()
+    {
+        var cond = ParseAdditive();
+        ExpectKw("EVALUATE");
+        ExpectKw("PER");
+        var ev = AcceptKw("STATEMENT") ? AuditEvaluation.Statement
+            : AcceptKw("SESSION") ? AuditEvaluation.Session
+            : AcceptKw("INSTANCE") ? AuditEvaluation.Instance
+            : throw Fail($"Expected STATEMENT, SESSION or INSTANCE but found {Describe(Cur)}");
+        return (cond, ev);
+    }
+
     // ---- DROP / ALTER (generic) ----
 
     private Statement ParseDrop()
@@ -437,6 +1034,11 @@ public sealed partial class SqlParser
         if (!TryParseObjectKind(out var kind)) kind = ObjectKind.Other;
         if (kind == ObjectKind.Table) return ParseAlterTable(start);
         if (kind == ObjectKind.Session) return ParseAlterSession(start);
+        if (kind == ObjectKind.User) return ParseAlterUser(start, pub);
+        if (kind == ObjectKind.Role) return ParseAlterRole(start, pub);
+        if (kind == ObjectKind.Profile) return ParseAlterProfile(start, pub);
+        if (kind == ObjectKind.Tablespace) return ParseAlterTablespace(start, pub);
+        if (kind == ObjectKind.AuditPolicy) return ParseAlterAuditPolicy(start, pub);
         if (kind == ObjectKind.Domain) return ParseAlterDomain(start);
         // typed forms rewind to the generic node when a clause is not modeled, and never apply to ALTER ... IF EXISTS
         if (!pub && !(IsKw("IF") && IsKwAt(1, "EXISTS")) && TryParseTypedAlter(start, kind) is { } typed) return typed;
@@ -502,7 +1104,9 @@ public sealed partial class SqlParser
     {
         var start = Next();
         bool orReplace = false, unique = false, bitmap = false, pub = false, andResolve = false, andCompile = false, noForce = false;
-        bool force = false, editioning = false, gtt = false, ptt = false, dup = false, imm = false, blk = false, useCase = false;
+        bool force = false, editioning = false, gtt = false, ptt = false, dup = false, imm = false, blk = false, useCase = false, shared = false;
+        bool? bigfile = null;
+        TablespaceType? tsType = null;
         EditionableKind? editionable = null;
         int prog22 = -1;
         while (Progress(ref prog22))
@@ -522,6 +1126,10 @@ public sealed partial class SqlParser
             else if (IsKw("AND") && (IsKwAt(1, "RESOLVE") || IsKwAt(1, "COMPILE"))) { Next(); if (Next().Value == "RESOLVE") andResolve = true; else andCompile = true; }
             else if (IsKw("UNIQUE")) { Next(); unique = true; }
             else if (IsKw("BITMAP")) { Next(); bitmap = true; }
+            else if (IsKw("SHARED") && (IsKwAt(1, "PUBLIC") || IsKwAt(1, "DATABASE"))) { Next(); shared = true; }
+            else if ((IsKw("BIGFILE") || IsKw("SMALLFILE")) && (IsKwAt(1, "TABLESPACE") || IsKwAt(1, "TEMPORARY") || IsKwAt(1, "UNDO"))) { bigfile = Next().Value == "BIGFILE"; }
+            else if (IsKw("TEMPORARY") && IsKwAt(1, "TABLESPACE")) { Next(); tsType = TablespaceType.Temporary; }
+            else if (IsKw("UNDO") && IsKwAt(1, "TABLESPACE")) { Next(); tsType = TablespaceType.Undo; }
             else if (IsKw("PUBLIC")) { Next(); pub = true; }
             else break;
         }
@@ -535,6 +1143,14 @@ public sealed partial class SqlParser
         TryParseObjectKind(out var kind);
         switch (kind)
         {
+            case ObjectKind.AuditPolicy: return ParseCreateAuditPolicy(start, orReplace, pub);
+            case ObjectKind.Tablespace: return ParseCreateTablespace(start, orReplace, pub, bigfile, tsType);
+            case ObjectKind.DatabaseLink: return ParseCreateDatabaseLink(start, orReplace, pub, shared);
+            case ObjectKind.Directory: return ParseCreateDirectory(start, orReplace, pub);
+            case ObjectKind.Context: return ParseCreateContext(start, orReplace, pub);
+            case ObjectKind.Profile: return ParseCreateProfile(start, orReplace, pub);
+            case ObjectKind.Role: return ParseCreateRole(start, orReplace, pub);
+            case ObjectKind.User: return ParseCreateUser(start, orReplace, pub);
             case ObjectKind.Table: return ParseCreateTable(start, orReplace, gtt, ptt, dup, imm, blk);
             case ObjectKind.Index: return ParseCreateIndex(start, unique, bitmap);
             case ObjectKind.View: return ParseCreateView(start, orReplace, force, noForce, editioning, false);
