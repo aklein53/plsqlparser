@@ -4,23 +4,61 @@ using OracleSqlParser;
 
 namespace OracleSqlParser.Guard;
 
+/// <summary>The kind of policy violation that <c>QueryGuard.Validate</c> reports.</summary>
 [Experimental("PLSQLGUARD001")]
 public enum ViolationCode
 {
-    ParseError, NotSingleSelect, TableNotAllowed, DatabaseLink, IntoClause, ForUpdate, PlsqlDeclaration, SubstitutionVariable,
-    FunctionNotAllowed, UnknownQualifier, StarNotAllowed, MissingRequiredColumn, DuplicateColumnName, BindNameCollision, UnsupportedAccessSql,
+    /// <summary>The query does not parse; the message is the parser's message.</summary>
+    ParseError,
+    /// <summary>The input is not exactly one <c>SELECT</c> statement.</summary>
+    NotSingleSelect,
+    /// <summary>The query reads a table or view that <see cref="QueryPolicy.AllowedTables"/> does not list.</summary>
+    TableNotAllowed,
+    /// <summary>The query reads through a database link, such as <c>t@remote</c>.</summary>
+    DatabaseLink,
+    /// <summary>The query has an <c>INTO</c> clause.</summary>
+    IntoClause,
+    /// <summary>The query has a <c>FOR UPDATE</c> clause.</summary>
+    ForUpdate,
+    /// <summary>The query declares PL/SQL, such as a <c>WITH FUNCTION</c> declaration.</summary>
+    PlsqlDeclaration,
+    /// <summary>The query contains a SQL*Plus substitution variable, such as <c>&amp;name</c>.</summary>
+    SubstitutionVariable,
+    /// <summary>The query calls a function that the policy does not allow.</summary>
+    FunctionNotAllowed,
+    /// <summary>A column is qualified by a name that is not a table or alias in the query.</summary>
+    UnknownQualifier,
+    /// <summary>The query uses <c>*</c> while <see cref="QueryPolicy.AllowStar"/> is false.</summary>
+    StarNotAllowed,
+    /// <summary>The top-level select list does not expose a required column.</summary>
+    MissingRequiredColumn,
+    /// <summary>The top-level select list exposes the same column name more than once.</summary>
+    DuplicateColumnName,
+    /// <summary>A bind variable name in the query collides with a bind name the guard adds.</summary>
+    BindNameCollision,
+    /// <summary>The access restriction cannot be applied to this query shape.</summary>
+    UnsupportedAccessSql,
 }
 
+/// <summary>One violation found in a query, with its source position when known.</summary>
+/// <param name="Code">The kind of violation.</param>
+/// <param name="Message">A description of the violation.</param>
+/// <param name="Line">The 1-based line of the offending text, or 0 when unknown.</param>
+/// <param name="Column">The 1-based column of the offending text, or 0 when unknown.</param>
 [Experimental("PLSQLGUARD001")]
 public sealed record PolicyViolation(ViolationCode Code, string Message, int Line = 0, int Column = 0)
 {
+    /// <summary>The violation as text, prefixed with its position when known.</summary>
     public override string ToString() => Line > 0 ? $"({Line}:{Column}) {Code}: {Message}" : $"{Code}: {Message}";
 }
 
+/// <summary>Thrown when a query breaks its policy. <c>Violations</c> lists every violation found.</summary>
+/// <param name="violations">The violations that caused the rejection.</param>
 [Experimental("PLSQLGUARD001")]
 public sealed class QueryRejectedException(IReadOnlyList<PolicyViolation> violations)
     : Exception("Query rejected: " + string.Join("; ", violations))
 {
+    /// <summary>The violations that caused the rejection.</summary>
     public IReadOnlyList<PolicyViolation> Violations { get; } = violations;
 }
 
@@ -45,8 +83,15 @@ public sealed class QueryPolicy
     public bool AllowStar { get; init; }
 }
 
+/// <summary>How an <see cref="AccessFilter"/> restricts the rows of a query.</summary>
 [Experimental("PLSQLGUARD001")]
-public enum AccessJoinStyle { InSubquery, InnerJoin }
+public enum AccessJoinStyle
+{
+    /// <summary><c>KEY IN (access SQL)</c>: a filter with a subquery.</summary>
+    InSubquery,
+    /// <summary>An inner join with the access SQL on the id column.</summary>
+    InnerJoin,
+}
 
 /// <summary>The trusted restriction applied to a user query: only rows whose key is in the access list.</summary>
 [Experimental("PLSQLGUARD001")]
@@ -58,15 +103,20 @@ public sealed class AccessFilter
     /// <summary>Trusted SQL returning the permitted ids, e.g. "SELECT order_id FROM user_orders WHERE user_id = :accessUserId".</summary>
     public required string AccessSql { get; init; }
 
+    /// <summary>How the access SQL is joined to the query; <see cref="AccessJoinStyle.InSubquery"/> by default.</summary>
     public AccessJoinStyle Style { get; init; } = AccessJoinStyle.InSubquery;
 
     /// <summary>For InnerJoin style: the id column exposed by <see cref="AccessSql"/>. Ignored for InSubquery (first column is used).</summary>
     public string AccessIdColumn { get; init; } = "ID";
 }
 
+/// <summary>A query rewritten with its access restriction, and the bind variable names it needs.</summary>
+/// <param name="Sql">The rewritten SQL text.</param>
+/// <param name="BindNames">The bind variable names the rewritten SQL expects, in order.</param>
 [Experimental("PLSQLGUARD001")]
 public sealed record GuardedSql(string Sql, IReadOnlyList<string> BindNames);
 
+/// <summary>Validates user-supplied <c>SELECT</c> queries against a <see cref="QueryPolicy"/> and applies a trusted <see cref="AccessFilter"/>.</summary>
 [Experimental("PLSQLGUARD001")]
 public static class QueryGuard
 {
