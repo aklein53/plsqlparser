@@ -553,8 +553,9 @@ public sealed partial class SqlScriptGenerator
                 case PairsOfControl p: Add("PAIRS OF "); Expr(p.Collection); break;
                 case CursorControl cc: ParenQuery(cc.Query); break;
                 case DynamicSqlControl d:
-                    Add("EXECUTE IMMEDIATE "); Expr(d.Sql);
+                    Add("(EXECUTE IMMEDIATE "); Expr(d.Sql);
                     if (d.Using.Count > 0) UsingList(d.Using);
+                    Add(")");
                     break;
                 default: throw Unsupported(c);
             }

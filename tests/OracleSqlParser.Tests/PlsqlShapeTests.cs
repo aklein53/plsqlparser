@@ -43,6 +43,13 @@ BEGIN NULL; END;");
     }
 
     [Fact]
+    public void DynamicSqlControl_BareFormIsRejected()
+    {
+        // Oracle only accepts the parenthesised form FOR r IN (EXECUTE IMMEDIATE ...)
+        Assert.False(SqlParser.Parse("BEGIN FOR r IN EXECUTE IMMEDIATE 'select 1 from dual' LOOP NULL; END LOOP; END;").Success);
+    }
+
+    [Fact]
     public void ConditionalCompilation_InStatements()
     {
         Assert.Equal(
@@ -140,8 +147,10 @@ BEGIN NULL; END;");
         "[(LoopStatement kind=For iterands=[(ForIterand name=I type=(DataType name=NUMBER arguments=[5 1]))] controls=[(RangeControl lower=1 upper=2 by=0.5)] body=[(NullStatement)])]")]
     [InlineData("FOR i MUTABLE IN 1..2 LOOP NULL; END LOOP;",
         "[(LoopStatement kind=For iterands=[(ForIterand name=I mutable)] controls=[(RangeControl lower=1 upper=2)] body=[(NullStatement)])]")]
-    [InlineData("FOR r IN EXECUTE IMMEDIATE 'select 1 from dual' LOOP NULL; END LOOP;",
+    [InlineData("FOR r IN (EXECUTE IMMEDIATE 'select 1 from dual') LOOP NULL; END LOOP;",
         "[(LoopStatement kind=For iterands=[(ForIterand name=R)] controls=[(DynamicSqlControl sql='select 1 from dual')] body=[(NullStatement)])]")]
+    [InlineData("FOR r NUMBER IN (EXECUTE IMMEDIATE 'select 1 from dual' USING x) LOOP NULL; END LOOP;",
+        "[(LoopStatement kind=For iterands=[(ForIterand name=R type=(DataType name=NUMBER))] controls=[(DynamicSqlControl sql='select 1 from dual' using=[(UsingArgument value=X)])] body=[(NullStatement)])]")]
     [InlineData("OPEN c1; OPEN c2(1, 2); CLOSE c1;",
         "[(OpenStatement cursor=C1) (OpenStatement cursor=(FunctionCall name=[C2] arguments=[(Argument value=1) (Argument value=2)])) (CloseStatement cursor=C1)]")]
     [InlineData("OPEN rc FOR SELECT a FROM t WHERE b = :x USING y;",
