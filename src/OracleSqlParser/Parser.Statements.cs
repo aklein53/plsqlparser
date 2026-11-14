@@ -39,7 +39,8 @@ public sealed partial class SqlParser
             case "RENAME" when !SqlPlusCommands.Contains("RENAME"): return ParseRename();
             case "PURGE": return ParsePurge();
             case "FLASHBACK" when IsKwAt(1, "TABLE"): return ParseFlashbackTable();
-            case "ANALYZE": case "AUDIT": case "NOAUDIT": case "ASSOCIATE": case "DISASSOCIATE": case "ADMINISTER": case "FLASHBACK":
+            case "ANALYZE": return ParseAnalyze(start);
+            case "AUDIT": case "NOAUDIT": case "ASSOCIATE": case "DISASSOCIATE": case "ADMINISTER": case "FLASHBACK":
             {
                 var verb = Next().Value;
                 var body = ParseSyntaxItems(AtStatementEnd);
@@ -437,6 +438,8 @@ public sealed partial class SqlParser
         if (kind == ObjectKind.Table) return ParseAlterTable(start);
         if (kind == ObjectKind.Session) return ParseAlterSession(start);
         if (kind == ObjectKind.Domain) return ParseAlterDomain(start);
+        // typed forms rewind to the generic node when a clause is not modeled, and never apply to ALTER ... IF EXISTS
+        if (!pub && !(IsKw("IF") && IsKwAt(1, "EXISTS")) && TryParseTypedAlter(start, kind) is { } typed) return typed;
         var st = new AlterObjectStatement { Kind = kind, Public = pub };
         st.IfExists = TryIfExists();
         if (ObjectKindHasName(kind) && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) st.Name = ParseDottedName();
@@ -879,6 +882,7 @@ public sealed partial class SqlParser
             else if (AcceptKw("FORCE")) rc.Method = RefreshMethod.Force;
             else if (IsKw("ON") && IsKwAt(1, "DEMAND")) { Next(); Next(); rc.Mode = RefreshMode.OnDemand; }
             else if (IsKw("ON") && IsKwAt(1, "COMMIT")) { Next(); Next(); rc.Mode = RefreshMode.OnCommit; }
+            else if (IsKw("ON") && IsKwAt(1, "STATEMENT")) { Next(); Next(); rc.Mode = RefreshMode.OnStatement; }
             else if (IsKw("START") && IsKwAt(1, "WITH")) { Next(); Next(); rc.StartWith = ParseAdditive(); }
             else if (AcceptKw("NEXT")) rc.Next = ParseAdditive();
             else if (IsKw("WITH") && IsKwAt(1, "PRIMARY")) { Next(); Next(); ExpectKw("KEY"); rc.WithPrimaryKey = true; }
@@ -1075,6 +1079,7 @@ public sealed partial class SqlParser
 
     private AlterTableAction ParseAlterTableAction()
     {
+        if (AtPartitionMaintenanceStart()) return ParsePartitionMaintenance();
         var s = Cur;
         var a = new AlterTableAction();
         if (IsKw("ADD") && !(IsKwAt(1, "PARTITION") || IsKwAt(1, "SUPPLEMENTAL") || IsKwAt(1, "PERIOD") || IsKwAt(1, "SUBPARTITION") || IsKwAt(1, "OVERFLOW") || IsKwAt(1, "ATTRIBUTE")))

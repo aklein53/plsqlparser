@@ -429,7 +429,7 @@ public sealed partial class SqlScriptGenerator
             if (r.Method == RefreshMethod.Never) { Add("NEVER REFRESH"); return; }
             Add("REFRESH");
             if (r.Method != null) Add(r.Method switch { RefreshMethod.Fast => " FAST", RefreshMethod.Complete => " COMPLETE", _ => " FORCE" });
-            if (r.Mode != null) Add(r.Mode == RefreshMode.OnDemand ? " ON DEMAND" : " ON COMMIT");
+            if (r.Mode != null) Add(r.Mode switch { RefreshMode.OnDemand => " ON DEMAND", RefreshMode.OnCommit => " ON COMMIT", _ => " ON STATEMENT" });
             if (r.StartWith != null) { Add(" START WITH "); Expr(r.StartWith); }
             if (r.Next != null) { Add(" NEXT "); Expr(r.Next); }
             if (r.WithPrimaryKey) Add(" WITH PRIMARY KEY");
@@ -486,7 +486,9 @@ public sealed partial class SqlScriptGenerator
                 case AlterTableActionKind.Attributes:
                     Sep(a.Attributes, Attribute, " ");
                     break;
-                default: SyntaxList(a.Syntax); break;
+                default:
+                    if (!AlterPartitionAction(a)) SyntaxList(a.Syntax);
+                    break;
             }
         }
 

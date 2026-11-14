@@ -18,12 +18,19 @@ public sealed partial class SqlScriptGenerator
                 case DeleteStatement d: Delete(d); break;
                 case MergeStatement m: Merge(m); break;
                 // transaction / session / admin
+                case AnalyzeStatement an: Analyze(an); break;
                 case CommitStatement or RollbackStatement or SavepointStatement or SetTransactionStatement or SetConstraintsStatement
                     or SetRoleStatement or AlterSessionStatement or CallStatement or ExplainPlanStatement or LockTableStatement
                     or TruncateStatement or CommentStatement or GrantStatement or RenameStatement or PurgeStatement
                     or FlashbackTableStatement or ExecStatement or SqlPlusCommand or AdminStatement:
                     AdminLike(st); break;
                 // generic and typed DDL
+                case AlterIndexStatement ai: AlterIndex(ai); break;
+                case AlterSequenceStatement asq: AlterSequence(asq); break;
+                case AlterCompileStatement acs: AlterCompile(acs); break;
+                case AlterTriggerStatement ats: AlterTrigger(ats); break;
+                case AlterViewStatement avs: AlterView(avs); break;
+                case AlterMaterializedViewStatement amv: AlterMaterializedView(amv); break;
                 case CreateObjectStatement or AlterObjectStatement or DropStatement or CreateTableStatement or CreateIndexStatement
                     or CreateViewStatement or CreateSequenceStatement or CreateSynonymStatement or AlterTableStatement or CreatePropertyGraphStatement
                     or CreateDomainStatement or AlterDomainStatement

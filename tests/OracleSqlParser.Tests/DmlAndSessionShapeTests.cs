@@ -139,10 +139,25 @@ public class DmlAndSessionShapeTests
     public void Grants(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
-    [InlineData("ANALYZE TABLE emp COMPUTE STATISTICS", "(AdminStatement verb=ANALYZE body=[(WordItem value=TABLE) (WordItem value=EMP) (WordItem value=COMPUTE) (WordItem value=STATISTICS)])")]
     [InlineData("AUDIT SELECT ON emp BY ACCESS", "(AdminStatement verb=AUDIT body=[(WordItem value=SELECT) (WordItem value=ON) (WordItem value=EMP) (WordItem value=BY) (WordItem value=ACCESS)])")]
     [InlineData("ADMINISTER KEY MANAGEMENT CREATE KEYSTORE 'k' IDENTIFIED BY pw", "(AdminStatement verb=ADMINISTER body=[(WordItem value=KEY) (WordItem value=MANAGEMENT) (WordItem value=CREATE) (WordItem value=KEYSTORE) (LiteralItem kind=String value=k) (WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=PW)])")]
     public void AdminTokenTreeStatements(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("ANALYZE TABLE emp COMPUTE STATISTICS", "(AnalyzeStatement target=Table name=[EMP] action=ComputeStatistics)")]
+    [InlineData("ANALYZE INDEX ix COMPUTE SYSTEM STATISTICS", "(AnalyzeStatement target=Index name=[IX] action=ComputeStatistics systemStatistics)")]
+    [InlineData("ANALYZE CLUSTER c DELETE STATISTICS", "(AnalyzeStatement target=Cluster name=[C] action=DeleteStatistics)")]
+    [InlineData("ANALYZE TABLE t PARTITION (p1) COMPUTE STATISTICS FOR ALL COLUMNS SIZE 10",
+        "(AnalyzeStatement target=Table name=[T] partition=(PartitionReference name=P1) action=ComputeStatistics otherClauses=[(WordItem value=FOR) (WordItem value=ALL) (WordItem value=COLUMNS) (WordItem value=SIZE) (LiteralItem kind=Number value=10)])")]
+    [InlineData("ANALYZE TABLE t SUBPARTITION (s1) ESTIMATE STATISTICS SAMPLE 10 PERCENT",
+        "(AnalyzeStatement target=Table name=[T] partition=(PartitionReference subpartition name=S1) action=EstimateStatistics sample=10 samplePercent)")]
+    [InlineData("ANALYZE TABLE t ESTIMATE STATISTICS SAMPLE 500 ROWS", "(AnalyzeStatement target=Table name=[T] action=EstimateStatistics sample=500)")]
+    [InlineData("ANALYZE TABLE t VALIDATE STRUCTURE CASCADE ONLINE", "(AnalyzeStatement target=Table name=[T] action=ValidateStructure cascade online=true)")]
+    [InlineData("ANALYZE TABLE t VALIDATE STRUCTURE OFFLINE", "(AnalyzeStatement target=Table name=[T] action=ValidateStructure online=false)")]
+    [InlineData("ANALYZE TABLE t LIST CHAINED ROWS INTO chained_rows", "(AnalyzeStatement target=Table name=[T] action=ListChainedRows intoTable=[CHAINED_ROWS])")]
+    [InlineData("ANALYZE TABLE t VALIDATE REF UPDATE",
+        "(AnalyzeStatement target=Table name=[T] action=Other otherClauses=[(WordItem value=VALIDATE) (WordItem value=REF) (WordItem value=UPDATE)])")]
+    public void AnalyzeStatements(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Fact]
     public void SqlPlus_Commands_And_Terminators()

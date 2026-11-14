@@ -26,12 +26,17 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 | CREATE INDEX, VIEW, MATERIALIZED VIEW, SEQUENCE, SYNONYM | `CreateIndexStatement` … | typed | DdlShape |
 | CREATE [OR REPLACE] [USECASE] DOMAIN, ALTER DOMAIN (DISPLAY, ORDER, ANNOTATIONS); column `DOMAIN d` | `CreateDomainStatement`, `AlterDomainStatement`, `ColumnDefinition.Domain` | typed; ANNOTATIONS, multi-column and other unmodelled clauses are kept in `OtherClauses` tokens | DomainShape |
 | CREATE [OR REPLACE] PROPERTY GRAPH (VERTEX/EDGE TABLES, KEY, SOURCE/DESTINATION, LABEL, PROPERTIES) | `CreatePropertyGraphStatement` | typed; unmodelled clauses kept in `OtherClauses` tokens | PropertyGraphShape |
-| ALTER TABLE | `AlterTableStatement` | typed (partition/other maintenance actions: `Syntax` token tree) | DdlShape |
+| ALTER INDEX (REBUILD, RENAME, UNUSABLE, VISIBLE, MONITORING, COALESCE, ENABLE/DISABLE, attributes, SHRINK SPACE, DEALLOCATE UNUSED) | `AlterIndexStatement` | typed (physical attributes reuse the CREATE nodes) | DdlShape, SmokeCorpus |
+| ALTER SEQUENCE (all options; RESTART as an option word) | `AlterSequenceStatement` | typed (shares `SequenceOption` with CREATE) | DdlShape, SmokeCorpus |
+| ALTER of PROCEDURE/FUNCTION/PACKAGE [BODY]/TYPE [BODY]/TRIGGER/LIBRARY/JAVA/VIEW/SYNONYM: COMPILE [DEBUG] [SPECIFICATION|BODY|PACKAGE] [REUSE SETTINGS] [param = v], EDITIONABLE/NONEDITIONABLE; ALTER TRIGGER ENABLE/DISABLE/RENAME TO; ALTER VIEW ADD/MODIFY/DROP CONSTRAINT, READ ONLY/WRITE | `AlterCompileStatement`, `AlterTriggerStatement`, `AlterViewStatement` | typed (other clauses stay `AlterObjectStatement`) | DdlShape, SmokeCorpus |
+| ALTER MATERIALIZED VIEW (REFRESH options, ENABLE/DISABLE QUERY REWRITE, COMPILE, CONSIDER FRESH, SHRINK SPACE, CACHE/LOGGING/PARALLEL) | `AlterMaterializedViewStatement` | typed (refresh reuses `RefreshClause`) | DdlShape, SmokeCorpus |
+| ALTER TABLE | `AlterTableStatement` | typed (ADD/DROP/TRUNCATE/SPLIT/MERGE/EXCHANGE/MOVE/RENAME PARTITION, MODIFY PARTITION ADD/DROP VALUES, SET INTERVAL; other maintenance actions: `Syntax` token tree) | DdlShape, SmokeCorpus |
 | DROP (any object kind) | `DropStatement` | typed | DdlShape |
 | CREATE PROCEDURE/FUNCTION/PACKAGE [BODY]/TRIGGER/TYPE [BODY]/LIBRARY/JAVA | `CreateProgramStatement` … | typed | PlsqlShape, DdlShape |
 | CREATE of any other object (USER, ROLE, PROFILE, TABLESPACE, DATABASE LINK, DIRECTORY, CLUSTER, CONTEXT, DIMENSION, EDITION, OPERATOR, INDEXTYPE, OUTLINE, JSON DUALITY VIEW, MV LOG, ZONEMAP, ANALYTIC VIEW, ...) | `CreateObjectStatement` | header+tree |
-| ALTER of any object other than TABLE/SESSION (INDEX, VIEW, SEQUENCE, MV, TRIGGER, PROCEDURE, USER, SYSTEM, DATABASE, ...) | `AlterObjectStatement` | header+tree |
-| ANALYZE, AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE | `AdminStatement` | header+tree |
+| ALTER of any object other than TABLE/SESSION/INDEX/SEQUENCE/MATERIALIZED VIEW/DOMAIN and the typed compiled-unit forms ( TRIGGER, PROCEDURE, USER, SYSTEM, DATABASE, ...) | `AlterObjectStatement` | header+tree |
+| ANALYZE TABLE/INDEX/CLUSTER (COMPUTE/ESTIMATE/DELETE STATISTICS, VALIDATE STRUCTURE, LIST CHAINED ROWS; FOR clauses and other forms in a token tree) | `AnalyzeStatement` | typed (trailing clauses: `OtherClauses` token tree) | DmlAndSessionShape, SmokeCorpus |
+| AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE | `AdminStatement` | header+tree |
 
 ## PL/SQL
 

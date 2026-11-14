@@ -152,11 +152,139 @@ public class DdlShapeTests
     [InlineData("ALTER TABLE t RENAME TO t_old", "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=RenameTo newName=T_OLD)])")]
     [InlineData("ALTER TABLE t ENABLE ROW MOVEMENT", "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=Attributes attributes=[(RowMovementAttribute enabled)])])")]
     [InlineData("ALTER TABLE t PCTFREE 5 NOLOGGING", "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=Attributes attributes=[(NumericAttribute kind=PctFree value=5) (LoggingAttribute)])])")]
-    [InlineData("ALTER TABLE t ADD PARTITION p3 VALUES LESS THAN (30)",
-        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=Other syntax=[(WordItem value=ADD) (WordItem value=PARTITION) (WordItem value=P3) (WordItem value=VALUES) (WordItem value=LESS) (WordItem value=THAN) (GroupItem items=[(LiteralItem kind=Number value=30)])])])")]
     [InlineData("ALTER TABLE IF EXISTS t ADD c NUMBER MODIFY d DATE DROP COLUMN e",
         "(AlterTableStatement name=[T] ifExists actions=[(AlterTableAction kind=AddColumns columns=[(ColumnDefinition name=C type=(DataType name=NUMBER))]) (AlterTableAction kind=ModifyColumns columns=[(ColumnDefinition name=D type=(DataType name=DATE))]) (AlterTableAction kind=DropColumns names=[E])])")]
     public void AlterTable(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("ALTER INDEX ix REBUILD", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Rebuild)])")]
+    [InlineData("ALTER INDEX ix REBUILD PARTITION p3 ONLINE TABLESPACE ts PARALLEL 4 NOLOGGING",
+        "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Rebuild partition=P3 online attributes=[(TablespaceAttribute name=TS) (ParallelAttribute degree=4) (LoggingAttribute)])])")]
+    [InlineData("ALTER INDEX ix REBUILD SUBPARTITION s1 REVERSE COMPRESS 2", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Rebuild partition=S1 subpartition reverse=true attributes=[(CompressAttribute compress prefixLength=2)])])")]
+    [InlineData("ALTER INDEX ix REBUILD NOREVERSE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Rebuild reverse=false)])")]
+    [InlineData("ALTER INDEX ix RENAME TO ix2", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=RenameTo newName=IX2)])")]
+    [InlineData("ALTER INDEX ix UNUSABLE ONLINE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Unusable online)])")]
+    [InlineData("ALTER INDEX ix INVISIBLE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Visibility visible=false)])")]
+    [InlineData("ALTER INDEX ix VISIBLE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Visibility visible=true)])")]
+    [InlineData("ALTER INDEX ix NOMONITORING USAGE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=MonitoringUsage monitoring=false)])")]
+    [InlineData("ALTER INDEX ix MONITORING USAGE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=MonitoringUsage monitoring=true)])")]
+    [InlineData("ALTER INDEX ix COALESCE CLEANUP ONLY", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Coalesce cleanup only)])")]
+    [InlineData("ALTER INDEX ix ENABLE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=EnableDisable enabled=true)])")]
+    [InlineData("ALTER INDEX ix DISABLE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=EnableDisable enabled=false)])")]
+    [InlineData("ALTER INDEX ix PARALLEL 4 NOLOGGING", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Attributes attributes=[(ParallelAttribute degree=4) (LoggingAttribute)])])")]
+    [InlineData("ALTER INDEX ix SHRINK SPACE COMPACT CASCADE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=ShrinkSpace compact cascade)])")]
+    [InlineData("ALTER INDEX ix DEALLOCATE UNUSED", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=DeallocateUnused)])")]
+    [InlineData("ALTER INDEX ix DEALLOCATE UNUSED KEEP 1024", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=DeallocateUnused keep=1024)])")]
+    [InlineData("ALTER INDEX ix REBUILD TABLESPACE ts ONLINE", "(AlterIndexStatement name=[IX] actions=[(AlterIndexAction kind=Rebuild online attributes=[(TablespaceAttribute name=TS)])])")]
+    public void AlterIndex(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("ALTER SEQUENCE s INCREMENT BY 5", "(AlterSequenceStatement name=[S] options=[(SequenceOption name=INCREMENT BY value=5)])")]
+    [InlineData("ALTER SEQUENCE s NOMAXVALUE NOCYCLE CACHE 20 ORDER",
+        "(AlterSequenceStatement name=[S] options=[(SequenceOption name=NOMAXVALUE) (SequenceOption name=NOCYCLE) (SequenceOption name=CACHE value=20) (SequenceOption name=ORDER)])")]
+    [InlineData("ALTER SEQUENCE s RESTART START WITH 100", "(AlterSequenceStatement name=[S] options=[(SequenceOption name=RESTART) (SequenceOption name=START WITH value=100)])")]
+    [InlineData("ALTER SEQUENCE s MAXVALUE 999 MINVALUE 1 KEEP NOSCALE SHARD SESSION",
+        "(AlterSequenceStatement name=[S] options=[(SequenceOption name=MAXVALUE value=999) (SequenceOption name=MINVALUE value=1) (SequenceOption name=KEEP) (SequenceOption name=NOSCALE) (SequenceOption name=SHARD) (SequenceOption name=SESSION)])")]
+    [InlineData("ALTER SEQUENCE s NOSHARD GLOBAL NOKEEP", "(AlterSequenceStatement name=[S] options=[(SequenceOption name=NOSHARD) (SequenceOption name=GLOBAL) (SequenceOption name=NOKEEP)])")]
+    public void AlterSequence(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("ALTER PROCEDURE p COMPILE", "(AlterCompileStatement kind=Procedure name=[P] compile)")]
+    [InlineData("ALTER FUNCTION f COMPILE DEBUG REUSE SETTINGS", "(AlterCompileStatement kind=Function name=[F] compile debug reuseSettings)")]
+    [InlineData("ALTER PACKAGE pk COMPILE DEBUG SPECIFICATION REUSE SETTINGS PLSQL_OPTIMIZE_LEVEL = 2",
+        "(AlterCompileStatement kind=Package name=[PK] compile debug part=Specification reuseSettings parameters=[(SessionSetting name=[PLSQL_OPTIMIZE_LEVEL] value=2)])")]
+    [InlineData("ALTER PACKAGE pk COMPILE BODY", "(AlterCompileStatement kind=Package name=[PK] compile part=Body)")]
+    [InlineData("ALTER PACKAGE pk COMPILE PACKAGE", "(AlterCompileStatement kind=Package name=[PK] compile part=Package)")]
+    [InlineData("ALTER TYPE ty COMPILE BODY", "(AlterCompileStatement kind=Type name=[TY] compile part=Body)")]
+    [InlineData("ALTER TRIGGER tr COMPILE", "(AlterCompileStatement kind=Trigger name=[TR] compile)")]
+    [InlineData("ALTER LIBRARY lib COMPILE", "(AlterCompileStatement kind=Library name=[LIB] compile)")]
+    [InlineData("ALTER JAVA SOURCE js COMPILE", "(AlterCompileStatement kind=JavaSource name=[JS] compile)")]
+    [InlineData("ALTER SYNONYM syn COMPILE", "(AlterCompileStatement kind=Synonym name=[SYN] compile)")]
+    [InlineData("ALTER FUNCTION f EDITIONABLE", "(AlterCompileStatement kind=Function name=[F] editionable=Editionable)")]
+    [InlineData("ALTER PROCEDURE p NONEDITIONABLE", "(AlterCompileStatement kind=Procedure name=[P] editionable=NonEditionable)")]
+    [InlineData("ALTER VIEW v COMPILE", "(AlterCompileStatement kind=View name=[V] compile)")]
+    [InlineData("ALTER TRIGGER tr ENABLE", "(AlterTriggerStatement name=[TR] enable=true)")]
+    [InlineData("ALTER TRIGGER tr DISABLE", "(AlterTriggerStatement name=[TR] enable=false)")]
+    [InlineData("ALTER TRIGGER tr RENAME TO tr2", "(AlterTriggerStatement name=[TR] renameTo=TR2)")]
+    [InlineData("ALTER VIEW v DROP CONSTRAINT c", "(AlterViewStatement name=[V] actions=[(AlterTableAction kind=DropConstraint names=[C])])")]
+    [InlineData("ALTER VIEW v DROP PRIMARY KEY", "(AlterViewStatement name=[V] actions=[(AlterTableAction kind=DropPrimaryKey)])")]
+    [InlineData("ALTER VIEW v DROP UNIQUE (a, b)", "(AlterViewStatement name=[V] actions=[(AlterTableAction kind=DropUnique names=[A B])])")]
+    [InlineData("ALTER VIEW v ADD CONSTRAINT pk PRIMARY KEY (id) RELY DISABLE",
+        "(AlterViewStatement name=[V] actions=[(AlterTableAction kind=AddConstraint constraints=[(TableConstraint name=PK kind=PrimaryKey columns=[ID] state=(ConstraintState enable=false rely=true))])])")]
+    [InlineData("ALTER VIEW v MODIFY CONSTRAINT pk RELY", "(AlterViewStatement name=[V] actions=[(AlterTableAction kind=ModifyConstraint constraints=[(TableConstraint name=PK state=(ConstraintState rely=true))])])")]
+    [InlineData("ALTER VIEW v READ ONLY", "(AlterViewStatement name=[V] readOnly=true)")]
+    [InlineData("ALTER VIEW v READ WRITE", "(AlterViewStatement name=[V] readOnly=false)")]
+    public void AlterCompileAndUnits(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("ALTER MATERIALIZED VIEW mv REFRESH FAST ON COMMIT", "(AlterMaterializedViewStatement name=[MV] refresh=(RefreshClause method=Fast mode=OnCommit))")]
+    [InlineData("ALTER MATERIALIZED VIEW mv REFRESH COMPLETE ON DEMAND START WITH SYSDATE NEXT SYSDATE + 1",
+        "(AlterMaterializedViewStatement name=[MV] refresh=(RefreshClause method=Complete mode=OnDemand startWith=SYSDATE next=(+ SYSDATE 1)))")]
+    [InlineData("ALTER MATERIALIZED VIEW mv REFRESH FORCE ON STATEMENT WITH PRIMARY KEY", "(AlterMaterializedViewStatement name=[MV] refresh=(RefreshClause method=Force mode=OnStatement withPrimaryKey))")]
+    [InlineData("ALTER MATERIALIZED VIEW mv NEVER REFRESH", "(AlterMaterializedViewStatement name=[MV] refresh=(RefreshClause method=Never))")]
+    [InlineData("ALTER MATERIALIZED VIEW mv ENABLE QUERY REWRITE", "(AlterMaterializedViewStatement name=[MV] queryRewrite=true)")]
+    [InlineData("ALTER MATERIALIZED VIEW mv DISABLE QUERY REWRITE", "(AlterMaterializedViewStatement name=[MV] queryRewrite=false)")]
+    [InlineData("ALTER MATERIALIZED VIEW mv COMPILE", "(AlterMaterializedViewStatement name=[MV] compile)")]
+    [InlineData("ALTER MATERIALIZED VIEW mv CONSIDER FRESH", "(AlterMaterializedViewStatement name=[MV] considerFresh)")]
+    [InlineData("ALTER MATERIALIZED VIEW mv SHRINK SPACE COMPACT CASCADE", "(AlterMaterializedViewStatement name=[MV] shrinkSpace shrinkCompact shrinkCascade)")]
+    [InlineData("ALTER MATERIALIZED VIEW mv NOCACHE NOLOGGING PARALLEL 4",
+        "(AlterMaterializedViewStatement name=[MV] attributes=[(CacheAttribute) (LoggingAttribute) (ParallelAttribute degree=4)])")]
+    [InlineData("ALTER MATERIALIZED VIEW mv REFRESH FAST ENABLE QUERY REWRITE LOGGING",
+        "(AlterMaterializedViewStatement name=[MV] refresh=(RefreshClause method=Fast) queryRewrite=true attributes=[(LoggingAttribute logging)])")]
+    [InlineData("CREATE MATERIALIZED VIEW mv REFRESH FAST ON STATEMENT AS SELECT 1 FROM dual", "(CreateViewStatement materialized name=[MV] refresh=(RefreshClause method=Fast mode=OnStatement) query=" + SelDual + ")")]
+    public void AlterMaterializedView(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("ALTER SEQUENCE IF EXISTS s INCREMENT BY 5", "(AlterObjectStatement kind=Sequence ifExists name=[S] body=[(WordItem value=INCREMENT) (WordItem value=BY) (LiteralItem kind=Number value=5)])")]
+    [InlineData("ALTER INDEX IF EXISTS ix REBUILD", "(AlterObjectStatement kind=Index ifExists name=[IX] body=[(WordItem value=REBUILD)])")]
+    [InlineData("ALTER INDEX ix RENAME PARTITION p1 TO p2", "(AlterObjectStatement kind=Index name=[IX] body=[(WordItem value=RENAME) (WordItem value=PARTITION) (WordItem value=P1) (WordItem value=TO) (WordItem value=P2)])")]
+    [InlineData("ALTER INDEX ix MODIFY PARTITION p2 UNUSABLE", "(AlterObjectStatement kind=Index name=[IX] body=[(WordItem value=MODIFY) (WordItem value=PARTITION) (WordItem value=P2) (WordItem value=UNUSABLE)])")]
+    [InlineData("ALTER MATERIALIZED VIEW mv MODIFY COLUMN c NULL", "(AlterObjectStatement kind=MaterializedView name=[MV] body=[(WordItem value=MODIFY) (WordItem value=COLUMN) (WordItem value=C) (WordItem value=NULL)])")]
+    [InlineData("ALTER TRIGGER tr COMPILE REUSE SETTINGS", "(AlterCompileStatement kind=Trigger name=[TR] compile reuseSettings)")]
+    [InlineData("ALTER TABLE t SPLIT PARTITION p INTO (PARTITION a VALUES LESS THAN (10), PARTITION b VALUES LESS THAN (20), PARTITION c)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=SplitPartition partitionRefs=[(PartitionReference name=P)] partitions=[(PartitionDefinition name=A lessThan values=[10]) (PartitionDefinition name=B lessThan values=[20]) (PartitionDefinition name=C)])])")]
+    [InlineData("ALTER TABLE t TRUNCATE PARTITION p1 DROP STORAGE UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=TruncatePartition partitionRefs=[(PartitionReference name=P1)] updateIndexes storage=DropStorage)])")]
+    [InlineData("ALTER TABLE t TRUNCATE PARTITION p1 REUSE STORAGE",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=TruncatePartition partitionRefs=[(PartitionReference name=P1)] storage=ReuseStorage)])")]
+    public void AlterFallbacksAndMultiWaySplit(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("ALTER TABLE t ADD PARTITION p3 VALUES LESS THAN (30)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=AddPartition partitions=[(PartitionDefinition name=P3 lessThan values=[30])])])")]
+    [InlineData("ALTER TABLE t ADD PARTITION p4 VALUES (1, 2) TABLESPACE ts",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=AddPartition partitions=[(PartitionDefinition name=P4 values=[1 2] attributes=[(TablespaceAttribute name=TS)])])])")]
+    [InlineData("ALTER TABLE t DROP PARTITION p1, p2 UPDATE GLOBAL INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=DropPartition partitionRefs=[(PartitionReference name=P1) (PartitionReference name=P2)] updateIndexes globalIndexes)])")]
+    [InlineData("ALTER TABLE t DROP SUBPARTITION s1 UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=DropPartition partitionRefs=[(PartitionReference subpartition name=S1)] updateIndexes)])")]
+    [InlineData("ALTER TABLE t DROP PARTITION FOR (5)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=DropPartition partitionRefs=[(PartitionReference forValues=[5])])])")]
+    [InlineData("ALTER TABLE t TRUNCATE PARTITION p1 UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=TruncatePartition partitionRefs=[(PartitionReference name=P1)] updateIndexes)])")]
+    [InlineData("ALTER TABLE t SPLIT PARTITION p AT (10) INTO (PARTITION a TABLESPACE x, PARTITION b) UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=SplitPartition partitionRefs=[(PartitionReference name=P)] partitions=[(PartitionDefinition name=A attributes=[(TablespaceAttribute name=X)]) (PartitionDefinition name=B)] values=[10] updateIndexes)])")]
+    [InlineData("ALTER TABLE t SPLIT PARTITION p VALUES (1, 2)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=SplitPartition partitionRefs=[(PartitionReference name=P)] values=[1 2] splitByValues)])")]
+    [InlineData("ALTER TABLE t MERGE PARTITIONS a, b INTO PARTITION c UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=MergePartitions partitionRefs=[(PartitionReference name=A) (PartitionReference name=B)] partitions=[(PartitionDefinition name=C)] updateIndexes)])")]
+    [InlineData("ALTER TABLE t MERGE PARTITIONS a, b",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=MergePartitions partitionRefs=[(PartitionReference name=A) (PartitionReference name=B)])])")]
+    [InlineData("ALTER TABLE t EXCHANGE PARTITION p WITH TABLE u INCLUDING INDEXES WITHOUT VALIDATION",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=ExchangePartition names=[U] partitionRefs=[(PartitionReference name=P)] includingIndexes=true withValidation=false)])")]
+    [InlineData("ALTER TABLE t EXCHANGE PARTITION p WITH TABLE u EXCLUDING INDEXES WITH VALIDATION",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=ExchangePartition names=[U] partitionRefs=[(PartitionReference name=P)] includingIndexes=false withValidation=true)])")]
+    [InlineData("ALTER TABLE t MOVE PARTITION p TABLESPACE ts ONLINE UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=MovePartition online attributes=[(TablespaceAttribute name=TS)] partitionRefs=[(PartitionReference name=P)] updateIndexes)])")]
+    [InlineData("ALTER TABLE t RENAME PARTITION a TO b",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=RenamePartition newName=B partitionRefs=[(PartitionReference name=A)])])")]
+    [InlineData("ALTER TABLE t MODIFY PARTITION p ADD VALUES (3)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=ModifyPartitionValues partitionRefs=[(PartitionReference name=P)] values=[3] addValues=true)])")]
+    [InlineData("ALTER TABLE t MODIFY PARTITION p DROP VALUES (3)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=ModifyPartitionValues partitionRefs=[(PartitionReference name=P)] values=[3] addValues=false)])")]
+    [InlineData("ALTER TABLE t SET INTERVAL (1)", "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=SetInterval interval=1)])")]
+    [InlineData("ALTER TABLE t SET INTERVAL ()", "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=SetInterval)])")]
+    public void AlterTablePartitionMaintenance(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
     [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateObjectStatement kind=User name=[BOB] body=[(WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=PW)])")]
@@ -169,10 +297,7 @@ public class DdlShapeTests
     [InlineData("CREATE JSON RELATIONAL DUALITY VIEW dv AS SELECT 1", "(CreateObjectStatement kind=JsonRelationalDualityView name=[DV] body=[(WordItem value=AS) (WordItem value=SELECT) (LiteralItem kind=Number value=1)])")]
     [InlineData("CREATE MATERIALIZED VIEW LOG ON t WITH PRIMARY KEY", "(CreateObjectStatement kind=MaterializedViewLog body=[(WordItem value=ON) (WordItem value=T) (WordItem value=WITH) (WordItem value=PRIMARY) (WordItem value=KEY)])")]
     [InlineData("ALTER SYSTEM FLUSH SHARED_POOL", "(AlterObjectStatement kind=System body=[(WordItem value=FLUSH) (WordItem value=SHARED_POOL)])")]
-    [InlineData("ALTER INDEX ix REBUILD", "(AlterObjectStatement kind=Index name=[IX] body=[(WordItem value=REBUILD)])")]
     [InlineData("ALTER USER u ACCOUNT LOCK", "(AlterObjectStatement kind=User name=[U] body=[(WordItem value=ACCOUNT) (WordItem value=LOCK)])")]
-    [InlineData("ALTER PROCEDURE p COMPILE", "(AlterObjectStatement kind=Procedure name=[P] body=[(WordItem value=COMPILE)])")]
-    [InlineData("ALTER SEQUENCE s INCREMENT BY 5", "(AlterObjectStatement kind=Sequence name=[S] body=[(WordItem value=INCREMENT) (WordItem value=BY) (LiteralItem kind=Number value=5)])")]
     public void GenericObjectDdl(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Fact]

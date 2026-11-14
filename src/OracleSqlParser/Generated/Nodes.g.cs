@@ -90,6 +90,64 @@ public partial class AdminStatement
     }
 }
 
+public partial class AlterCompileStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Parameters is not null) foreach (var x in Parameters) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        if (Parameters is not null) foreach (var x in Parameters) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AlterCompileStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Parameters, "AlterCompileStatement.Parameters");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterCompileStatement();
+        CopySpan(this, c);
+        c.Kind = Kind;
+        c.Name = CloneList(Name);
+        c.Editionable = Editionable;
+        c.Compile = Compile;
+        c.Debug = Debug;
+        c.Part = Part;
+        c.ReuseSettings = ReuseSettings;
+        c.Parameters = CloneList(Parameters);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterCompileStatement)other;
+        return Kind == o.Kind
+            && PairList(Name, o.Name, pending)
+            && Editionable == o.Editionable
+            && Compile == o.Compile
+            && Debug == o.Debug
+            && Part == o.Part
+            && ReuseSettings == o.ReuseSettings
+            && PairList(Parameters, o.Parameters, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class AlterDomainAction
 {
     /// <inheritdoc/>
@@ -182,6 +240,191 @@ public partial class AlterDomainStatement
     }
 }
 
+public partial class AlterIndexAction
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Partition is not null) yield return Partition;
+        if (NewName is not null) yield return NewName;
+        if (Keep is not null) yield return Keep;
+        if (Attributes is not null) foreach (var x in Attributes) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Partition?.Accept(visitor);
+        NewName?.Accept(visitor);
+        Keep?.Accept(visitor);
+        if (Attributes is not null) foreach (var x in Attributes) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Partition = SqlNodeRewriter.RewriteOptional(rewriter, Partition, "AlterIndexAction.Partition");
+        NewName = SqlNodeRewriter.RewriteOptional(rewriter, NewName, "AlterIndexAction.NewName");
+        Keep = SqlNodeRewriter.RewriteOptional(rewriter, Keep, "AlterIndexAction.Keep");
+        SqlNodeRewriter.RewriteList(rewriter, Attributes, "AlterIndexAction.Attributes");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterIndexAction();
+        CopySpan(this, c);
+        c.Kind = Kind;
+        c.Partition = CloneChild(Partition);
+        c.Subpartition = Subpartition;
+        c.Reverse = Reverse;
+        c.Online = Online;
+        c.NewName = CloneChild(NewName);
+        c.Visible = Visible;
+        c.Monitoring = Monitoring;
+        c.Cleanup = Cleanup;
+        c.Only = Only;
+        c.Enabled = Enabled;
+        c.Compact = Compact;
+        c.Cascade = Cascade;
+        c.Keep = CloneChild(Keep);
+        c.Attributes = CloneList(Attributes);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterIndexAction)other;
+        return Kind == o.Kind
+            && Pair(Partition, o.Partition, pending)
+            && Subpartition == o.Subpartition
+            && Reverse == o.Reverse
+            && Online == o.Online
+            && Pair(NewName, o.NewName, pending)
+            && Visible == o.Visible
+            && Monitoring == o.Monitoring
+            && Cleanup == o.Cleanup
+            && Only == o.Only
+            && Enabled == o.Enabled
+            && Compact == o.Compact
+            && Cascade == o.Cascade
+            && Pair(Keep, o.Keep, pending)
+            && PairList(Attributes, o.Attributes, pending);
+    }
+}
+
+public partial class AlterIndexStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Actions is not null) foreach (var x in Actions) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        if (Actions is not null) foreach (var x in Actions) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AlterIndexStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Actions, "AlterIndexStatement.Actions");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterIndexStatement();
+        CopySpan(this, c);
+        c.Name = CloneList(Name);
+        c.Actions = CloneList(Actions);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterIndexStatement)other;
+        return PairList(Name, o.Name, pending)
+            && PairList(Actions, o.Actions, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class AlterMaterializedViewStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Refresh is not null) yield return Refresh;
+        if (Attributes is not null) foreach (var x in Attributes) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        Refresh?.Accept(visitor);
+        if (Attributes is not null) foreach (var x in Attributes) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AlterMaterializedViewStatement.Name");
+        Refresh = SqlNodeRewriter.RewriteOptional(rewriter, Refresh, "AlterMaterializedViewStatement.Refresh");
+        SqlNodeRewriter.RewriteList(rewriter, Attributes, "AlterMaterializedViewStatement.Attributes");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterMaterializedViewStatement();
+        CopySpan(this, c);
+        c.Name = CloneList(Name);
+        c.Refresh = CloneChild(Refresh);
+        c.QueryRewrite = QueryRewrite;
+        c.Compile = Compile;
+        c.ConsiderFresh = ConsiderFresh;
+        c.ShrinkSpace = ShrinkSpace;
+        c.ShrinkCompact = ShrinkCompact;
+        c.ShrinkCascade = ShrinkCascade;
+        c.Attributes = CloneList(Attributes);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterMaterializedViewStatement)other;
+        return PairList(Name, o.Name, pending)
+            && Pair(Refresh, o.Refresh, pending)
+            && QueryRewrite == o.QueryRewrite
+            && Compile == o.Compile
+            && ConsiderFresh == o.ConsiderFresh
+            && ShrinkSpace == o.ShrinkSpace
+            && ShrinkCompact == o.ShrinkCompact
+            && ShrinkCascade == o.ShrinkCascade
+            && PairList(Attributes, o.Attributes, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class AlterObjectStatement
 {
     /// <inheritdoc/>
@@ -230,6 +473,52 @@ public partial class AlterObjectStatement
             && IfExists == o.IfExists
             && PairList(Name, o.Name, pending)
             && PairList(Body, o.Body, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class AlterSequenceStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Options is not null) foreach (var x in Options) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        if (Options is not null) foreach (var x in Options) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AlterSequenceStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Options, "AlterSequenceStatement.Options");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterSequenceStatement();
+        CopySpan(this, c);
+        c.Name = CloneList(Name);
+        c.Options = CloneList(Options);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterSequenceStatement)other;
+        return PairList(Name, o.Name, pending)
+            && PairList(Options, o.Options, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -316,6 +605,10 @@ public partial class AlterTableAction
         if (Names is not null) foreach (var x in Names) yield return x;
         if (NewName is not null) yield return NewName;
         if (Attributes is not null) foreach (var x in Attributes) yield return x;
+        if (PartitionRefs is not null) foreach (var x in PartitionRefs) yield return x;
+        if (Partitions is not null) foreach (var x in Partitions) yield return x;
+        if (Values is not null) foreach (var x in Values) yield return x;
+        if (Interval is not null) yield return Interval;
         if (Syntax is not null) foreach (var x in Syntax) yield return x;
     }
 
@@ -327,6 +620,10 @@ public partial class AlterTableAction
         if (Names is not null) foreach (var x in Names) x.Accept(visitor);
         NewName?.Accept(visitor);
         if (Attributes is not null) foreach (var x in Attributes) x.Accept(visitor);
+        if (PartitionRefs is not null) foreach (var x in PartitionRefs) x.Accept(visitor);
+        if (Partitions is not null) foreach (var x in Partitions) x.Accept(visitor);
+        if (Values is not null) foreach (var x in Values) x.Accept(visitor);
+        Interval?.Accept(visitor);
         if (Syntax is not null) foreach (var x in Syntax) x.Accept(visitor);
     }
 
@@ -337,6 +634,10 @@ public partial class AlterTableAction
         SqlNodeRewriter.RewriteList(rewriter, Names, "AlterTableAction.Names");
         NewName = SqlNodeRewriter.RewriteOptional(rewriter, NewName, "AlterTableAction.NewName");
         SqlNodeRewriter.RewriteList(rewriter, Attributes, "AlterTableAction.Attributes");
+        SqlNodeRewriter.RewriteList(rewriter, PartitionRefs, "AlterTableAction.PartitionRefs");
+        SqlNodeRewriter.RewriteList(rewriter, Partitions, "AlterTableAction.Partitions");
+        SqlNodeRewriter.RewriteList(rewriter, Values, "AlterTableAction.Values");
+        Interval = SqlNodeRewriter.RewriteOptional(rewriter, Interval, "AlterTableAction.Interval");
         SqlNodeRewriter.RewriteList(rewriter, Syntax, "AlterTableAction.Syntax");
     }
 
@@ -357,6 +658,17 @@ public partial class AlterTableAction
         c.Cascade = Cascade;
         c.Online = Online;
         c.Attributes = CloneList(Attributes);
+        c.PartitionRefs = CloneList(PartitionRefs);
+        c.Partitions = CloneList(Partitions);
+        c.Values = CloneList(Values);
+        c.SplitByValues = SplitByValues;
+        c.AddValues = AddValues;
+        c.Interval = CloneChild(Interval);
+        c.UpdateIndexes = UpdateIndexes;
+        c.GlobalIndexes = GlobalIndexes;
+        c.IncludingIndexes = IncludingIndexes;
+        c.WithValidation = WithValidation;
+        c.Storage = Storage;
         c.Syntax = CloneList(Syntax);
         return c;
     }
@@ -372,6 +684,17 @@ public partial class AlterTableAction
             && Cascade == o.Cascade
             && Online == o.Online
             && PairList(Attributes, o.Attributes, pending)
+            && PairList(PartitionRefs, o.PartitionRefs, pending)
+            && PairList(Partitions, o.Partitions, pending)
+            && PairList(Values, o.Values, pending)
+            && SplitByValues == o.SplitByValues
+            && AddValues == o.AddValues
+            && Pair(Interval, o.Interval, pending)
+            && UpdateIndexes == o.UpdateIndexes
+            && GlobalIndexes == o.GlobalIndexes
+            && IncludingIndexes == o.IncludingIndexes
+            && WithValidation == o.WithValidation
+            && Storage == o.Storage
             && PairList(Syntax, o.Syntax, pending);
     }
 }
@@ -420,6 +743,175 @@ public partial class AlterTableStatement
         return PairList(Name, o.Name, pending)
             && IfExists == o.IfExists
             && PairList(Actions, o.Actions, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class AlterTriggerStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (RenameTo is not null) yield return RenameTo;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        RenameTo?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AlterTriggerStatement.Name");
+        RenameTo = SqlNodeRewriter.RewriteOptional(rewriter, RenameTo, "AlterTriggerStatement.RenameTo");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterTriggerStatement();
+        CopySpan(this, c);
+        c.Name = CloneList(Name);
+        c.Enable = Enable;
+        c.RenameTo = CloneChild(RenameTo);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterTriggerStatement)other;
+        return PairList(Name, o.Name, pending)
+            && Enable == o.Enable
+            && Pair(RenameTo, o.RenameTo, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class AlterViewStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Actions is not null) foreach (var x in Actions) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        if (Actions is not null) foreach (var x in Actions) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AlterViewStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Actions, "AlterViewStatement.Actions");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterViewStatement();
+        CopySpan(this, c);
+        c.Name = CloneList(Name);
+        c.Actions = CloneList(Actions);
+        c.ReadOnly = ReadOnly;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterViewStatement)other;
+        return PairList(Name, o.Name, pending)
+            && PairList(Actions, o.Actions, pending)
+            && ReadOnly == o.ReadOnly
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class AnalyzeStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Partition is not null) yield return Partition;
+        if (Sample is not null) yield return Sample;
+        if (IntoTable is not null) foreach (var x in IntoTable) yield return x;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        Partition?.Accept(visitor);
+        Sample?.Accept(visitor);
+        if (IntoTable is not null) foreach (var x in IntoTable) x.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AnalyzeStatement.Name");
+        Partition = SqlNodeRewriter.RewriteOptional(rewriter, Partition, "AnalyzeStatement.Partition");
+        Sample = SqlNodeRewriter.RewriteOptional(rewriter, Sample, "AnalyzeStatement.Sample");
+        SqlNodeRewriter.RewriteList(rewriter, IntoTable, "AnalyzeStatement.IntoTable");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "AnalyzeStatement.OtherClauses");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AnalyzeStatement();
+        CopySpan(this, c);
+        c.Target = Target;
+        c.Name = CloneList(Name);
+        c.Partition = CloneChild(Partition);
+        c.Action = Action;
+        c.SystemStatistics = SystemStatistics;
+        c.Sample = CloneChild(Sample);
+        c.SamplePercent = SamplePercent;
+        c.Cascade = Cascade;
+        c.Online = Online;
+        c.IntoTable = CloneList(IntoTable);
+        c.OtherClauses = CloneList(OtherClauses);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AnalyzeStatement)other;
+        return Target == o.Target
+            && PairList(Name, o.Name, pending)
+            && Pair(Partition, o.Partition, pending)
+            && Action == o.Action
+            && SystemStatistics == o.SystemStatistics
+            && Pair(Sample, o.Sample, pending)
+            && SamplePercent == o.SamplePercent
+            && Cascade == o.Cascade
+            && Online == o.Online
+            && PairList(IntoTable, o.IntoTable, pending)
+            && PairList(OtherClauses, o.OtherClauses, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -8631,6 +9123,52 @@ public partial class PartitionDefinition
             && PairList(Values, o.Values, pending)
             && PairList(Attributes, o.Attributes, pending)
             && PairList(Subpartitions, o.Subpartitions, pending);
+    }
+}
+
+public partial class PartitionReference
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (ForValues is not null) foreach (var x in ForValues) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (ForValues is not null) foreach (var x in ForValues) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteOptional(rewriter, Name, "PartitionReference.Name");
+        SqlNodeRewriter.RewriteList(rewriter, ForValues, "PartitionReference.ForValues");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new PartitionReference();
+        CopySpan(this, c);
+        c.Subpartition = Subpartition;
+        c.Name = CloneChild(Name);
+        c.ForValues = CloneList(ForValues);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (PartitionReference)other;
+        return Subpartition == o.Subpartition
+            && Pair(Name, o.Name, pending)
+            && PairList(ForValues, o.ForValues, pending);
     }
 }
 

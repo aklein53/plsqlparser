@@ -28,6 +28,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="AlterCompileStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterCompileStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterCompileStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterCompileStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="AlterDomainAction"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(AlterDomainAction node) => Visit((SqlNode)node);
 
@@ -48,11 +58,51 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="AlterIndexAction"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterIndexAction node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterIndexAction"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterIndexAction node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AlterIndexStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterIndexStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterIndexStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterIndexStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AlterMaterializedViewStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterMaterializedViewStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterMaterializedViewStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterMaterializedViewStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="AlterObjectStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(AlterObjectStatement node) => Visit((SqlNode)node);
 
     /// <summary>Entry point for a <see cref="AlterObjectStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(AlterObjectStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AlterSequenceStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterSequenceStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterSequenceStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterSequenceStatement node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -83,6 +133,36 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="AlterTableStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(AlterTableStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AlterTriggerStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterTriggerStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterTriggerStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterTriggerStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AlterViewStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterViewStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterViewStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterViewStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AnalyzeStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AnalyzeStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AnalyzeStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AnalyzeStatement node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -1673,6 +1753,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="PartitionDefinition"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(PartitionDefinition node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="PartitionReference"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(PartitionReference node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="PartitionReference"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(PartitionReference node)
     {
         Visit(node);
         node.AcceptChildren(this);
