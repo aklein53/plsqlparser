@@ -356,9 +356,9 @@ public sealed partial class ParallelEnableClause : SqlNode
     public ParallelPartitionMethod? Method { get; set; }
     /// <summary>The columns after <c>BY</c> in the partitioning method; empty when absent.</summary>
     public List<Identifier> MethodColumns { get; set; } = [];
-    /// <summary>ORDER|CLUSTER BY columns.</summary>
+    /// <summary>True for the <c>CLUSTER</c> streaming clause (<c>CLUSTER expr BY (cols)</c>).</summary>
     public bool Cluster { get; set; }
-    /// <summary>True for <c>ORDER</c> with a streaming clause.</summary>
+    /// <summary>True for the <c>ORDER</c> streaming clause (<c>ORDER expr BY (cols)</c>).</summary>
     public bool Order { get; set; }
     /// <summary>The columns of a <c>CLUSTER ... BY</c> or <c>ORDER ... BY</c> clause; empty when absent.</summary>
     public List<Identifier> StreamingColumns { get; set; } = [];
@@ -481,11 +481,11 @@ public sealed partial class ExternalCall : SqlNode
     public bool Pascal { get; set; }
     /// <summary>The parameters of the external call specification, in source order.</summary>
     public List<ExternalParameter> Parameters { get; set; } = [];
-    /// <summary>MLE module/env/signature (LANGUAGE JAVASCRIPT).</summary>
+    /// <summary>The module name after <c>MLE MODULE</c> (LANGUAGE JAVASCRIPT); empty when absent.</summary>
     public List<Identifier> MleModule { get; set; } = [];
-    /// <summary>The names after <c>MLE ENV</c>; empty when absent.</summary>
+    /// <summary>The environment name after <c>MLE ENV</c>; empty when absent.</summary>
     public List<Identifier> MleEnv { get; set; } = [];
-    /// <summary>The signature after <c>MLE MODULE</c> or <c>SIGNATURE</c>, or null when absent.</summary>
+    /// <summary>The string after <c>SIGNATURE</c> in an MLE call specification, or null when absent.</summary>
     public Expression? Signature { get; set; }
 }
 
@@ -570,7 +570,7 @@ public enum TriggerTiming
     After,
     /// <summary><c>INSTEAD OF</c>: fires in place of the event on a view.</summary>
     InsteadOf,
-    /// <summary><c>FOR</c>: a compound trigger timing point.</summary>
+    /// <summary><c>FOR</c> (as in <c>FOR INSERT ON t COMPOUND TRIGGER</c>): the timing of a compound trigger, which has its own timing points.</summary>
     For,
 }
 /// <summary>The event that fires a trigger.</summary>
