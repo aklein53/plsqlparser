@@ -52,7 +52,8 @@ public sealed partial class SqlParser
         {
             if (t is NamedTable nt)
             {
-                if (IsKw("SAMPLE") && nt.Sample == null) { nt.Sample = ParseSample(); continue; }
+                // SAMPLE is a clause only before "(" or BLOCK; otherwise it is an alias (checked below)
+                if (IsKw("SAMPLE") && (IsOpAt(1, "(") || IsKwAt(1, "BLOCK")) && nt.Sample == null) { nt.Sample = ParseSample(); continue; }
                 if (nt.Flashback == null && ((IsKw("VERSIONS") && IsKwAt(1, "BETWEEN")) || (IsKw("AS") && IsKwAt(1, "OF"))))
                 {
                     nt.Flashback = ParseFlashback();

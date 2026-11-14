@@ -3127,6 +3127,7 @@ public partial class DeleteStatement
     public override IEnumerable<SqlNode> GetChildren()
     {
         if (Target is not null) yield return Target;
+        if (From is not null) foreach (var x in From) yield return x;
         if (Where is not null) yield return Where;
         if (Hint is not null) yield return Hint;
         if (Returning is not null) foreach (var x in Returning) yield return x;
@@ -3138,6 +3139,7 @@ public partial class DeleteStatement
     public override void AcceptChildren(SqlNodeVisitor visitor)
     {
         Target?.Accept(visitor);
+        if (From is not null) foreach (var x in From) x.Accept(visitor);
         Where?.Accept(visitor);
         Hint?.Accept(visitor);
         if (Returning is not null) foreach (var x in Returning) x.Accept(visitor);
@@ -3148,6 +3150,7 @@ public partial class DeleteStatement
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
     {
         Target = SqlNodeRewriter.RewriteRequired(rewriter, Target, "DeleteStatement.Target");
+        SqlNodeRewriter.RewriteList(rewriter, From, "DeleteStatement.From");
         Where = SqlNodeRewriter.RewriteOptional(rewriter, Where, "DeleteStatement.Where");
         Hint = SqlNodeRewriter.RewriteOptional(rewriter, Hint, "DeleteStatement.Hint");
         SqlNodeRewriter.RewriteList(rewriter, Returning, "DeleteStatement.Returning");
@@ -3165,6 +3168,7 @@ public partial class DeleteStatement
         var c = new DeleteStatement();
         CopySpan(this, c);
         c.Target = CloneChild(Target)!;
+        c.From = CloneList(From);
         c.Where = CloneChild(Where);
         c.Hint = CloneChild(Hint);
         c.Returning = CloneList(Returning);
@@ -3179,6 +3183,7 @@ public partial class DeleteStatement
     {
         var o = (DeleteStatement)other;
         return Pair(Target, o.Target, pending)
+            && PairList(From, o.From, pending)
             && Pair(Where, o.Where, pending)
             && Pair(Hint, o.Hint, pending)
             && PairList(Returning, o.Returning, pending)
@@ -4067,6 +4072,7 @@ public partial class FetchClause
         c.Count = CloneChild(Count);
         c.Percent = Percent;
         c.WithTies = WithTies;
+        c.Accuracy = Accuracy;
         return c;
     }
 
@@ -4076,7 +4082,8 @@ public partial class FetchClause
         return Next == o.Next
             && Pair(Count, o.Count, pending)
             && Percent == o.Percent
-            && WithTies == o.WithTies;
+            && WithTies == o.WithTies
+            && Accuracy == o.Accuracy;
     }
 }
 
@@ -5666,6 +5673,8 @@ public partial class JoinTable
         if (Right is not null) yield return Right;
         if (On is not null) yield return On;
         if (Using is not null) foreach (var x in Using) yield return x;
+        if (LeftPartitionBy is not null) foreach (var x in LeftPartitionBy) yield return x;
+        if (RightPartitionBy is not null) foreach (var x in RightPartitionBy) yield return x;
         if (Alias is not null) yield return Alias;
     }
 
@@ -5676,6 +5685,8 @@ public partial class JoinTable
         Right?.Accept(visitor);
         On?.Accept(visitor);
         if (Using is not null) foreach (var x in Using) x.Accept(visitor);
+        if (LeftPartitionBy is not null) foreach (var x in LeftPartitionBy) x.Accept(visitor);
+        if (RightPartitionBy is not null) foreach (var x in RightPartitionBy) x.Accept(visitor);
         Alias?.Accept(visitor);
     }
 
@@ -5685,6 +5696,8 @@ public partial class JoinTable
         Right = SqlNodeRewriter.RewriteRequired(rewriter, Right, "JoinTable.Right");
         On = SqlNodeRewriter.RewriteOptional(rewriter, On, "JoinTable.On");
         SqlNodeRewriter.RewriteList(rewriter, Using, "JoinTable.Using");
+        SqlNodeRewriter.RewriteList(rewriter, LeftPartitionBy, "JoinTable.LeftPartitionBy");
+        SqlNodeRewriter.RewriteList(rewriter, RightPartitionBy, "JoinTable.RightPartitionBy");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "JoinTable.Alias");
     }
 
@@ -5703,6 +5716,8 @@ public partial class JoinTable
         c.Right = CloneChild(Right)!;
         c.On = CloneChild(On);
         c.Using = CloneList(Using);
+        c.LeftPartitionBy = CloneList(LeftPartitionBy);
+        c.RightPartitionBy = CloneList(RightPartitionBy);
         c.Alias = CloneChild(Alias);
         return c;
     }
@@ -5716,6 +5731,8 @@ public partial class JoinTable
             && Pair(Right, o.Right, pending)
             && Pair(On, o.On, pending)
             && PairList(Using, o.Using, pending)
+            && PairList(LeftPartitionBy, o.LeftPartitionBy, pending)
+            && PairList(RightPartitionBy, o.RightPartitionBy, pending)
             && Pair(Alias, o.Alias, pending);
     }
 }
@@ -9215,6 +9232,47 @@ public partial class ReturningClause
     }
 }
 
+public partial class ReturningItem
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Expression is not null) yield return Expression;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Expression?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Expression = SqlNodeRewriter.RewriteRequired(rewriter, Expression, "ReturningItem.Expression");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ReturningItem();
+        CopySpan(this, c);
+        c.Image = Image;
+        c.Expression = CloneChild(Expression)!;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ReturningItem)other;
+        return Image == o.Image
+            && Pair(Expression, o.Expression, pending);
+    }
+}
+
 public partial class RoleSpec
 {
     /// <inheritdoc/>
@@ -11173,6 +11231,45 @@ public partial class ValuesOfControl
         return Pair(Collection, o.Collection, pending)
             && Pair(While, o.While, pending)
             && Pair(When, o.When, pending);
+    }
+}
+
+public partial class ValuesQuery
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Rows is not null) foreach (var row in Rows) if (row is not null) foreach (var x in row) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Rows is not null) foreach (var row in Rows) if (row is not null) foreach (var x in row) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteNested(rewriter, Rows, "ValuesQuery.Rows");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ValuesQuery();
+        CopySpan(this, c);
+        c.Rows = CloneNested(Rows);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ValuesQuery)other;
+        return PairNested(Rows, o.Rows, pending);
     }
 }
 

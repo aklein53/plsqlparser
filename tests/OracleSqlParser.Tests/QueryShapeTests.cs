@@ -33,6 +33,12 @@ public class QueryShapeTests
     [Theory]
     [InlineData("SELECT * FROM a LEFT OUTER JOIN b ON a.id = b.id",
         "(JoinTable left=(NamedTable name=[A]) kind=Left right=(NamedTable name=[B]) on=(= A.ID B.ID))")]
+    [InlineData("SELECT * FROM a PARTITION BY (a.x) RIGHT OUTER JOIN b ON a.id = b.id",
+        "(JoinTable left=(NamedTable name=[A]) kind=Right right=(NamedTable name=[B]) on=(= A.ID B.ID) leftPartitionBy=[A.X])")]
+    [InlineData("SELECT * FROM a LEFT JOIN b PARTITION BY (b.x) ON a.id = b.id",
+        "(JoinTable left=(NamedTable name=[A]) kind=Left right=(NamedTable name=[B]) on=(= A.ID B.ID) rightPartitionBy=[B.X])")]
+    [InlineData("SELECT * FROM a PARTITION BY (a.x, a.y) LEFT OUTER JOIN b ON a.id = b.id",
+        "(JoinTable left=(NamedTable name=[A]) kind=Left right=(NamedTable name=[B]) on=(= A.ID B.ID) leftPartitionBy=[A.X A.Y])")]
     [InlineData("SELECT * FROM a JOIN b USING (id, x)",
         "(JoinTable left=(NamedTable name=[A]) kind=Inner right=(NamedTable name=[B]) using=[ID X])")]
     [InlineData("SELECT * FROM a NATURAL JOIN b",
@@ -44,6 +50,26 @@ public class QueryShapeTests
     [InlineData("SELECT * FROM a FULL JOIN b ON 1 = 1 RIGHT JOIN c ON 2 = 2",
         "(JoinTable left=(JoinTable left=(NamedTable name=[A]) kind=Full right=(NamedTable name=[B]) on=(= 1 1)) kind=Right right=(NamedTable name=[C]) on=(= 2 2))")]
     public void Joins(string sql, string expected) => Assert.Equal(expected, Shape.Of<JoinTable>(sql));
+
+    // Non-reserved words that also start a clause: an alias where the clause cannot start, the clause elsewhere.
+    [Theory]
+    [InlineData("SELECT 1 pivot, 2 left, 3 sample, 4 fetch FROM dual",
+        "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1 alias=PIVOT) (ExpressionSelectItem expression=2 alias=LEFT) (ExpressionSelectItem expression=3 alias=SAMPLE) (ExpressionSelectItem expression=4 alias=FETCH)] from=[(NamedTable name=[DUAL])]))")]
+    [InlineData("SELECT * FROM t sample", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] alias=SAMPLE)]))")]
+    [InlineData("SELECT * FROM t pivot", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] alias=PIVOT)]))")]
+    [InlineData("SELECT * FROM t left", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] alias=LEFT)]))")]
+    [InlineData("SELECT * FROM t fetch", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] alias=FETCH)]))")]
+    [InlineData("SELECT * FROM t SAMPLE (10) sample", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] sample=(SampleClause percent=10) alias=SAMPLE)]))")]
+    [InlineData("SELECT * FROM t sample (10)", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T] sample=(SampleClause percent=10))]))")]
+    [InlineData("SELECT * FROM t LEFT JOIN u ON 1 = 1", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(JoinTable left=(NamedTable name=[T]) kind=Left right=(NamedTable name=[U]) on=(= 1 1))]))")]
+    [InlineData("SELECT * FROM t FETCH FIRST 1 ROW ONLY", "(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[T])]) fetch=(FetchClause count=1))")]
+    public void ContextualKeywordAliases(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("SELECT * FROM a PARTITION BY (a.x) JOIN b ON a.id = b.id")] // only outer joins take a partition clause
+    [InlineData("SELECT * FROM a PARTITION BY (a.x) FULL OUTER JOIN b ON a.id = b.id")] // FULL outer joins cannot be partitioned
+    [InlineData("SELECT * FROM a PARTITION BY (a.x) LEFT JOIN b PARTITION BY (b.x) ON a.id = b.id")] // one side only
+    public void PartitionedOuterJoin_Rejected(string sql) => Assert.False(SqlParser.Parse(sql).Success);
 
     [Theory]
     [InlineData("SELECT * FROM emp@remote_db e", "(NamedTable name=[EMP] dbLink=[REMOTE_DB] alias=E)")]
@@ -84,7 +110,10 @@ public class QueryShapeTests
     [InlineData("SELECT 1 FROM a ORDER SIBLINGS BY b", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[A])]) orderSiblings orderBy=[(OrderByItem expression=B)])")]
     [InlineData("SELECT 1 FROM a OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[A])]) offset=5 fetch=(FetchClause next count=10))")]
     [InlineData("SELECT 1 FROM a FETCH FIRST 10 PERCENT ROWS WITH TIES", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[A])]) fetch=(FetchClause count=10 percent withTies))")]
-    [InlineData("SELECT 1 FROM a FETCH FIRST ROW ONLY", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[A])]) fetch=(FetchClause))")]
+    [InlineData("SELECT 1 FROM a ORDER BY b FETCH APPROX FIRST 20 ROWS ONLY", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[A])]) orderBy=[(OrderByItem expression=B)] fetch=(FetchClause count=20 accuracy=Approximate))")]
+    [InlineData("SELECT 1 FROM a ORDER BY b FETCH APPROXIMATE NEXT 20 ROWS ONLY", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[A])]) orderBy=[(OrderByItem expression=B)] fetch=(FetchClause next count=20 accuracy=Approximate))")]
+    [InlineData("SELECT 1 FROM a ORDER BY b FETCH EXACT FIRST 20 ROWS ONLY", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[A])]) orderBy=[(OrderByItem expression=B)] fetch=(FetchClause count=20 accuracy=Exact))")]
+    [InlineData("SELECT 1 FROM a FETCH FIRST ROW ONLY","(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[A])]) fetch=(FetchClause))")]
     [InlineData("SELECT 1 FROM a FOR UPDATE OF a.x, y SKIP LOCKED", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[A])]) forUpdate=(ForUpdateClause of=[A.X Y] skipLocked))")]
     [InlineData("SELECT 1 FROM a FOR UPDATE WAIT 5", "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[A])]) forUpdate=(ForUpdateClause wait=5))")]
     public void OrderingAndLocking(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
@@ -99,6 +128,8 @@ public class QueryShapeTests
     [Theory]
     [InlineData("WITH x (a, b) AS (SELECT 1, 2 FROM dual) SELECT * FROM x",
         "(CommonTableExpression name=X columns=[A B] query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1) (ExpressionSelectItem expression=2)] from=[(NamedTable name=[DUAL])])))")]
+    [InlineData("WITH x(a, b) AS (VALUES (1, 2), (3, 4)) SELECT * FROM x",
+        "(CommonTableExpression name=X columns=[A B] query=(SelectStatement body=(ValuesQuery rows=[[1 2] [3 4]])))")]
     [InlineData("WITH t(n) AS (SELECT 1 FROM dual) SEARCH DEPTH FIRST BY n DESC SET ord CYCLE n SET is_cycle TO 'Y' DEFAULT 'N' SELECT * FROM t",
         "(CommonTableExpression name=T columns=[N] query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[DUAL])])) search=(SearchClause depthFirst by=[(OrderByItem expression=N descending)] setColumn=ORD) cycle=(CycleClause columns=[N] setColumn=IS_CYCLE cycleValue='Y' defaultValue='N'))")]
     [InlineData("WITH t AS (SELECT 1 FROM dual) SEARCH BREADTH FIRST BY n SET o SELECT * FROM t",

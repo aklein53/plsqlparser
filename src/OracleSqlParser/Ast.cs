@@ -164,11 +164,21 @@ public abstract partial class Statement : SqlNode
 public abstract partial class DmlStatement : Statement
 {
     public HintClause? Hint { get; set; }
-    public List<Expression> Returning { get; set; } = [];
+    public List<ReturningItem> Returning { get; set; } = [];
     public bool ReturningBulkCollect { get; set; }
     public List<Expression> ReturningInto { get; set; } = [];
     public ErrorLogging? ErrorLogging { get; set; }
 }
+
+/// <summary>One item of a RETURNING list: a column or expression, optionally qualified with the row image OLD or NEW (23ai).</summary>
+public sealed partial class ReturningItem : SqlNode
+{
+    /// <summary>Null when neither OLD nor NEW is written: the value after the change is returned.</summary>
+    public ReturningImage? Image { get; set; }
+    public Expression Expression { get; set; } = null!;
+}
+
+public enum ReturningImage { Old, New }
 
 public sealed partial class ErrorLogging : SqlNode
 {
@@ -282,7 +292,11 @@ public sealed partial class FetchClause : SqlNode
     public Expression? Count { get; set; }
     public bool Percent { get; set; }
     public bool WithTies { get; set; }
+    /// <summary>23ai vector search: EXACT, or APPROX / APPROXIMATE (synonyms). Null when the keyword is omitted.</summary>
+    public FetchAccuracy? Accuracy { get; set; }
 }
+
+public enum FetchAccuracy { Exact, Approximate }
 
 public sealed partial class ForUpdateClause : SqlNode
 {
@@ -325,6 +339,8 @@ public sealed partial class SetClause : SqlNode
 public sealed partial class DeleteStatement : DmlStatement
 {
     public TableReference Target { get; set; } = null!;
+    /// <summary>23ai: DELETE FROM target FROM table_references (direct joins).</summary>
+    public List<TableReference> From { get; set; } = [];
     public Expression? Where { get; set; }
 }
 
@@ -392,6 +408,10 @@ public sealed partial class JoinTable : TableReference
     public TableReference Right { get; set; } = null!;
     public Expression? On { get; set; }
     public List<Identifier> Using { get; set; } = [];
+    /// <summary>Partitioned outer join: PARTITION BY (...) on the left operand (only one side may be partitioned).</summary>
+    public List<Expression> LeftPartitionBy { get; set; } = [];
+    /// <summary>Partitioned outer join: PARTITION BY (...) on the right operand.</summary>
+    public List<Expression> RightPartitionBy { get; set; } = [];
 }
 
 public enum JoinKind { Inner, Left, Right, Full, Cross, CrossApply, OuterApply }

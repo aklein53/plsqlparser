@@ -9,7 +9,7 @@ public class DmlAndSessionShapeTests
 
     [Theory]
     [InlineData("INSERT INTO t (a, b) VALUES (1, DEFAULT) RETURNING a INTO :x",
-        "(InsertStatement target=(NamedTable name=[T]) columns=[A B] valueRows=[[1 DEFAULT]] returning=[A] returningInto=[:x])")]
+        "(InsertStatement target=(NamedTable name=[T]) columns=[A B] valueRows=[[1 DEFAULT]] returning=[(ReturningItem expression=A)] returningInto=[:x])")]
     [InlineData("INSERT INTO t VALUES (1), (2)", "(InsertStatement target=(NamedTable name=[T]) valueRows=[[1] [2]])")]
     [InlineData("INSERT /*+ APPEND */ INTO t SELECT 1 FROM dual",
         "(InsertStatement target=(NamedTable name=[T]) query=" + SelDual + " hint=(HintClause text=APPEND items=[(HintItem name=APPEND)]))")]
@@ -20,7 +20,7 @@ public class DmlAndSessionShapeTests
     [InlineData("INSERT INTO t SELECT 1 FROM dual LOG ERRORS REJECT LIMIT 10",
         "(InsertStatement target=(NamedTable name=[T]) query=" + SelDual + " errorLogging=(ErrorLogging rejectLimit=10))")]
     [InlineData("INSERT INTO t VALUES (1) RETURNING a, b BULK COLLECT INTO v1, v2",
-        "(InsertStatement target=(NamedTable name=[T]) valueRows=[[1]] returning=[A B] returningBulkCollect returningInto=[V1 V2])")]
+        "(InsertStatement target=(NamedTable name=[T]) valueRows=[[1]] returning=[(ReturningItem expression=A) (ReturningItem expression=B)] returningBulkCollect returningInto=[V1 V2])")]
     public void Inserts(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
@@ -34,10 +34,24 @@ public class DmlAndSessionShapeTests
     [InlineData("UPDATE t SET a = 1, (b, c) = (SELECT 1, 2 FROM dual) WHERE id = 5",
         "(UpdateStatement target=(NamedTable name=[T]) set=[(SetClause columns=[A] value=1) (SetClause columns=[B C] value=(SubqueryExpression query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1) (ExpressionSelectItem expression=2)] from=[(NamedTable name=[DUAL])]))))] where=(= ID 5))")]
     [InlineData("UPDATE t SET a = 1 WHERE CURRENT OF c1", "(UpdateStatement target=(NamedTable name=[T]) set=[(SetClause columns=[A] value=1)] where=(CurrentOfExpression cursor=C1))")]
-    [InlineData("UPDATE t SET a = DEFAULT RETURNING a INTO v", "(UpdateStatement target=(NamedTable name=[T]) set=[(SetClause columns=[A] value=DEFAULT)] returning=[A] returningInto=[V])")]
+    [InlineData("UPDATE t SET a = DEFAULT RETURNING a INTO v", "(UpdateStatement target=(NamedTable name=[T]) set=[(SetClause columns=[A] value=DEFAULT)] returning=[(ReturningItem expression=A)] returningInto=[V])")]
     [InlineData("DELETE FROM t x WHERE x.a = 1 RETURNING a BULK COLLECT INTO tab",
-        "(DeleteStatement target=(NamedTable name=[T] alias=X) where=(= X.A 1) returning=[A] returningBulkCollect returningInto=[TAB])")]
+        "(DeleteStatement target=(NamedTable name=[T] alias=X) where=(= X.A 1) returning=[(ReturningItem expression=A)] returningBulkCollect returningInto=[TAB])")]
     [InlineData("DELETE t", "(DeleteStatement target=(NamedTable name=[T]))")]
+    [InlineData("UPDATE t SET a = 1 RETURNING OLD a, NEW a INTO :o, :n",
+        "(UpdateStatement target=(NamedTable name=[T]) set=[(SetClause columns=[A] value=1)] returning=[(ReturningItem image=Old expression=A) (ReturningItem image=New expression=A)] returningInto=[:o :n])")]
+    [InlineData("UPDATE t SET a = 1 RETURNING old, new INTO :o, :n",
+        "(UpdateStatement target=(NamedTable name=[T]) set=[(SetClause columns=[A] value=1)] returning=[(ReturningItem expression=OLD) (ReturningItem expression=NEW)] returningInto=[:o :n])")]
+    [InlineData("UPDATE t SET a = 1 RETURNING NEW SUM(a) INTO :n",
+        "(UpdateStatement target=(NamedTable name=[T]) set=[(SetClause columns=[A] value=1)] returning=[(ReturningItem image=New expression=(FunctionCall name=[SUM] arguments=[(Argument value=A)]))] returningInto=[:n])")]
+    [InlineData("UPDATE t SET t.a = u.a FROM u WHERE t.id = u.id",
+        "(UpdateStatement target=(NamedTable name=[T]) set=[(SetClause columns=[T.A] value=U.A)] from=[(NamedTable name=[U])] where=(= T.ID U.ID))")]
+    [InlineData("DELETE FROM t FROM u WHERE t.id = u.id",
+        "(DeleteStatement target=(NamedTable name=[T]) from=[(NamedTable name=[U])] where=(= T.ID U.ID))")]
+    [InlineData("DELETE FROM t x FROM t y JOIN u ON y.id = u.id WHERE x.id = y.id",
+        "(DeleteStatement target=(NamedTable name=[T] alias=X) from=[(JoinTable left=(NamedTable name=[T] alias=Y) kind=Inner right=(NamedTable name=[U]) on=(= Y.ID U.ID))] where=(= X.ID Y.ID))")]
+    [InlineData("DELETE FROM t RETURNING OLD a INTO :o",
+        "(DeleteStatement target=(NamedTable name=[T]) returning=[(ReturningItem image=Old expression=A)] returningInto=[:o])")]
     public void UpdatesAndDeletes(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Fact]
@@ -48,6 +62,13 @@ public class DmlAndSessionShapeTests
             "(MergeClause insertColumns=[ID V] insertValues=[S.ID S.V] insertWhere=(> S.V 1))])",
             Shape.Of("MERGE INTO t USING (SELECT * FROM s) s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.v = s.v WHERE s.v > 0 DELETE WHERE t.v = 0 WHEN NOT MATCHED THEN INSERT (id, v) VALUES (s.id, s.v) WHERE s.v > 1")
                 );
+
+    [Fact]
+    public void Merge_LogErrors_Shape() =>
+        Assert.Equal(
+            "(MergeStatement target=(NamedTable name=[T]) source=(SubqueryTable query=(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[S])])) alias=S) on=(paren (= T.ID S.ID)) clauses=[" +
+            "(MergeClause matched set=[(SetClause columns=[T.V] value=S.V)])] errorLogging=(ErrorLogging table=[ERR_T] tag='x' rejectLimit=5))",
+            Shape.Of("MERGE INTO t USING (SELECT * FROM s) s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.v = s.v LOG ERRORS INTO err_t ('x') REJECT LIMIT 5"));
 
     [Theory]
     [InlineData("COMMIT", "(CommitStatement)")]

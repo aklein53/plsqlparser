@@ -90,7 +90,9 @@ public sealed partial class SqlScriptGenerator
             if (s.Fetch != null)
             {
                 ClauseStart(_o.NewLineBeforeOrderByClause);
-                Add(s.Fetch.Next ? "FETCH NEXT" : "FETCH FIRST");
+                Add("FETCH ");
+                if (s.Fetch.Accuracy is { } accuracy) Add(accuracy == FetchAccuracy.Exact ? "EXACT " : "APPROXIMATE ");
+                Add(s.Fetch.Next ? "NEXT" : "FIRST");
                 if (s.Fetch.Count != null) { Add(" "); Child(s.Fetch.Count, 5); if (s.Fetch.Percent) Add(" PERCENT"); Add(" ROWS"); }
                 else Add(" ROW");
                 Add(s.Fetch.WithTies ? " WITH TIES" : " ONLY");
@@ -129,6 +131,10 @@ public sealed partial class SqlScriptGenerator
                     break;
                 }
                 case ParenthesizedQuery pq: ParenQuery(pq.Query); break;
+                case ValuesQuery vq:
+                    Add("VALUES ");
+                    Sep(vq.Rows, r => { Add("("); Sep(r, e => Expr(e)); Add(")"); });
+                    break;
                 default: throw Unsupported(q);
             }
         }
@@ -159,7 +165,18 @@ public sealed partial class SqlScriptGenerator
 
         // ---------- table references ----------
 
-        private void Alias(TableReference t) { if (t.Alias != null) { Add(" "); Id(t.Alias); } }
+        /// <summary>The table printed immediately before a join keyword (its alias is the one that could be misread).</summary>
+        private TableReference? _aliasBeforeJoin;
+
+        private void Alias(TableReference t)
+        {
+            if (t.Alias == null) return;
+            Add(" ");
+            // Unquoted LEFT/RIGHT/FULL here would read as the join keyword; quoting it names the same identifier.
+            if (ReferenceEquals(t, _aliasBeforeJoin) && !t.Alias.Quoted && t.Alias.Value is "LEFT" or "RIGHT" or "FULL")
+                Id(new Identifier { Value = t.Alias.Value, Quoted = true });
+            else Id(t.Alias);
+        }
 
         private void Table(TableReference t)
         {
@@ -215,11 +232,13 @@ public sealed partial class SqlScriptGenerator
             var spine = new List<JoinTable> { j };
             TableReference cur = j.Left;
             while (cur is JoinTable l) { spine.Add(l); cur = l.Left; }
+            _aliasBeforeJoin = cur;
             Table(cur);
             for (int i = spine.Count - 1; i >= 0; i--)
             {
                 var x = spine[i];
                 ClauseStart(_o.NewLineBeforeJoinClause);
+                if (x.LeftPartitionBy.Count > 0) { Add("PARTITION BY ("); Sep(x.LeftPartitionBy, e => Expr(e)); Add(") "); }
                 if (x.Natural) Add("NATURAL ");
                 Add(x.Kind switch
                 {
@@ -228,6 +247,8 @@ public sealed partial class SqlScriptGenerator
                 });
                 Add(" ");
                 Table(x.Right);
+                _aliasBeforeJoin = x.Right; // the next iteration's join keyword follows this table
+                if (x.RightPartitionBy.Count > 0) { Add(" PARTITION BY ("); Sep(x.RightPartitionBy, e => Expr(e)); Add(")"); }
                 if (x.On != null) { Add(" ON "); Expr(x.On); }
                 else if (x.Using.Count > 0) { Add(" USING ("); IdList(x.Using); Add(")"); }
             }

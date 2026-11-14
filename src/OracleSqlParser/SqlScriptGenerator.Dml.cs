@@ -51,11 +51,17 @@ public sealed partial class SqlScriptGenerator
             if (d.Returning.Count > 0)
             {
                 ClauseStart(_o.NewLineBeforeReturningClause);
-                Add("RETURNING "); Sep(d.Returning, e => Expr(e));
+                Add("RETURNING "); Sep(d.Returning, ReturningItemText);
                 Add(d.ReturningBulkCollect ? " BULK COLLECT INTO " : " INTO ");
                 Sep(d.ReturningInto, e => Expr(e));
             }
             if (d.ErrorLogging != null) { ClauseStart(_o.NewLineBeforeReturningClause); ErrorLoggingText(d.ErrorLogging); }
+        }
+
+        private void ReturningItemText(ReturningItem r)
+        {
+            if (r.Image is { } image) Add(image == ReturningImage.Old ? "OLD " : "NEW ");
+            Expr(r.Expression);
         }
 
         private void ErrorLoggingText(ErrorLogging el)
@@ -138,6 +144,7 @@ public sealed partial class SqlScriptGenerator
         {
             Add("DELETE"); DmlHint(d);
             Add(" FROM "); Table(d.Target);
+            if (d.From.Count > 0) { ClauseStart(_o.NewLineBeforeFromClause); Add("FROM "); Sep(d.From, Table); }
             if (d.Where != null) { ClauseStart(_o.NewLineBeforeWhereClause); Add("WHERE "); Expr(d.Where); }
             DmlTail(d);
         }

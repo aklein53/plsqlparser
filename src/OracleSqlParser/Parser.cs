@@ -312,6 +312,14 @@ public sealed partial class SqlParser
         return r;
     }
 
+    private ValuesQuery ParseValuesQuery()
+    {
+        var start = Next(); // VALUES
+        var vq = new ValuesQuery();
+        ParseValueRows(vq.Rows);
+        return Fin(vq, start);
+    }
+
     private SelectStatement ParseSelectStatementCore()
     {
         var start = Cur;
@@ -336,7 +344,8 @@ public sealed partial class SqlParser
             } while (AcceptOp(","));
         }
 
-        stmt.Body = ParseQueryExpression();
+        // A bare VALUES list is a query body only in a CTE here (`WITH x AS (VALUES ...)`); elsewhere it is a table constructor.
+        stmt.Body = IsKw("VALUES") ? ParseValuesQuery() : ParseQueryExpression();
 
         if (IsKw("ORDER"))
         {
@@ -354,7 +363,10 @@ public sealed partial class SqlParser
         if (IsKw("FETCH"))
         {
             var fs = Next();
-            var f = new FetchClause { Next = IsKw("NEXT") };
+            var f = new FetchClause();
+            if (AcceptKw("EXACT")) f.Accuracy = FetchAccuracy.Exact;
+            else if (AcceptKw("APPROX") || AcceptKw("APPROXIMATE")) f.Accuracy = FetchAccuracy.Approximate;
+            f.Next = IsKw("NEXT");
             if (!AcceptKw("FIRST") && !AcceptKw("NEXT")) throw Fail("Expected FIRST or NEXT after FETCH");
             if (!IsKw("ROW") && !IsKw("ROWS"))
             {
@@ -511,9 +523,23 @@ public sealed partial class SqlParser
     private Identifier? ParseOptionalAlias()
     {
         if (IsKw("AS") && !IsKwAt(1, "OF")) { Next(); return ParseIdentifier(); }
-        if (CanBeImplicitAlias(Cur)) return ParseIdentifier();
+        if (CanBeImplicitAlias(Cur) || IsContextualAlias()) return ParseIdentifier();
         return null;
     }
+
+    /// <summary>
+    /// Non-reserved words that can also start a clause (LEFT, PIVOT, SAMPLE, FETCH, ...) are aliases when the clause
+    /// they would start cannot begin at this point, judged by one token of lookahead.
+    /// </summary>
+    private bool IsContextualAlias() => Cur.Type == TokenType.Identifier && Cur.Value switch
+    {
+        "LEFT" or "RIGHT" or "FULL" => !IsKwAt(1, "JOIN") && !IsKwAt(1, "OUTER"),
+        "PIVOT" => !IsOpAt(1, "(") && !IsKwAt(1, "XML"),
+        "UNPIVOT" => !IsOpAt(1, "(") && !IsKwAt(1, "INCLUDE") && !IsKwAt(1, "EXCLUDE"),
+        "SAMPLE" => !IsOpAt(1, "(") && !IsKwAt(1, "BLOCK"),
+        "FETCH" => !(IsKwAt(1, "FIRST") || IsKwAt(1, "NEXT") || IsKwAt(1, "EXACT") || IsKwAt(1, "APPROX") || IsKwAt(1, "APPROXIMATE")),
+        _ => false,
+    };
 
     private List<OrderByItem> ParseOrderByList()
     {
@@ -546,6 +572,9 @@ public sealed partial class SqlParser
             var js = Cur;
             bool natural = false;
             JoinKind kind;
+            // PARTITION BY before the join keyword partitions the left operand of an outer join
+            var leftPartition = new List<Expression>();
+            if (IsKw("PARTITION") && IsKwAt(1, "BY")) { Next(); Next(); leftPartition = ParsePartitionByList(); }
             if (IsKw("NATURAL")) { Next(); natural = true; }
 
             if (IsKw("CROSS") && IsKwAt(1, "APPLY")) { Next(); Next(); kind = JoinKind.CrossApply; }
@@ -559,10 +588,18 @@ public sealed partial class SqlParser
             }
             else if (IsKw("JOIN")) { Next(); kind = JoinKind.Inner; }
             else if (natural) throw Fail("Expected JOIN after NATURAL");
+            else if (leftPartition.Count > 0) throw Fail("Expected an outer join after PARTITION BY");
             else break;
 
-            var join = new JoinTable { Left = left, Kind = kind, Natural = natural };
+            var join = new JoinTable { Left = left, Kind = kind, Natural = natural, LeftPartitionBy = leftPartition };
             join.Right = ParseTablePrimary();
+            if (IsKw("PARTITION") && IsKwAt(1, "BY")) { Next(); Next(); join.RightPartitionBy = ParsePartitionByList(); }
+            // Oracle: a partitioned outer join is a LEFT or RIGHT join (never FULL), natural or not, on one side only.
+            if (join.LeftPartitionBy.Count > 0 || join.RightPartitionBy.Count > 0)
+            {
+                if (natural || kind is not (JoinKind.Left or JoinKind.Right)) throw Fail("PARTITION BY needs a LEFT or RIGHT outer join");
+                if (join.LeftPartitionBy.Count > 0 && join.RightPartitionBy.Count > 0) throw Fail("PARTITION BY may name one side of an outer join only");
+            }
             if (kind is JoinKind.Inner or JoinKind.Left or JoinKind.Right or JoinKind.Full && !natural)
             {
                 if (AcceptKw("ON")) join.On = ParseExpr();
@@ -577,6 +614,29 @@ public sealed partial class SqlParser
         return left;
     }
 
+    /// <summary>`(e, e), (e, e)`: the row list of a VALUES constructor, up to but not including the closing parenthesis.</summary>
+    private void ParseValueRows(List<List<Expression>> rows)
+    {
+        do
+        {
+            ExpectOp("(");
+            var row = new List<Expression>();
+            do row.Add(ParseExpr()); while (AcceptOp(","));
+            ExpectOp(")");
+            rows.Add(row);
+        } while (AcceptOp(","));
+    }
+
+    /// <summary>The parenthesized list after PARTITION BY in a partitioned outer join (the parentheses are required there).</summary>
+    private List<Expression> ParsePartitionByList()
+    {
+        ExpectOp("(");
+        var list = new List<Expression>();
+        do list.Add(ParseExpr()); while (AcceptOp(","));
+        ExpectOp(")");
+        return list;
+    }
+
     private TableReference ParseTablePrimary()
     {
         var start = Cur;
@@ -588,14 +648,7 @@ public sealed partial class SqlParser
             {
                 var vt = new ValuesTable();
                 Next();
-                do
-                {
-                    ExpectOp("(");
-                    var row = new List<Expression>();
-                    do row.Add(ParseExpr()); while (AcceptOp(","));
-                    ExpectOp(")");
-                    vt.Rows.Add(row);
-                } while (AcceptOp(","));
+                ParseValueRows(vt.Rows);
                 ExpectOp(")");
                 t = vt;
                 var alias = ParseOptionalAlias();
@@ -666,15 +719,7 @@ public sealed partial class SqlParser
         if (AcceptKw("VALUES"))
         {
             if (!IsOp("(")) st.RecordValue = ParseExpr();
-            else
-                do
-                {
-                    ExpectOp("(");
-                    var row = new List<Expression>();
-                    do row.Add(ParseExpr()); while (AcceptOp(","));
-                    ExpectOp(")");
-                    st.ValueRows.Add(row);
-                } while (AcceptOp(","));
+            else ParseValueRows(st.ValueRows);
         }
         else if (IsKw("SELECT") || IsKw("WITH") || IsOp("(")) st.Query = ParseSelectStatement();
         else throw Fail($"Expected VALUES or SELECT but found {Describe(Cur)}");
@@ -740,6 +785,7 @@ public sealed partial class SqlParser
         if (Cur.Type == TokenType.Hint) st.Hint = ParseHint(Next());
         AcceptKw("FROM");
         st.Target = ParseTablePrimary();
+        if (AcceptKw("FROM")) { do st.From.Add(ParseJoinedTable()); while (AcceptOp(",")); }
         if (AcceptKw("WHERE")) st.Where = ParseWhereCondition();
         ParseDmlTail(st);
         return Fin(st, start);
@@ -760,11 +806,36 @@ public sealed partial class SqlParser
     {
         if (AcceptKw("RETURNING") || AcceptKw("RETURN"))
         {
-            do st.Returning.Add(ParseExpr()); while (AcceptOp(","));
+            do st.Returning.Add(ParseReturningItem()); while (AcceptOp(","));
             if (IsKw("BULK") && IsKwAt(1, "COLLECT")) { Next(); Next(); st.ReturningBulkCollect = true; }
             ExpectKw("INTO");
             do st.ReturningInto.Add(ParsePostfix()); while (AcceptOp(","));
         }
+        ParseErrorLogging(st);
+    }
+
+    /// <summary>
+    /// OLD and NEW are not reserved words, so they only qualify the item when an expression follows them:
+    /// `RETURNING OLD a` qualifies, while `RETURNING old, new INTO` and `RETURNING old INTO` name columns.
+    /// </summary>
+    private ReturningItem ParseReturningItem()
+    {
+        var s = Cur;
+        var item = new ReturningItem();
+        var next = PeekTok();
+        bool nextStartsItem = next.Type == TokenType.QuotedIdentifier || (next.Type == TokenType.Identifier && !Reserved.Contains(next.Value));
+        if ((IsKw("OLD") || IsKw("NEW")) && nextStartsItem)
+        {
+            item.Image = IsKw("OLD") ? ReturningImage.Old : ReturningImage.New;
+            Next();
+        }
+        item.Expression = ParseExpr();
+        return Fin(item, s);
+    }
+
+    /// <summary>LOG ERRORS [INTO t] [('tag')] [REJECT LIMIT n | UNLIMITED]; also the last clause of MERGE.</summary>
+    private void ParseErrorLogging(DmlStatement st)
+    {
         if (IsKw("LOG") && IsKwAt(1, "ERRORS"))
         {
             var s = Next(); Next();
@@ -818,6 +889,7 @@ public sealed partial class SqlParser
             st.Clauses.Add(Fin(mc, cs));
         }
         if (st.Clauses.Count == 0) throw Fail("Expected WHEN clause in MERGE");
+        ParseErrorLogging(st);
         return Fin(st, start);
     }
 

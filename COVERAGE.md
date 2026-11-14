@@ -11,11 +11,11 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 
 | Statement | Node | Level | Tests |
 |---|---|---|---|
-| SELECT (all clauses, set ops, WITH incl. SEARCH/CYCLE/`WITH FUNCTION`) | `SelectStatement`, `QuerySpecification` | typed | QueryShape |
-| PIVOT / UNPIVOT / MATCH_RECOGNIZE / MODEL / XMLTABLE / JSON_TABLE / flashback / SAMPLE / VALUES table | `PivotTable` … `ValuesTable` | typed | QueryShape, MiscShape |
+| SELECT (all clauses, set ops, WITH incl. SEARCH/CYCLE/`WITH FUNCTION`, partitioned outer join, `FETCH [EXACT\|APPROX]`, PIVOT/LEFT/SAMPLE/FETCH as aliases where no clause can start; the vector-search `accuracy_clause` is not modeled) | `SelectStatement`, `QuerySpecification` | typed | QueryShape |
+| PIVOT / UNPIVOT / MATCH_RECOGNIZE / MODEL / XMLTABLE / JSON_TABLE / flashback / SAMPLE / VALUES table (also as a CTE body) | `PivotTable` … `ValuesTable`, `ValuesQuery` | typed | QueryShape, MiscShape |
 | GRAPH_TABLE | `GraphTable` | header+tree (body) | QueryShape |
 | INSERT (single, multitable, RETURNING, LOG ERRORS, `VALUES rec`) | `InsertStatement`, `MultiTableInsertStatement` | typed | DmlAndSessionShape, MiscShape |
-| UPDATE (incl. `SET ROW`, 23ai `FROM`), DELETE, MERGE | `UpdateStatement` … | typed | DmlAndSessionShape, MiscShape |
+| UPDATE (incl. `SET ROW`, 23ai `FROM`, RETURNING `OLD`/`NEW`), DELETE (23ai `FROM` direct joins), MERGE (incl. `LOG ERRORS`) | `UpdateStatement` … | typed | DmlAndSessionShape, MiscShape |
 | CALL, EXPLAIN PLAN, LOCK TABLE | `CallStatement`, `ExplainPlanStatement`, `LockTableStatement` | typed | DmlAndSessionShape |
 | COMMIT, ROLLBACK, SAVEPOINT, SET TRANSACTION, SET CONSTRAINT(S) | `CommitStatement` … `SetConstraintsStatement` | typed | DmlAndSessionShape |
 | ALTER SESSION (SET, ENABLE/DISABLE/FORCE, CLOSE DATABASE LINK, ADVISE, SYNC) | `AlterSessionStatement` | typed (`FeatureSyntax` token tree for unmodeled ENABLE/DISABLE features) | DmlAndSessionShape |
@@ -56,9 +56,8 @@ Error recovery resyncs at `;`, or for PL/SQL units at a `/` alone on its line (e
 
 ## Known gaps (each is a parse error today, not a silent mis-parse)
 
-- `RETURNING OLD/NEW` (23ai) — syntax not verified against the docs, not implemented.
 - `JSON_TRANSFORM` `NESTED PATH` and `CASE` operations.
-- Qualified expressions (`t_rec(a => 1)` parses as a function call), `DELETE ... FROM` join form.
+- Qualified expressions (`t_rec(a => 1)` parses as a function call).
 - `IN (subquery, expr)` mixed lists, `CREATE ... SHARDED/DUPLICATED` modifiers beyond those listed.
 - Every node can be generated back to SQL by `SqlScriptGenerator` (comments excepted; token-tree bodies print as space-separated tokens). The `AstPrinter` text is for assertions, not SQL.
 - Collection indexing vs. function call: `arr(i)` is syntactically identical to a call and is represented as
