@@ -41,3 +41,12 @@ public sealed partial class AlterIndexAction : SqlNode
     public Expression? Keep { get; set; }
     public List<PhysicalAttribute> Attributes { get; set; } = [];
 }
+
+// ---------- ALTER SEQUENCE ----------
+
+/// <summary>ALTER SEQUENCE; options are the same nodes as CREATE SEQUENCE (RESTART is an option name with no value).</summary>
+public sealed partial class AlterSequenceStatement : Statement
+{
+    public List<Identifier> Name { get; set; } = [];
+    public List<SequenceOption> Options { get; set; } = [];
+}

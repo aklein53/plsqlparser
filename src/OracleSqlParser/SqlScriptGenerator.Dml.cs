@@ -25,6 +25,7 @@ public sealed partial class SqlScriptGenerator
                     AdminLike(st); break;
                 // generic and typed DDL
                 case AlterIndexStatement ai: AlterIndex(ai); break;
+                case AlterSequenceStatement asq: AlterSequence(asq); break;
                 case CreateObjectStatement or AlterObjectStatement or DropStatement or CreateTableStatement or CreateIndexStatement
                     or CreateViewStatement or CreateSequenceStatement or CreateSynonymStatement or AlterTableStatement
                     or CreateJavaStatement or CreateLibraryStatement:

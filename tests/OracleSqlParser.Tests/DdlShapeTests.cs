@@ -175,6 +175,16 @@ public class DdlShapeTests
     public void AlterIndex(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
+    [InlineData("ALTER SEQUENCE s INCREMENT BY 5", "(AlterSequenceStatement name=[S] options=[(SequenceOption name=INCREMENT BY value=5)])")]
+    [InlineData("ALTER SEQUENCE s NOMAXVALUE NOCYCLE CACHE 20 ORDER",
+        "(AlterSequenceStatement name=[S] options=[(SequenceOption name=NOMAXVALUE) (SequenceOption name=NOCYCLE) (SequenceOption name=CACHE value=20) (SequenceOption name=ORDER)])")]
+    [InlineData("ALTER SEQUENCE s RESTART START WITH 100", "(AlterSequenceStatement name=[S] options=[(SequenceOption name=RESTART) (SequenceOption name=START WITH value=100)])")]
+    [InlineData("ALTER SEQUENCE s MAXVALUE 999 MINVALUE 1 KEEP NOSCALE SHARD SESSION",
+        "(AlterSequenceStatement name=[S] options=[(SequenceOption name=MAXVALUE value=999) (SequenceOption name=MINVALUE value=1) (SequenceOption name=KEEP) (SequenceOption name=NOSCALE) (SequenceOption name=SHARD) (SequenceOption name=SESSION)])")]
+    [InlineData("ALTER SEQUENCE s NOSHARD GLOBAL NOKEEP", "(AlterSequenceStatement name=[S] options=[(SequenceOption name=NOSHARD) (SequenceOption name=GLOBAL) (SequenceOption name=NOKEEP)])")]
+    public void AlterSequence(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
     [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateObjectStatement kind=User name=[BOB] body=[(WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=PW)])")]
     [InlineData("CREATE ROLE r", "(CreateObjectStatement kind=Role name=[R])")]
     [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'",
@@ -189,7 +199,6 @@ public class DdlShapeTests
     [InlineData("ALTER SYSTEM FLUSH SHARED_POOL", "(AlterObjectStatement kind=System body=[(WordItem value=FLUSH) (WordItem value=SHARED_POOL)])")]
     [InlineData("ALTER USER u ACCOUNT LOCK", "(AlterObjectStatement kind=User name=[U] body=[(WordItem value=ACCOUNT) (WordItem value=LOCK)])")]
     [InlineData("ALTER PROCEDURE p COMPILE", "(AlterObjectStatement kind=Procedure name=[P] body=[(WordItem value=COMPILE)])")]
-    [InlineData("ALTER SEQUENCE s INCREMENT BY 5", "(AlterObjectStatement kind=Sequence name=[S] body=[(WordItem value=INCREMENT) (WordItem value=BY) (LiteralItem kind=Number value=5)])")]
     public void GenericObjectDdl(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Fact]

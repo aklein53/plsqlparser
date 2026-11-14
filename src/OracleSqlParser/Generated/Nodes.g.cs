@@ -264,6 +264,52 @@ public partial class AlterObjectStatement
     }
 }
 
+public partial class AlterSequenceStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Options is not null) foreach (var x in Options) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        if (Options is not null) foreach (var x in Options) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AlterSequenceStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Options, "AlterSequenceStatement.Options");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterSequenceStatement();
+        CopySpan(this, c);
+        c.Name = CloneList(Name);
+        c.Options = CloneList(Options);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterSequenceStatement)other;
+        return PairList(Name, o.Name, pending)
+            && PairList(Options, o.Options, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class AlterSessionStatement
 {
     /// <inheritdoc/>

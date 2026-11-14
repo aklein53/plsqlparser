@@ -4,6 +4,15 @@ public sealed partial class SqlScriptGenerator
 {
     private sealed partial class Printer
     {
+        // ---------- ALTER SEQUENCE ----------
+
+        private void AlterSequence(AlterSequenceStatement s)
+        {
+            Add("ALTER SEQUENCE");
+            Sp(); Name(s.Name);
+            foreach (var o in s.Options) { Sp(); SeqOption(o); }
+        }
+
         // ---------- ALTER INDEX ----------
 
         private void AlterIndex(AlterIndexStatement s)

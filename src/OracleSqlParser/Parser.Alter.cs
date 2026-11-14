@@ -92,3 +92,15 @@ public sealed partial class SqlParser
         return Fin(a, s);
     }
 }
+
+public sealed partial class SqlParser
+{
+    // ---- ALTER SEQUENCE ----
+
+    private Statement ParseAlterSequence(Token start)
+    {
+        var st = new AlterSequenceStatement { Name = ParseDottedName() };
+        st.Options = ParseSequenceOptions(() => false);
+        return Fin(st, start);
+    }
+}

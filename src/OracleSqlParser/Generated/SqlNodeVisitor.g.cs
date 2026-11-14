@@ -58,6 +58,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="AlterSequenceStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterSequenceStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterSequenceStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterSequenceStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="AlterSessionStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(AlterSessionStatement node) => Visit((SqlNode)node);
 
