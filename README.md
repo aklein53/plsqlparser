@@ -1,7 +1,7 @@
 # OracleSqlParser
 
 A hand-written lexer and recursive-descent parser for Oracle SQL that builds an abstract syntax tree
-(similar in spirit to Microsoft's `TSqlParser`/ScriptDom). Targets net8.0 and net10.0 with no NuGet package dependencies (SourceLink is build-time only).
+(similar in spirit to Microsoft's `TSqlParser`/ScriptDom). Targets net8.0 and net10.0 and has no NuGet package dependencies (SourceLink is build-time only).
 
 ## Installing
 
@@ -24,13 +24,15 @@ Versions are published as pre-releases (`0.1.0-preview.N`) until the API stabili
 Publishing uses nuget.org Trusted Publishing (GitHub OIDC) bound to `.github/workflows/build.yml`; no API key
 secret is required.
 
-1. Bump `<Version>` in `src/OracleSqlParser/OracleSqlParser.csproj` (e.g. `0.1.0-preview.2`) and commit.
+1. Bump `<Version>` (e.g. `0.1.0-preview.2`) in all three csproj files: `src/OracleSqlParser/OracleSqlParser.csproj`,
+   `src/OracleSqlParser.Guard/OracleSqlParser.Guard.csproj` and `src/OracleSqlParser.Cli/OracleSqlParser.Cli.csproj`. Commit.
 2. Tag the commit with the matching `v`-prefixed version: `git tag vX.Y.Z-preview.N` (e.g. `v0.1.0-preview.2`).
 3. Push the tag: `git push origin vX.Y.Z-preview.N`.
 
-The `Build` workflow runs on every push and pull request; its `publish` job runs only on `v*` tags. It checks that
-the tag matches the csproj `<Version>`, then exchanges the GitHub OIDC token for a short-lived key and pushes the
-package built by the `build` job to nuget.org.
+The `Build` workflow runs on every push and pull request. It packs `OracleSqlParser`, `OracleSqlParser.Guard` and
+`OracleSqlParser.Cli` (the dotnet tool). Its `publish` job runs only on `v*` tags. It checks that the tag matches the
+`<Version>` of all three csproj files, then exchanges the GitHub OIDC token for a short-lived key and pushes the packages
+built by the `build` job to nuget.org.
 
 ## Library
 
@@ -63,16 +65,19 @@ The gated constructs and their versions are listed in [COVERAGE.md](https://gith
 
 ## CLI
 
+The command-line tool is packaged as the .NET tool `OracleSqlParser.Cli` (command `oraclesqlparser`):
+
 ```
-dotnet run --project src/OracleSqlParser.Cli -- [--positions] [--compact] [-f file | -e "sql"]   # or stdin
+dotnet tool install -g OracleSqlParser.Cli --prerelease
+oraclesqlparser [--shape] [--positions] [--compact] [-f file | -e "sql"]   # or stdin
 ```
-Prints the AST as JSON; syntax errors go to stderr with exit code 1.
+Prints the AST as JSON (or the compact tree with `--shape`); syntax errors go to stderr with exit code 1. See the
+[tool README](https://github.com/aklein53/plsqlparser/blob/main/src/OracleSqlParser.Cli/README.md) for every flag.
 
 ## Coverage
 
 See [COVERAGE.md](https://github.com/aklein53/plsqlparser/blob/main/COVERAGE.md): every statement in Oracle's statement index, the node that represents it, whether
-it is fully typed or a typed header with a token-tree body, and the known gaps. `dotnet run --project src/OracleSqlParser.Cli -- --shape -e "..."`
-prints the compact tree used by the shape tests.
+it is fully typed or a typed header with a token-tree body, and the known gaps. `oraclesqlparser --shape -e "..."` prints the compact tree used by the shape tests.
 
 ## Tests
 

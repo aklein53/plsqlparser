@@ -31,6 +31,7 @@ jobs:
         run: |
           dotnet pack src/OracleSqlParser --configuration Release --no-build --output ./artifacts
           dotnet pack src/OracleSqlParser.Guard --configuration Release --no-build --output ./artifacts
+          dotnet pack src/OracleSqlParser.Cli --configuration Release --no-build --output ./artifacts
       - uses: actions/upload-artifact@v4
         with:
           name: package
@@ -50,18 +51,21 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-      - name: Validate tag matches csproj version
+      - name: Validate tag matches csproj versions
         run: |
-          csproj_version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/OracleSqlParser/OracleSqlParser.csproj | head -n1)
           tag_version="${GITHUB_REF_NAME#v}"
-          if [ -z "$csproj_version" ]; then
-            echo "::error::Could not find <Version> in src/OracleSqlParser/OracleSqlParser.csproj"
-            exit 1
-          fi
-          if [ "$csproj_version" != "$tag_version" ]; then
-            echo "::error::Tag '$GITHUB_REF_NAME' (version '$tag_version') does not match csproj <Version> '$csproj_version'. Bump the csproj or retag."
-            exit 1
-          fi
+          status=0
+          for csproj in src/OracleSqlParser/OracleSqlParser.csproj src/OracleSqlParser.Guard/OracleSqlParser.Guard.csproj src/OracleSqlParser.Cli/OracleSqlParser.Cli.csproj; do
+            csproj_version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$csproj" | head -n1)
+            if [ -z "$csproj_version" ]; then
+              echo "::error::Could not find <Version> in $csproj"
+              status=1
+            elif [ "$csproj_version" != "$tag_version" ]; then
+              echo "::error::Tag '$GITHUB_REF_NAME' (version '$tag_version') does not match <Version> '$csproj_version' in $csproj. Bump the csproj or retag."
+              status=1
+            fi
+          done
+          exit $status
       - uses: actions/download-artifact@v4
         with:
           name: package

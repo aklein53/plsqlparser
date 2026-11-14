@@ -1,6 +1,6 @@
 using OracleSqlParser;
 
-// Usage: oraparse [--positions] [--compact] [--shape] [-f file | -e "sql" | (stdin)]
+// Usage: oraclesqlparser [--shape] [--positions] [--compact] [-f file | -e "sql" | (stdin)]
 bool positions = false, compact = false, shape = false;
 string? sql = null;
 for (int i = 0; i < args.Length; i++)
@@ -13,7 +13,7 @@ for (int i = 0; i < args.Length; i++)
         case "-f" when i + 1 < args.Length: sql = File.ReadAllText(args[++i]); break;
         case "-e" when i + 1 < args.Length: sql = args[++i]; break;
         case "-h" or "--help":
-            Console.WriteLine("oraparse [--positions] [--compact] [-f file | -e \"sql\"]  (reads stdin if neither is given)");
+            Console.WriteLine("oraclesqlparser [--shape] [--positions] [--compact] [-f file | -e \"sql\"]  (reads stdin if neither is given)");
             return 0;
         default: Console.Error.WriteLine($"Unknown argument: {args[i]}"); return 2;
     }
