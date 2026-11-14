@@ -52,6 +52,7 @@ public sealed partial class SqlParser
         {
             if (t is NamedTable nt)
             {
+                if (AtDualityWithClause()) { ParseDualityAnnotations(nt); continue; }
                 // SAMPLE is a clause only before "(" or BLOCK; otherwise it is an alias (checked below)
                 if (IsKw("SAMPLE") && (IsOpAt(1, "(") || IsKwAt(1, "BLOCK")) && nt.Sample == null) { nt.Sample = ParseSample(); continue; }
                 if (nt.Flashback == null && ((IsKw("VERSIONS") && IsKwAt(1, "BETWEEN")) || (IsKw("AS") && IsKwAt(1, "OF"))))
@@ -60,7 +61,8 @@ public sealed partial class SqlParser
                     continue;
                 }
             }
-            if (t.Alias == null)
+            // Oracle takes a GRAPH_TABLE alias without AS (ORA-03048 for AS g).
+            if (t.Alias == null && !(t is GraphTable && IsKw("AS")))
             {
                 var a = ParseOptionalAlias();
                 if (a != null) { t.Alias = a; continue; }
@@ -364,22 +366,6 @@ public sealed partial class SqlParser
         var start = Cur;
         Next(); Next();
         var gt = new GraphTable { Graph = ParseDottedName() };
-        int mark = _p;
-        try { ParseGraphBody(gt); }
-        catch (ParseException)
-        {
-            // Syntax outside the typed grammar (e.g. quantified sub-path patterns) keeps the body as a token tree.
-            _p = mark;
-            gt.Match.Clear(); gt.Where = null; gt.RowsPer = null; gt.RowsPerVariables.Clear(); gt.Columns.Clear();
-            gt.OtherClauses = ParseSyntaxItems(() => false);
-        }
-        ExpectOp(")");
-        return Fin(gt, start);
-    }
-
-    /// <summary>MATCH paths [WHERE cond] [ONE ROW PER ...] COLUMNS (...), up to the closing parenthesis of GRAPH_TABLE.</summary>
-    private void ParseGraphBody(GraphTable gt)
-    {
         ExpectKw("MATCH");
         do gt.Match.Add(ParseGraphPathPattern()); while (AcceptOp(","));
         if (AcceptKw("WHERE")) gt.Where = ParseExpr();
@@ -400,20 +386,41 @@ public sealed partial class SqlParser
         ExpectOp("(");
         do gt.Columns.Add(ParseGraphColumn()); while (AcceptOp(","));
         ExpectOp(")");
-        if (!IsOp(")")) throw Fail($"Expected ')' to close GRAPH_TABLE but found {Describe(Cur)}");
+        ExpectOp(")");
+        return Fin(gt, start);
     }
 
     private GraphPathPattern ParseGraphPathPattern()
     {
         var s = Cur;
         var p = new GraphPathPattern();
-        p.Elements.Add(ParseGraphVertexPattern());
-        while (IsOp("-") || IsOp("->") || IsOp("<"))
+        p.Elements.Add(ParseGraphVertexOrSubpattern());
+        while (true)
         {
-            p.Elements.Add(ParseGraphEdgePattern());
-            p.Elements.Add(ParseGraphVertexPattern());
+            if (IsOp("-") || IsOp("->") || IsOp("<"))
+            {
+                p.Elements.Add(ParseGraphEdgePattern());
+                p.Elements.Add(ParseGraphVertexOrSubpattern());
+            }
+            else if (IsOp("(") && IsOpAt(1, "(")) p.Elements.Add(ParseGraphSubpattern());
+            else break;
         }
         return Fin(p, s);
+    }
+
+    private GraphPatternElement ParseGraphVertexOrSubpattern() =>
+        IsOp("(") && IsOpAt(1, "(") ? ParseGraphSubpattern() : ParseGraphVertexPattern();
+
+    /// <summary>( path ) [quantifier]: a sub-path pattern (its first element is itself parenthesised).</summary>
+    private GraphSubpatternElement ParseGraphSubpattern()
+    {
+        var s = Cur;
+        ExpectOp("(");
+        var sp = new GraphSubpatternElement { Path = ParseGraphPathPattern() };
+        ExpectOp(")");
+        // Oracle rejects a bare parenthesised sub-path (ORA-40951): it must repeat.
+        sp.Quantifier = ParseGraphQuantifier() ?? throw Fail("A parenthesised GRAPH_TABLE path pattern needs a quantifier");
+        return Fin(sp, s);
     }
 
     /// <summary>A variable name inside (...) or [...], i.e. an identifier that is not the start of IS or WHERE.</summary>
@@ -446,7 +453,11 @@ public sealed partial class SqlParser
             e.Label = ParseGraphLabel();
             if (AcceptKw("WHERE")) e.Where = ParseExpr();
             ExpectOp("]");
-            if (e.Direction == GraphEdgeDirection.Left) ExpectOp("-");
+            if (e.Direction == GraphEdgeDirection.Left)
+            {
+                if (AcceptOp("->")) e.Direction = GraphEdgeDirection.LeftOrRight;
+                else ExpectOp("-");
+            }
             else if (AcceptOp("->")) e.Direction = GraphEdgeDirection.Right;
             else ExpectOp("-");
             e.Quantifier = ParseGraphQuantifier();
@@ -462,18 +473,21 @@ public sealed partial class SqlParser
         return l;
     }
 
+    /// <summary>
+    /// Quantifier after an edge or sub-path. Oracle accepts {n}, {n,m} and {,m}; it rejects * and + (ORA-40985) and {n,} (ORA-40984).
+    /// </summary>
     private GraphQuantifier? ParseGraphQuantifier()
     {
         var s = Cur;
-        if (AcceptOp("*")) return Fin(new GraphQuantifier { Kind = GraphQuantifierKind.Star }, s);
-        if (AcceptOp("+")) return Fin(new GraphQuantifier { Kind = GraphQuantifierKind.Plus }, s);
+        if (IsOp("*") || IsOp("+")) throw Fail($"Unsupported quantifier {Cur.Value} in GRAPH_TABLE (use {{n}}, {{n,m}} or {{,m}})");
         if (!AcceptOp("{")) return null;
         var q = new GraphQuantifier { Kind = GraphQuantifierKind.Exact };
         if (!IsOp(",")) q.Min = ParseExpr();
         if (AcceptOp(","))
         {
             q.Kind = GraphQuantifierKind.Range;
-            if (!IsOp("}")) q.Max = ParseExpr();
+            if (IsOp("}")) throw Fail("A GRAPH_TABLE quantifier with no upper bound ({n,}) is not supported");
+            q.Max = ParseExpr();
         }
         else if (q.Min == null) throw Fail($"Expected a quantifier bound but found {Describe(Cur)}");
         ExpectOp("}");
@@ -727,5 +741,102 @@ public sealed partial class SqlParser
             list.Add(Fin(ic, s));
         }
         return list;
+    }
+
+
+    // ---- JSON constructors and duality view annotations ----
+
+    /// <summary>JSON { 'k' : value, ... } or JSON {*}; the JSON keyword is the current token.</summary>
+    private Expression ParseJsonObject()
+    {
+        var start = Next();
+        ExpectOp("{");
+        var o = new JsonObjectConstructor();
+        if (AcceptOp("*")) o.Wildcard = true;
+        else if (!IsOp("}")) do o.Members.Add(ParseJsonMember()); while (AcceptOp(","));
+        ExpectOp("}");
+        return Fin(o, start);
+    }
+
+    private JsonMember ParseJsonMember()
+    {
+        var s = Cur;
+        var m = new JsonMember { Key = ParsePrimary() };
+        if (Cur.Type == TokenType.Bind && Cur.Text.Length > 1 && char.IsDigit(Cur.Text[1]))
+        {
+            // 'key':1 with no space lexes ':1' as a bind; here it is a colon and a number (as in JSON_OBJECT)
+            var bt = Next();
+            m.Value = Fin(new Literal { Kind = LiteralKind.Number, Value = bt.Text[1..] }, bt);
+        }
+        else
+        {
+            if (Cur.Text != ":") throw Fail($"Expected ':' in a JSON member but found {Describe(Cur)}");
+            Next();
+            m.Value = IsOp("[") ? ParseJsonArray(keyword: false) : ParseExpr();
+        }
+        if (IsKw("ABSENT") && IsKwAt(1, "ON") && IsKwAt(2, "NULL")) { Next(); Next(); Next(); m.NullHandling = JsonNullHandling.AbsentOnNull; }
+        else if (IsKw("NULL") && IsKwAt(1, "ON") && IsKwAt(2, "NULL")) { Next(); Next(); Next(); m.NullHandling = JsonNullHandling.NullOnNull; }
+        if (AcceptKw("RETURNING")) m.Returning = ParseDataType();
+        return Fin(m, s);
+    }
+
+    /// <summary>[ expr, ... ] or [ SELECT ... ]; keyword is true for the top-level JSON [ ... ] form.</summary>
+    private Expression ParseJsonArray(bool keyword)
+    {
+        var start = Cur;
+        if (keyword) Next();
+        ExpectOp("[");
+        var a = new JsonArrayConstructor();
+        if (IsKw("SELECT") || IsKw("WITH")) a.Query = ParseSelectStatement();
+        else if (!IsOp("]")) do a.Elements.Add(ParseExpr()); while (AcceptOp(","));
+        ExpectOp("]");
+        return Fin(a, start);
+    }
+
+    private bool AtDualityWord(int k) =>
+        IsKwAt(k, "INSERT") || IsKwAt(k, "UPDATE") || IsKwAt(k, "DELETE") || IsKwAt(k, "NOINSERT") || IsKwAt(k, "NOUPDATE") ||
+        IsKwAt(k, "NODELETE") || IsKwAt(k, "NOCHECK") || IsKwAt(k, "ETAG") || IsKwAt(k, "NOETAG") ||
+        (IsKwAt(k, "NO") && (IsKwAt(k + 1, "CHECK") || IsKwAt(k + 1, "ETAG")));
+
+    /// <summary>A WITH that opens duality annotations (rather than WITH CHECK OPTION or WITH READ ONLY).</summary>
+    private bool AtDualityWithClause() => IsKw("WITH") && AtDualityWord(1);
+
+    /// <summary>WITH word [word]... [WITH word...]: Oracle accepts repeated WITH groups (semantic checks reject conflicts).</summary>
+    private void ParseDualityAnnotations(NamedTable nt)
+    {
+        int prog = -1;
+        while (AtDualityWithClause() && Progress(ref prog))
+        {
+            Next();
+            while (AtDualityWord(0))
+            {
+                var s = Cur;
+                var kind = ParseDualityWord();
+                nt.DualityAnnotations.Add(Fin(new DualityAnnotationItem { Kind = kind }, s));
+            }
+        }
+    }
+
+    private DualityAnnotation ParseDualityWord()
+    {
+        var w = Next().Value;
+        if (w == "NO") return Next().Value == "CHECK" ? DualityAnnotation.NoCheck : DualityAnnotation.NoEtag;
+        return w switch
+        {
+            "INSERT" => DualityAnnotation.Insert, "UPDATE" => DualityAnnotation.Update, "DELETE" => DualityAnnotation.Delete,
+            "NOINSERT" => DualityAnnotation.NoInsert, "NOUPDATE" => DualityAnnotation.NoUpdate, "NODELETE" => DualityAnnotation.NoDelete,
+            "NOCHECK" => DualityAnnotation.NoCheck, "ETAG" => DualityAnnotation.Etag, _ => DualityAnnotation.NoEtag,
+        };
+    }
+
+    /// <summary>CREATE ... JSON [RELATIONAL] DUALITY VIEW name AS query; the header tokens are already consumed.</summary>
+    private Statement ParseCreateDualityView(Token start, bool orReplace, bool relational)
+    {
+        var st = new CreateDualityViewStatement { OrReplace = orReplace, Relational = relational };
+        st.Name = ParseDottedName();
+        ExpectKw("AS");
+        if (IsKw("SELECT") || IsKw("WITH") || IsOp("(")) st.Query = ParseSelectStatement();
+        else st.OtherClauses = ParseSyntaxItems(AtStatementEnd);
+        return Fin(st, start);
     }
 }

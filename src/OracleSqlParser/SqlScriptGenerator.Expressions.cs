@@ -6,6 +6,29 @@ public sealed partial class SqlScriptGenerator
 {
     private sealed partial class Printer
     {
+        private void JsonMemberDef(JsonMember m)
+        {
+            Expr(m.Key); Add(" : ");
+            if (m.Value is JsonArrayConstructor ja) JsonArrayDef(ja); else Expr(m.Value);
+            if (m.NullHandling != null) Add(m.NullHandling == JsonNullHandling.AbsentOnNull ? " ABSENT ON NULL" : " NULL ON NULL");
+            if (m.Returning != null) { Add(" RETURNING "); Type(m.Returning); }
+        }
+
+        /// <summary>The bracketed array; the JSON keyword is added by the caller when the array stands alone.</summary>
+        private void JsonArrayDef(JsonArrayConstructor a)
+        {
+            Add("[");
+            if (a.Query != null) Select(a.Query); else Sep(a.Elements, Expr);
+            Add("]");
+        }
+
+        private void DualityWordDef(DualityAnnotation a) => Add(a switch
+        {
+            DualityAnnotation.Insert => "INSERT", DualityAnnotation.Update => "UPDATE", DualityAnnotation.Delete => "DELETE",
+            DualityAnnotation.NoInsert => "NOINSERT", DualityAnnotation.NoUpdate => "NOUPDATE", DualityAnnotation.NoDelete => "NODELETE",
+            DualityAnnotation.NoCheck => "NOCHECK", DualityAnnotation.Etag => "ETAG", _ => "NO ETAG",
+        });
+
         private void Type(DataType dt)
         {
             if (dt.Attribute != null) { Add(dt.Name).Add("%").Add(dt.Attribute); return; }
@@ -148,6 +171,12 @@ public sealed partial class SqlScriptGenerator
                 case MethodCall mc: Expr(mc.Target); Add("."); Id(mc.Name); Add("("); Sep(mc.Arguments, Arg); Add(")"); break;
                 case MemberAccess ma: Expr(ma.Target); Add("."); Id(ma.Member); break;
                 case ChainedCall cc: Expr(cc.Target); Add("("); Sep(cc.Arguments, Arg); Add(")"); break;
+                case JsonObjectConstructor jo:
+                    Add("JSON {");
+                    if (jo.Wildcard) Add("*"); else Sep(jo.Members, JsonMemberDef);
+                    Add("}");
+                    break;
+                case JsonArrayConstructor ja: Add("JSON "); JsonArrayDef(ja); break;
                 case CellReference cr:
                     Expr(cr.Base); Add("[");
                     Sep(cr.Subscripts, s => Expr(s));

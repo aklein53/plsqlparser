@@ -218,6 +218,26 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="AnnotationItem"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AnnotationItem node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AnnotationItem"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AnnotationItem node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AnnotationsClause"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AnnotationsClause node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AnnotationsClause"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AnnotationsClause node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="Argument"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(Argument node) => Visit((SqlNode)node);
 
@@ -668,6 +688,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="CreateDualityViewStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(CreateDualityViewStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="CreateDualityViewStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(CreateDualityViewStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="CreateIndexStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(CreateIndexStatement node) => Visit((SqlNode)node);
 
@@ -943,6 +973,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="DropStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(DropStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="DualityAnnotationItem"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(DualityAnnotationItem node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="DualityAnnotationItem"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(DualityAnnotationItem node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -1348,11 +1388,31 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="GraphProperty"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(GraphProperty node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="GraphProperty"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(GraphProperty node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="GraphQuantifier"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(GraphQuantifier node) => Visit((SqlNode)node);
 
     /// <summary>Entry point for a <see cref="GraphQuantifier"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(GraphQuantifier node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="GraphSubpatternElement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(GraphSubpatternElement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="GraphSubpatternElement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(GraphSubpatternElement node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -1573,6 +1633,36 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="JoinTable"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(JoinTable node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="JsonArrayConstructor"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(JsonArrayConstructor node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="JsonArrayConstructor"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(JsonArrayConstructor node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="JsonMember"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(JsonMember node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="JsonMember"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(JsonMember node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="JsonObjectConstructor"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(JsonObjectConstructor node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="JsonObjectConstructor"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(JsonObjectConstructor node)
     {
         Visit(node);
         node.AcceptChildren(this);

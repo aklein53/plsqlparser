@@ -865,8 +865,7 @@ public sealed partial class CreateViewStatement : Statement
     public Identifier? CheckOptionConstraint { get; set; }
 }
 
-/// <summary>CREATE [OR REPLACE] [USECASE] DOMAIN d AS type [DEFAULT ...] [constraints] [COLLATE ...] [DISPLAY ...] [ORDER ...].
-/// Clauses without a dedicated node (ANNOTATIONS, the multi-column AS (...) form) are kept in OtherClauses.</summary>
+/// <summary>CREATE [USECASE] DOMAIN [IF NOT EXISTS] d AS type [DEFAULT ...] [constraints] [COLLATE ...] [DISPLAY ...] [ORDER ...] [ANNOTATIONS (...)].</summary>
 public sealed partial class CreateDomainStatement : Statement
 {
     public bool OrReplace { get; set; }
@@ -879,8 +878,7 @@ public sealed partial class CreateDomainStatement : Statement
     public Identifier? Collation { get; set; }
     public Expression? Display { get; set; }
     public Expression? Order { get; set; }
-    /// <summary>Trailing clauses without a dedicated node, as a token tree.</summary>
-    public List<SyntaxItem> OtherClauses { get; set; } = [];
+    public AnnotationsClause? Annotations { get; set; }
 }
 
 public enum AlterDomainActionKind { AddDisplay, DropDisplay, AddOrder, DropOrder }
@@ -890,7 +888,28 @@ public sealed partial class AlterDomainStatement : Statement
 {
     public List<Identifier> Name { get; set; } = [];
     public AlterDomainAction? Action { get; set; }
+    /// <summary>ALTER DOMAIN d ANNOTATIONS (...).</summary>
+    public AnnotationsClause? Annotations { get; set; }
+    /// <summary>Actions not modelled above (RENAME, ADD CONSTRAINT, ...), as a token tree.</summary>
     public List<SyntaxItem> OtherClauses { get; set; } = [];
+}
+
+/// <summary>ANNOTATIONS ( item [, item]... ). In CREATE an item is name ['value'] or ADD [IF NOT EXISTS] name ['value']; in ALTER also DROP [IF EXISTS] name.</summary>
+public sealed partial class AnnotationsClause : SqlNode
+{
+    public List<AnnotationItem> Items { get; set; } = [];
+}
+
+public enum AnnotationAction { Add, Drop }
+
+public sealed partial class AnnotationItem : SqlNode
+{
+    /// <summary>Null for a plain name ['value'] item.</summary>
+    public AnnotationAction? Action { get; set; }
+    public bool IfNotExists { get; set; }
+    public bool IfExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public Expression? Value { get; set; }
 }
 
 public sealed partial class AlterDomainAction : SqlNode
@@ -907,8 +926,6 @@ public sealed partial class CreatePropertyGraphStatement : Statement
     public List<Identifier> Name { get; set; } = [];
     public List<GraphVertexTable> VertexTables { get; set; } = [];
     public List<GraphEdgeTable> EdgeTables { get; set; } = [];
-    /// <summary>Trailing clauses without a dedicated node, as a token tree.</summary>
-    public List<SyntaxItem> OtherClauses { get; set; } = [];
 }
 
 /// <summary>A table used as vertices or edges: table [AS alias] [KEY (cols)] [LABEL ... [PROPERTIES ...]]...</summary>
@@ -917,9 +934,9 @@ public abstract partial class GraphElementTable : SqlNode
     public List<Identifier> Table { get; set; } = [];
     public Identifier? Alias { get; set; }
     public List<Identifier> Key { get; set; } = [];
+    /// <summary>PROPERTIES written without a LABEL: the properties of the default (table-name) label.</summary>
+    public GraphPropertiesClause? Properties { get; set; }
     public List<GraphElementLabel> Labels { get; set; } = [];
-    /// <summary>Clauses after the labels that have no dedicated node, as a token tree.</summary>
-    public List<SyntaxItem> OtherClauses { get; set; } = [];
 }
 
 public sealed partial class GraphVertexTable : GraphElementTable
@@ -953,8 +970,15 @@ public enum GraphPropertiesKind { Columns, AllColumns, None }
 public sealed partial class GraphPropertiesClause : SqlNode
 {
     public GraphPropertiesKind Kind { get; set; }
-    public List<Identifier> Columns { get; set; } = [];
+    public List<GraphProperty> Columns { get; set; } = [];
     public List<Identifier> Except { get; set; } = [];
+}
+
+/// <summary>One property: column [AS name].</summary>
+public sealed partial class GraphProperty : SqlNode
+{
+    public Identifier Property { get; set; } = null!;
+    public Identifier? Alias { get; set; }
 }
 
 public sealed partial class CreateSequenceStatement : Statement

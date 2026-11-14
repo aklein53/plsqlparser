@@ -174,6 +174,7 @@ public sealed partial class SqlScriptGenerator
                 case CreateViewStatement cv: CreateView(cv); break;
                 case CreatePropertyGraphStatement pg: PropertyGraph(pg); break;
                 case CreateDomainStatement dm: CreateDomain(dm); break;
+                case CreateDualityViewStatement dv: DualityView(dv); break;
                 case AlterDomainStatement ad: AlterDomain(ad); break;
                 case CreateSequenceStatement cs:
                     Add("CREATE SEQUENCE");
@@ -571,17 +572,24 @@ public sealed partial class SqlScriptGenerator
             if (t.AsQuery != null) { Add(" AS "); Select(t.AsQuery); }
         }
 
+        private void DualityView(CreateDualityViewStatement d)
+        {
+            Add("CREATE "); if (d.OrReplace) Add("OR REPLACE "); Add("JSON "); if (d.Relational) Add("RELATIONAL ");
+            Add("DUALITY VIEW "); Name(d.Name); Add(" AS ");
+            if (d.Query != null) Select(d.Query); else SyntaxList(d.OtherClauses);
+        }
+
         private void CreateDomain(CreateDomainStatement d)
         {
-            Add("CREATE "); if (d.OrReplace) Add("OR REPLACE "); if (d.UseCase) Add("USECASE "); Add("DOMAIN ");
+            Add("CREATE "); if (d.UseCase) Add("USECASE "); Add("DOMAIN ");
             if (d.IfNotExists) Add("IF NOT EXISTS "); Name(d.Name);
-            Add(" AS "); if (d.Type != null) Type(d.Type);
+            Add(" AS "); Type(d.Type!);
             if (d.Default != null) { Add(" DEFAULT "); Expr(d.Default); }
             foreach (var k in d.Constraints) { Sp(); Constraint(k); }
             if (d.Collation != null) { Add(" COLLATE "); Id(d.Collation); }
             if (d.Display != null) { Add(" DISPLAY "); Expr(d.Display); }
             if (d.Order != null) { Add(" ORDER "); Expr(d.Order); }
-            if (d.OtherClauses.Count > 0) { if (d.Type != null) Sp(); SyntaxList(d.OtherClauses); }
+            if (d.Annotations != null) { Add(" ANNOTATIONS "); Annotations(d.Annotations); }
         }
 
         private void AlterDomain(AlterDomainStatement d)
@@ -598,7 +606,21 @@ public sealed partial class SqlScriptGenerator
                     default: Add("DROP ORDER"); break;
                 }
             }
+            if (d.Annotations != null) { Sp(); Add("ANNOTATIONS "); Annotations(d.Annotations); }
             if (d.OtherClauses.Count > 0) { Sp(); SyntaxList(d.OtherClauses); }
+        }
+
+        private void Annotations(AnnotationsClause c)
+        {
+            Add("(");
+            Sep(c.Items, item =>
+            {
+                if (item.Action == AnnotationAction.Add) { Add("ADD "); if (item.IfNotExists) Add("IF NOT EXISTS "); }
+                else if (item.Action == AnnotationAction.Drop) { Add("DROP "); if (item.IfExists) Add("IF EXISTS "); }
+                Id(item.Name);
+                if (item.Value != null) { Add(" "); Expr(item.Value); }
+            });
+            Add(")");
         }
 
         private void PropertyGraph(CreatePropertyGraphStatement g)
@@ -606,7 +628,6 @@ public sealed partial class SqlScriptGenerator
             Add("CREATE "); if (g.OrReplace) Add("OR REPLACE "); Add("PROPERTY GRAPH "); Name(g.Name);
             Add(" VERTEX TABLES ("); Sep(g.VertexTables, GraphElementDef); Add(")");
             if (g.EdgeTables.Count > 0) { Add(" EDGE TABLES ("); Sep(g.EdgeTables, GraphElementDef); Add(")"); }
-            if (g.OtherClauses.Count > 0) { Sp(); SyntaxList(g.OtherClauses); }
         }
 
         private void GraphElementDef(GraphElementTable t)
@@ -619,31 +640,40 @@ public sealed partial class SqlScriptGenerator
                 Add(" SOURCE "); GraphEndpoint(e.Source);
                 Add(" DESTINATION "); GraphEndpoint(e.Destination);
             }
+            if (t.Properties is { } dp) { Add(" "); GraphProperties(dp); }
             foreach (var l in t.Labels)
             {
                 Add(" LABEL "); Id(l.Name);
-                if (l.Properties is { } p)
-                {
-                    Add(" ");
-                    switch (p.Kind)
-                    {
-                        case GraphPropertiesKind.None: Add("NO PROPERTIES"); break;
-                        case GraphPropertiesKind.AllColumns:
-                            Add("PROPERTIES ARE ALL COLUMNS");
-                            if (p.Except.Count > 0) { Add(" EXCEPT ("); Sep(p.Except, Id); Add(")"); }
-                            break;
-                        default: Add("PROPERTIES ("); Sep(p.Columns, Id); Add(")"); break;
-                    }
-                }
+                if (l.Properties is { } p) { Add(" "); GraphProperties(p); }
             }
-            if (t.OtherClauses.Count > 0) { Sp(); SyntaxList(t.OtherClauses); }
+        }
+
+        private void GraphProperties(GraphPropertiesClause p)
+        {
+            switch (p.Kind)
+            {
+                case GraphPropertiesKind.None: Add("NO PROPERTIES"); break;
+                case GraphPropertiesKind.AllColumns:
+                    Add("PROPERTIES ARE ALL COLUMNS");
+                    if (p.Except.Count > 0) { Add(" EXCEPT ("); Sep(p.Except, Id); Add(")"); }
+                    break;
+                default:
+                    Add("PROPERTIES ("); Sep(p.Columns, GraphProperty); Add(")");
+                    break;
+            }
+        }
+
+        private void GraphProperty(GraphProperty gp)
+        {
+            Id(gp.Property);
+            if (gp.Alias != null) { Add(" AS "); Id(gp.Alias); }
         }
 
         private void GraphEndpoint(GraphEdgeEndpoint ep)
         {
             if (ep.Keys.Count > 0) { Add("KEY ("); Sep(ep.Keys, Id); Add(") REFERENCES "); }
             Name(ep.Table);
-            if (ep.Columns.Count > 0) { Add(" ("); Sep(ep.Columns, Id); Add(")"); }
+            if (ep.Keys.Count > 0) { Add(" ("); Sep(ep.Columns, Id); Add(")"); }
         }
 
         private void ColumnDef(ColumnDefinition c)
