@@ -169,8 +169,6 @@ public sealed partial class GraphTable : TableReference
     /// <summary>The variables named in ONE ROW PER VERTEX(v) or STEP(v1, e, v2); empty for MATCH.</summary>
     public List<Identifier> RowsPerVariables { get; set; } = [];
     public List<GraphColumn> Columns { get; set; } = [];
-    /// <summary>The whole body as a token tree, when the body uses syntax outside the typed grammar (empty otherwise).</summary>
-    public List<SyntaxItem> OtherClauses { get; set; } = [];
 }
 
 public enum GraphRowsPer { Match, Vertex, Step }
@@ -194,7 +192,8 @@ public sealed partial class GraphVertexPattern : GraphPatternElement
     public Expression? Where { get; set; }
 }
 
-public enum GraphEdgeDirection { Right, Left, Any }
+/// <summary>Right: -&gt;, Left: &lt;-, Any: -, LeftOrRight: &lt;-[...]-&gt; (bracketed only).</summary>
+public enum GraphEdgeDirection { Right, Left, Any, LeftOrRight }
 
 /// <summary>-[e IS lbl WHERE cond]-&gt;, &lt;-[...]-, -[...]-; abbreviated -&gt;, &lt;-, - when Bracketed is false.</summary>
 public sealed partial class GraphEdgePattern : GraphPatternElement
@@ -213,15 +212,22 @@ public sealed partial class GraphLabelExpression : SqlNode
     public List<Identifier> Labels { get; set; } = [];
 }
 
-public enum GraphQuantifierKind { Star, Plus, Exact, Range }
+public enum GraphQuantifierKind { Exact, Range }
 
-/// <summary>Repetition of a bracketed edge: * (zero or more), + (one or more), {n} (exact), {n,m} / {n,} / {,m} (range).</summary>
+/// <summary>Repetition of an edge or group: {n} (exact), {n,m} / {,m} (range). Oracle rejects * and + on edges and {n,} (ORA-40984/40985).</summary>
 public sealed partial class GraphQuantifier : SqlNode
 {
     public GraphQuantifierKind Kind { get; set; }
     /// <summary>The count for Exact, or the lower bound for Range (null when omitted).</summary>
     public Expression? Min { get; set; }
     public Expression? Max { get; set; }
+}
+
+/// <summary>( path ) quantifier: a parenthesised sub-path pattern that repeats.</summary>
+public sealed partial class GraphSubpatternElement : GraphPatternElement
+{
+    public GraphPathPattern Path { get; set; } = null!;
+    public GraphQuantifier? Quantifier { get; set; }
 }
 
 /// <summary>One COLUMNS item: expr [AS alias].</summary>

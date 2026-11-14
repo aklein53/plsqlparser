@@ -218,9 +218,7 @@ public sealed partial class SqlScriptGenerator
 
         private void GraphTableRef(GraphTable gt)
         {
-            Add("GRAPH_TABLE("); Name(gt.Graph);
-            if (gt.Match.Count == 0) { Sp(); SyntaxList(gt.OtherClauses); Add(")"); Alias(gt); return; }
-            Add(" MATCH "); Sep(gt.Match, GraphPath);
+            Add("GRAPH_TABLE("); Name(gt.Graph); Add(" MATCH "); Sep(gt.Match, GraphPath);
             if (gt.Where != null) { Add(" WHERE "); Expr(gt.Where); }
             if (gt.RowsPer is { } rp)
             {
@@ -238,6 +236,10 @@ public sealed partial class SqlScriptGenerator
                 {
                     case GraphVertexPattern v: Add("("); GraphElementBody(v.Variable, v.Label, v.Where); Add(")"); break;
                     case GraphEdgePattern e: GraphEdge(e); break;
+                    case GraphSubpatternElement sp:
+                        Add("("); GraphPath(sp.Path); Add(")");
+                        if (sp.Quantifier is { } sq) GraphQuantifierText(sq);
+                        break;
                     default: throw Unsupported(el);
                 }
             }
@@ -245,23 +247,24 @@ public sealed partial class SqlScriptGenerator
 
         private void GraphEdge(GraphEdgePattern e)
         {
+            bool leftStart = e.Direction is GraphEdgeDirection.Left or GraphEdgeDirection.LeftOrRight;
             if (!e.Bracketed) { Add(e.Direction switch { GraphEdgeDirection.Right => "->", GraphEdgeDirection.Left => "<-", _ => "-" }); return; }
-            Add(e.Direction == GraphEdgeDirection.Left ? "<-[" : "-[");
+            Add(leftStart ? "<-[" : "-[");
             GraphElementBody(e.Variable, e.Label, e.Where);
             Add("]");
-            Add(e.Direction == GraphEdgeDirection.Right ? "->" : "-");
-            if (e.Quantifier is { } q)
+            Add(e.Direction is GraphEdgeDirection.Right or GraphEdgeDirection.LeftOrRight ? "->" : "-");
+            if (e.Quantifier is { } q) GraphQuantifierText(q);
+        }
+
+        private void GraphQuantifierText(GraphQuantifier q)
+        {
+            switch (q.Kind)
             {
-                switch (q.Kind)
-                {
-                    case GraphQuantifierKind.Star: Add("*"); break;
-                    case GraphQuantifierKind.Plus: Add("+"); break;
-                    case GraphQuantifierKind.Exact: Add("{"); Expr(q.Min!); Add("}"); break;
-                    default:
-                        Add("{"); if (q.Min != null) Expr(q.Min);
-                        Add(","); if (q.Max != null) Expr(q.Max);
-                        Add("}"); break;
-                }
+                case GraphQuantifierKind.Exact: Add("{"); Expr(q.Min!); Add("}"); break;
+                default:
+                    Add("{"); if (q.Min != null) Expr(q.Min);
+                    Add(","); if (q.Max != null) Expr(q.Max);
+                    Add("}"); break;
             }
         }
 

@@ -60,7 +60,8 @@ public sealed partial class SqlParser
                     continue;
                 }
             }
-            if (t.Alias == null)
+            // Oracle takes a GRAPH_TABLE alias without AS (ORA-03048 for AS g).
+            if (t.Alias == null && !(t is GraphTable && IsKw("AS")))
             {
                 var a = ParseOptionalAlias();
                 if (a != null) { t.Alias = a; continue; }
@@ -364,22 +365,6 @@ public sealed partial class SqlParser
         var start = Cur;
         Next(); Next();
         var gt = new GraphTable { Graph = ParseDottedName() };
-        int mark = _p;
-        try { ParseGraphBody(gt); }
-        catch (ParseException)
-        {
-            // Syntax outside the typed grammar (e.g. quantified sub-path patterns) keeps the body as a token tree.
-            _p = mark;
-            gt.Match.Clear(); gt.Where = null; gt.RowsPer = null; gt.RowsPerVariables.Clear(); gt.Columns.Clear();
-            gt.OtherClauses = ParseSyntaxItems(() => false);
-        }
-        ExpectOp(")");
-        return Fin(gt, start);
-    }
-
-    /// <summary>MATCH paths [WHERE cond] [ONE ROW PER ...] COLUMNS (...), up to the closing parenthesis of GRAPH_TABLE.</summary>
-    private void ParseGraphBody(GraphTable gt)
-    {
         ExpectKw("MATCH");
         do gt.Match.Add(ParseGraphPathPattern()); while (AcceptOp(","));
         if (AcceptKw("WHERE")) gt.Where = ParseExpr();
@@ -400,20 +385,41 @@ public sealed partial class SqlParser
         ExpectOp("(");
         do gt.Columns.Add(ParseGraphColumn()); while (AcceptOp(","));
         ExpectOp(")");
-        if (!IsOp(")")) throw Fail($"Expected ')' to close GRAPH_TABLE but found {Describe(Cur)}");
+        ExpectOp(")");
+        return Fin(gt, start);
     }
 
     private GraphPathPattern ParseGraphPathPattern()
     {
         var s = Cur;
         var p = new GraphPathPattern();
-        p.Elements.Add(ParseGraphVertexPattern());
-        while (IsOp("-") || IsOp("->") || IsOp("<"))
+        p.Elements.Add(ParseGraphVertexOrSubpattern());
+        while (true)
         {
-            p.Elements.Add(ParseGraphEdgePattern());
-            p.Elements.Add(ParseGraphVertexPattern());
+            if (IsOp("-") || IsOp("->") || IsOp("<"))
+            {
+                p.Elements.Add(ParseGraphEdgePattern());
+                p.Elements.Add(ParseGraphVertexOrSubpattern());
+            }
+            else if (IsOp("(") && IsOpAt(1, "(")) p.Elements.Add(ParseGraphSubpattern());
+            else break;
         }
         return Fin(p, s);
+    }
+
+    private GraphPatternElement ParseGraphVertexOrSubpattern() =>
+        IsOp("(") && IsOpAt(1, "(") ? ParseGraphSubpattern() : ParseGraphVertexPattern();
+
+    /// <summary>( path ) [quantifier]: a sub-path pattern (its first element is itself parenthesised).</summary>
+    private GraphSubpatternElement ParseGraphSubpattern()
+    {
+        var s = Cur;
+        ExpectOp("(");
+        var sp = new GraphSubpatternElement { Path = ParseGraphPathPattern() };
+        ExpectOp(")");
+        // Oracle rejects a bare parenthesised sub-path (ORA-40951): it must repeat.
+        sp.Quantifier = ParseGraphQuantifier() ?? throw Fail("A parenthesised GRAPH_TABLE path pattern needs a quantifier");
+        return Fin(sp, s);
     }
 
     /// <summary>A variable name inside (...) or [...], i.e. an identifier that is not the start of IS or WHERE.</summary>
@@ -446,7 +452,11 @@ public sealed partial class SqlParser
             e.Label = ParseGraphLabel();
             if (AcceptKw("WHERE")) e.Where = ParseExpr();
             ExpectOp("]");
-            if (e.Direction == GraphEdgeDirection.Left) ExpectOp("-");
+            if (e.Direction == GraphEdgeDirection.Left)
+            {
+                if (AcceptOp("->")) e.Direction = GraphEdgeDirection.LeftOrRight;
+                else ExpectOp("-");
+            }
             else if (AcceptOp("->")) e.Direction = GraphEdgeDirection.Right;
             else ExpectOp("-");
             e.Quantifier = ParseGraphQuantifier();
@@ -462,18 +472,21 @@ public sealed partial class SqlParser
         return l;
     }
 
+    /// <summary>
+    /// Quantifier after an edge or sub-path. Oracle accepts {n}, {n,m} and {,m}; it rejects * and + (ORA-40985) and {n,} (ORA-40984).
+    /// </summary>
     private GraphQuantifier? ParseGraphQuantifier()
     {
         var s = Cur;
-        if (AcceptOp("*")) return Fin(new GraphQuantifier { Kind = GraphQuantifierKind.Star }, s);
-        if (AcceptOp("+")) return Fin(new GraphQuantifier { Kind = GraphQuantifierKind.Plus }, s);
+        if (IsOp("*") || IsOp("+")) throw Fail($"Unsupported quantifier {Cur.Value} in GRAPH_TABLE (use {{n}}, {{n,m}} or {{,m}})");
         if (!AcceptOp("{")) return null;
         var q = new GraphQuantifier { Kind = GraphQuantifierKind.Exact };
         if (!IsOp(",")) q.Min = ParseExpr();
         if (AcceptOp(","))
         {
             q.Kind = GraphQuantifierKind.Range;
-            if (!IsOp("}")) q.Max = ParseExpr();
+            if (IsOp("}")) throw Fail("A GRAPH_TABLE quantifier with no upper bound ({n,}) is not supported");
+            q.Max = ParseExpr();
         }
         else if (q.Min == null) throw Fail($"Expected a quantifier bound but found {Describe(Cur)}");
         ExpectOp("}");

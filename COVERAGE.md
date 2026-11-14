@@ -13,7 +13,7 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 |---|---|---|---|
 | SELECT (all clauses, set ops, WITH incl. SEARCH/CYCLE/`WITH FUNCTION`, partitioned outer join, `FETCH [EXACT\|APPROX] ... [WITH TARGET ACCURACY]`, PIVOT/LEFT/SAMPLE/FETCH as aliases where no clause can start; the vector-search `accuracy_clause` is not modeled) | `SelectStatement`, `QuerySpecification` | typed | QueryShape |
 | PIVOT / UNPIVOT / MATCH_RECOGNIZE / MODEL / XMLTABLE / JSON_TABLE / flashback / SAMPLE / VALUES table (also as a CTE body) | `PivotTable` … `ValuesTable`, `ValuesQuery` | typed | QueryShape, MiscShape |
-| GRAPH_TABLE (MATCH paths: vertex/edge patterns, IS labels, WHERE, abbreviated arrows, `*`/`+`/`{n}`/`{n,m}` on bracketed edges; ONE ROW PER; COLUMNS) | `GraphTable` | typed; a body outside the typed grammar (e.g. parenthesised sub-path quantifiers) falls back to an `OtherClauses` token tree | QueryShape |
+| GRAPH_TABLE (MATCH paths: vertex/edge patterns, IS labels, WHERE, all arrows incl. `<-[..]->`, `{n}`, `{n,m}`, `{,m}` on edges and sub-paths `( ... ){n}`; ONE ROW PER; COLUMNS with optional AS) | `GraphTable` | typed; Oracle-rejected forms (`*`, `+`, `{n,}`, `AS` before the alias, bare sub-path) are rejected |  QueryShape |
 | INSERT (single, multitable, RETURNING, LOG ERRORS, `VALUES rec`) | `InsertStatement`, `MultiTableInsertStatement` | typed | DmlAndSessionShape, MiscShape |
 | UPDATE (incl. `SET ROW`, 23ai `FROM`, RETURNING `OLD`/`NEW`), DELETE (23ai `FROM` direct joins), MERGE (incl. `LOG ERRORS`) | `UpdateStatement` … | typed | DmlAndSessionShape, MiscShape |
 | CALL, EXPLAIN PLAN, LOCK TABLE | `CallStatement`, `ExplainPlanStatement`, `LockTableStatement` | typed | DmlAndSessionShape |
@@ -24,8 +24,8 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 | TRUNCATE, COMMENT, RENAME, PURGE, FLASHBACK TABLE | `TruncateStatement` … `FlashbackTableStatement` | typed | DmlAndSessionShape |
 | CREATE TABLE (columns, constraints, identity, virtual, partitioning, storage, CTAS) | `CreateTableStatement` | typed; LOB/external-table/other physical details are `OtherAttribute` token trees | DdlShape |
 | CREATE INDEX, VIEW, MATERIALIZED VIEW, SEQUENCE, SYNONYM | `CreateIndexStatement` … | typed | DdlShape |
-| CREATE [OR REPLACE] [USECASE] DOMAIN, ALTER DOMAIN (DISPLAY, ORDER, ANNOTATIONS); column `DOMAIN d` | `CreateDomainStatement`, `AlterDomainStatement`, `ColumnDefinition.Domain` | typed; ANNOTATIONS, multi-column and other unmodelled clauses are kept in `OtherClauses` tokens | DomainShape |
-| CREATE [OR REPLACE] PROPERTY GRAPH (VERTEX/EDGE TABLES, KEY, SOURCE/DESTINATION, LABEL, PROPERTIES) | `CreatePropertyGraphStatement` | typed; unmodelled clauses kept in `OtherClauses` tokens | PropertyGraphShape |
+| CREATE [USECASE] DOMAIN [IF NOT EXISTS] (CHECK, DEFAULT, NOT NULL, DISPLAY, ORDER, ANNOTATIONS), ALTER DOMAIN (DISPLAY, ORDER, ANNOTATIONS), column `DOMAIN d` | `CreateDomainStatement`, `AlterDomainStatement`, `AnnotationsClause`, `ColumnDefinition.Domain` | typed; Oracle-verified (integration GraphAndDomainAcceptance); other ALTER DOMAIN actions (RENAME, ADD CONSTRAINT) kept as tokens | DomainShape |
+| CREATE [OR REPLACE] PROPERTY GRAPH (VERTEX/EDGE TABLES, KEY, SOURCE/DESTINATION, LABEL, PROPERTIES incl. AS aliases and PROPERTIES without LABEL) | `CreatePropertyGraphStatement` | typed | PropertyGraphShape |
 | ALTER TABLE | `AlterTableStatement` | typed (partition/other maintenance actions: `Syntax` token tree) | DdlShape |
 | DROP (any object kind) | `DropStatement` | typed | DdlShape |
 | CREATE PROCEDURE/FUNCTION/PACKAGE [BODY]/TRIGGER/TYPE [BODY]/LIBRARY/JAVA | `CreateProgramStatement` … | typed | PlsqlShape, DdlShape |

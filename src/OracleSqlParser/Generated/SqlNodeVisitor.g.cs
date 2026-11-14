@@ -88,6 +88,26 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="AnnotationItem"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AnnotationItem node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AnnotationItem"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AnnotationItem node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AnnotationsClause"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AnnotationsClause node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AnnotationsClause"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AnnotationsClause node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="Argument"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(Argument node) => Visit((SqlNode)node);
 
@@ -1078,11 +1098,31 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="GraphProperty"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(GraphProperty node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="GraphProperty"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(GraphProperty node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="GraphQuantifier"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(GraphQuantifier node) => Visit((SqlNode)node);
 
     /// <summary>Entry point for a <see cref="GraphQuantifier"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(GraphQuantifier node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="GraphSubpatternElement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(GraphSubpatternElement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="GraphSubpatternElement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(GraphSubpatternElement node)
     {
         Visit(node);
         node.AcceptChildren(this);
