@@ -625,6 +625,64 @@ public sealed partial class SqlParser
         return Fin(l, s);
     }
 
+    // ---- CREATE DIRECTORY / DATABASE LINK / CONTEXT ----
+
+    private Statement ParseCreateDirectory(Token start, bool orReplace, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to CREATE DIRECTORY");
+        var st = new CreateDirectoryStatement { OrReplace = orReplace, IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        st.Sharing = TryParseSharing();
+        ExpectKw("AS");
+        st.Path = ParseAdditive();
+        return Fin(st, start);
+    }
+
+    private Statement ParseCreateDatabaseLink(Token start, bool orReplace, bool pub, bool shared)
+    {
+        var st = new CreateDatabaseLinkStatement { OrReplace = orReplace, Public = pub, Shared = shared, IfNotExists = TryIfNotExists() };
+        st.Name = ParseDottedName();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        if (AcceptKw("CONNECT"))
+        {
+            ExpectKw("TO");
+            if (AcceptKw("CURRENT_USER")) st.CurrentUser = true;
+            else
+            {
+                st.ConnectUser = ParseIdentifier();
+                if (AcceptKw("IDENTIFIED")) { ExpectKw("BY"); st.ConnectPassword = ParseIdentifier(); }
+            }
+        }
+        if (AcceptKw("AUTHENTICATED"))
+        {
+            ExpectKw("BY");
+            st.AuthenticatedUser = ParseIdentifier();
+            ExpectKw("IDENTIFIED");
+            ExpectKw("BY");
+            st.AuthenticatedPassword = ParseIdentifier();
+        }
+        if (AcceptKw("USING")) st.Using = ParseAdditive();
+        return Fin(st, start);
+    }
+
+    private Statement ParseCreateContext(Token start, bool orReplace, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to CREATE CONTEXT");
+        var st = new CreateContextStatement { OrReplace = orReplace, IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        ExpectKw("USING");
+        st.Package = ParseDottedName();
+        if (AcceptKw("INITIALIZED"))
+        {
+            if (AcceptKw("EXTERNALLY")) st.Initialized = ContextInit.Externally;
+            else { ExpectKw("GLOBALLY"); st.Initialized = ContextInit.Globally; }
+        }
+        if (AcceptKw("ACCESSED")) { ExpectKw("GLOBALLY"); st.AccessedGlobally = true; }
+        return Fin(st, start);
+    }
+
     // ---- DROP / ALTER (generic) ----
 
     private Statement ParseDrop()
@@ -724,7 +782,7 @@ public sealed partial class SqlParser
     {
         var start = Next();
         bool orReplace = false, unique = false, bitmap = false, pub = false, andResolve = false, andCompile = false, noForce = false;
-        bool force = false, editioning = false, gtt = false, ptt = false, dup = false, imm = false, blk = false;
+        bool force = false, editioning = false, gtt = false, ptt = false, dup = false, imm = false, blk = false, shared = false;
         EditionableKind? editionable = null;
         int prog22 = -1;
         while (Progress(ref prog22))
@@ -743,6 +801,7 @@ public sealed partial class SqlParser
             else if (IsKw("AND") && (IsKwAt(1, "RESOLVE") || IsKwAt(1, "COMPILE"))) { Next(); if (Next().Value == "RESOLVE") andResolve = true; else andCompile = true; }
             else if (IsKw("UNIQUE")) { Next(); unique = true; }
             else if (IsKw("BITMAP")) { Next(); bitmap = true; }
+            else if (IsKw("SHARED") && (IsKwAt(1, "PUBLIC") || IsKwAt(1, "DATABASE"))) { Next(); shared = true; }
             else if (IsKw("PUBLIC")) { Next(); pub = true; }
             else break;
         }
@@ -756,6 +815,9 @@ public sealed partial class SqlParser
         TryParseObjectKind(out var kind);
         switch (kind)
         {
+            case ObjectKind.DatabaseLink: return ParseCreateDatabaseLink(start, orReplace, pub, shared);
+            case ObjectKind.Directory: return ParseCreateDirectory(start, orReplace, pub);
+            case ObjectKind.Context: return ParseCreateContext(start, orReplace, pub);
             case ObjectKind.Profile: return ParseCreateProfile(start, orReplace, pub);
             case ObjectKind.Role: return ParseCreateRole(start, orReplace, pub);
             case ObjectKind.User: return ParseCreateUser(start, orReplace, pub);

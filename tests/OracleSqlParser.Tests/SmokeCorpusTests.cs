@@ -125,6 +125,8 @@ public class SmokeCorpusTests
     [InlineData("ALTER SYSTEM FLUSH SHARED_POOL")]
     [InlineData("CREATE ROLE app_role NOT IDENTIFIED")]
     [InlineData("CREATE PROFILE app_prof LIMIT SESSIONS_PER_USER 10 PASSWORD_VERIFY_FUNCTION NULL")]
+    [InlineData("CREATE DIRECTORY scratch_dir AS '/tmp'")]
+    [InlineData("CREATE CONTEXT scratch_ctx USING scratch_pkg INITIALIZED GLOBALLY")]
     [InlineData("CREATE USER bob IDENTIFIED BY pw")]
     [InlineData("CREATE USER scratch_u IDENTIFIED BY \"Scratch_pw_2\" DEFAULT TABLESPACE users TEMPORARY TABLESPACE temp QUOTA 10M ON users PROFILE default PASSWORD EXPIRE")]
     [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'")]

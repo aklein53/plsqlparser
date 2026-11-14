@@ -338,6 +338,50 @@ public sealed partial class AlterProfileStatement : Statement
     public bool Cascade { get; set; }
 }
 
+// ---------- CREATE DIRECTORY / DATABASE LINK / CONTEXT ----------
+
+public sealed partial class CreateDirectoryStatement : Statement
+{
+    public bool OrReplace { get; set; }
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public SharingKind? Sharing { get; set; }
+    /// <summary>AS 'path'.</summary>
+    public Expression Path { get; set; } = null!;
+}
+
+public sealed partial class CreateDatabaseLinkStatement : Statement
+{
+    public bool OrReplace { get; set; }
+    public bool IfNotExists { get; set; }
+    public bool Public { get; set; }
+    public bool Shared { get; set; }
+    public List<Identifier> Name { get; set; } = [];
+    /// <summary>CONNECT TO user [IDENTIFIED BY password].</summary>
+    public Identifier? ConnectUser { get; set; }
+    /// <summary>Printed as typed (passwords are case-sensitive even when unquoted).</summary>
+    public Identifier? ConnectPassword { get; set; }
+    /// <summary>CONNECT TO CURRENT_USER.</summary>
+    public bool CurrentUser { get; set; }
+    /// <summary>AUTHENTICATED BY user IDENTIFIED BY password (shared links).</summary>
+    public Identifier? AuthenticatedUser { get; set; }
+    public Identifier? AuthenticatedPassword { get; set; }
+    /// <summary>USING 'connect_string'.</summary>
+    public Expression? Using { get; set; }
+}
+
+public enum ContextInit { Externally, Globally }
+
+public sealed partial class CreateContextStatement : Statement
+{
+    public bool OrReplace { get; set; }
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<Identifier> Package { get; set; } = [];
+    public ContextInit? Initialized { get; set; }
+    public bool AccessedGlobally { get; set; }
+}
+
 // ---------- Generic object DDL (typed header + token-tree body) ----------
 
 public enum ObjectKind

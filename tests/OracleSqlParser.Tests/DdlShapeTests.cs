@@ -155,10 +155,9 @@ public class DdlShapeTests
     [Theory]
     [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateUserStatement name=BOB clauses=[(UserClause kind=IdentifiedBy password=PW)])")]
     [InlineData("CREATE ROLE r", "(CreateRoleStatement name=R)")]
-    [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'",
-        "(CreateObjectStatement kind=DatabaseLink name=[L] body=[(WordItem value=CONNECT) (WordItem value=TO) (WordItem value=U) (WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=P) (WordItem value=USING) (LiteralItem kind=String value=tns)])")]
-    [InlineData("CREATE OR REPLACE PUBLIC DATABASE LINK l USING 'x'", "(CreateObjectStatement kind=DatabaseLink orReplace public name=[L] body=[(WordItem value=USING) (LiteralItem kind=String value=x)])")]
-    [InlineData("CREATE DIRECTORY d AS '/tmp'", "(CreateObjectStatement kind=Directory name=[D] body=[(WordItem value=AS) (LiteralItem kind=String value=/tmp)])")]
+    [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'", "(CreateDatabaseLinkStatement name=[L] connectUser=U connectPassword=P using='tns')")]
+    [InlineData("CREATE OR REPLACE PUBLIC DATABASE LINK l USING 'x'", "(CreateDatabaseLinkStatement orReplace public name=[L] using='x')")]
+    [InlineData("CREATE DIRECTORY d AS '/tmp'", "(CreateDirectoryStatement name=D path='/tmp')")]
     [InlineData("CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M", "(CreateObjectStatement kind=Tablespace name=[TS] body=[(WordItem value=DATAFILE) (LiteralItem kind=String value=f.dbf) (WordItem value=SIZE) (LiteralItem kind=Number value=10M)])")]
     [InlineData("CREATE DOMAIN d AS NUMBER(3)", "(CreateObjectStatement kind=Domain name=[D] body=[(WordItem value=AS) (WordItem value=NUMBER) (GroupItem items=[(LiteralItem kind=Number value=3)])])")]
     [InlineData("CREATE PROPERTY GRAPH g VERTEX TABLES (v)", "(CreateObjectStatement kind=PropertyGraph name=[G] body=[(WordItem value=VERTEX) (WordItem value=TABLES) (GroupItem items=[(WordItem value=V)])])")]
@@ -205,6 +204,15 @@ public class DdlShapeTests
         "(AlterProfileStatement name=P limits=[(ProfileLimit name=PASSWORD_LIFE_TIME keyword=Unlimited)] container=All cascade)")]
     [InlineData("ALTER PROFILE p LIMIT PASSWORD_VERIFY_FUNCTION NULL", "(AlterProfileStatement name=P limits=[(ProfileLimit name=PASSWORD_VERIFY_FUNCTION keyword=Null)])")]
     public void CreateAlterProfile(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("CREATE OR REPLACE DIRECTORY d SHARING = NONE AS 'p'", "(CreateDirectoryStatement orReplace name=D sharing=None path='p')")]
+    [InlineData("CREATE SHARED PUBLIC DATABASE LINK sl CONNECT TO CURRENT_USER AUTHENTICATED BY au IDENTIFIED BY \"Au pw\" USING 'tns'",
+        "(CreateDatabaseLinkStatement public shared name=[SL] currentUser authenticatedUser=AU authenticatedPassword=\"Au pw\" using='tns')")]
+    [InlineData("CREATE OR REPLACE CONTEXT ns USING sec.pkg INITIALIZED GLOBALLY ACCESSED GLOBALLY",
+        "(CreateContextStatement orReplace name=NS package=[SEC PKG] initialized=Globally accessedGlobally)")]
+    [InlineData("CREATE CONTEXT ctx USING p INITIALIZED EXTERNALLY", "(CreateContextStatement name=CTX package=[P] initialized=Externally)")]
+    public void CreateDirectoryDbLinkContext(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Fact]
     public void CreateJava_Source()

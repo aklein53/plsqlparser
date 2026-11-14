@@ -74,6 +74,42 @@ public sealed partial class SqlScriptGenerator
                     RoleIdentificationText(ar.Authentication, ar.Password, ar.Package);
                     ContainerClause(ar.Container);
                     break;
+                case CreateDirectoryStatement cd:
+                    Add("CREATE");
+                    if (cd.OrReplace) Add(" OR REPLACE");
+                    Add(" DIRECTORY");
+                    if (cd.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cd.Name);
+                    SharingClause(cd.Sharing);
+                    Add(" AS "); Expr(cd.Path);
+                    break;
+                case CreateDatabaseLinkStatement dl:
+                    Add("CREATE");
+                    if (dl.OrReplace) Add(" OR REPLACE");
+                    if (dl.Shared) Add(" SHARED");
+                    if (dl.Public) Add(" PUBLIC");
+                    Add(" DATABASE LINK");
+                    if (dl.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Name(dl.Name);
+                    if (dl.CurrentUser) Add(" CONNECT TO CURRENT_USER");
+                    else if (dl.ConnectUser != null)
+                    {
+                        Add(" CONNECT TO "); Id(dl.ConnectUser);
+                        if (dl.ConnectPassword != null) { Add(" IDENTIFIED BY "); Verbatim(dl.ConnectPassword); }
+                    }
+                    if (dl.AuthenticatedUser != null) { Add(" AUTHENTICATED BY "); Id(dl.AuthenticatedUser); Add(" IDENTIFIED BY "); Verbatim(dl.AuthenticatedPassword!); }
+                    if (dl.Using != null) { Add(" USING "); Expr(dl.Using); }
+                    break;
+                case CreateContextStatement cx:
+                    Add("CREATE");
+                    if (cx.OrReplace) Add(" OR REPLACE");
+                    Add(" CONTEXT");
+                    if (cx.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cx.Name);
+                    Add(" USING "); Name(cx.Package);
+                    if (cx.Initialized != null) Add(cx.Initialized == ContextInit.Externally ? " INITIALIZED EXTERNALLY" : " INITIALIZED GLOBALLY");
+                    if (cx.AccessedGlobally) Add(" ACCESSED GLOBALLY");
+                    break;
                 case CreateProfileStatement cp:
                     Add("CREATE PROFILE");
                     if (cp.IfNotExists) Add(" IF NOT EXISTS");

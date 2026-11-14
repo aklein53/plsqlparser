@@ -428,6 +428,36 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="CreateContextStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(CreateContextStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="CreateContextStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(CreateContextStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="CreateDatabaseLinkStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(CreateDatabaseLinkStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="CreateDatabaseLinkStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(CreateDatabaseLinkStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="CreateDirectoryStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(CreateDirectoryStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="CreateDirectoryStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(CreateDirectoryStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="CreateIndexStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(CreateIndexStatement node) => Visit((SqlNode)node);
 

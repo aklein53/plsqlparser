@@ -27,11 +27,12 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 | ALTER TABLE | `AlterTableStatement` | typed (partition/other maintenance actions: `Syntax` token tree) | DdlShape |
 | DROP (any object kind) | `DropStatement` | typed | DdlShape |
 | CREATE PROCEDURE/FUNCTION/PACKAGE [BODY]/TRIGGER/TYPE [BODY]/LIBRARY/JAVA | `CreateProgramStatement` … | typed | PlsqlShape, DdlShape |
-| CREATE of any other object (TABLESPACE, DATABASE LINK, DIRECTORY, CLUSTER, CONTEXT, DIMENSION, DOMAIN, EDITION, OPERATOR, INDEXTYPE, OUTLINE, PROPERTY GRAPH, JSON DUALITY VIEW, MV LOG, ZONEMAP, ANALYTIC VIEW, ...) | `CreateObjectStatement` | header+tree |
+| CREATE of any other object (TABLESPACE, CLUSTER, DIMENSION, DOMAIN, EDITION, OPERATOR, INDEXTYPE, OUTLINE, PROPERTY GRAPH, JSON DUALITY VIEW, MV LOG, ZONEMAP, ANALYTIC VIEW, ...) | `CreateObjectStatement` | header+tree |
 | ALTER of any object other than TABLE/SESSION/USER/ROLE/PROFILE (INDEX, VIEW, SEQUENCE, MV, TRIGGER, PROCEDURE, SYSTEM, DATABASE, ...) | `AlterObjectStatement` | header+tree |
 | CREATE USER / ALTER USER (IDENTIFIED, DEFAULT/TEMPORARY TABLESPACE, QUOTA, PROFILE, PASSWORD EXPIRE, ACCOUNT, DEFAULT ROLE, CONTAINER, EDITIONS, READ ONLY/WRITE, GRANT/REVOKE CONNECT THROUGH) | `CreateUserStatement`, `AlterUserStatement` (`UserClause` per clause; unmodelled tokens as `Other`) | typed | DdlShape, SqlScriptGenerator |
 | CREATE ROLE / ALTER ROLE (NOT IDENTIFIED, IDENTIFIED BY/USING/EXTERNALLY/GLOBALLY, CONTAINER) | `CreateRoleStatement`, `AlterRoleStatement` | typed | DdlShape, SqlScriptGenerator |
 | CREATE PROFILE / ALTER PROFILE (LIMIT name value | UNLIMITED | DEFAULT | NULL, PASSWORD_VERIFY_FUNCTION, CONTAINER, CASCADE) | `CreateProfileStatement`, `AlterProfileStatement`, `ProfileLimit` | typed | DdlShape, SqlScriptGenerator |
+| CREATE DIRECTORY, CREATE [SHARED] [PUBLIC] DATABASE LINK (CONNECT TO user IDENTIFIED BY / CURRENT_USER, AUTHENTICATED BY, USING), CREATE CONTEXT (INITIALIZED, ACCESSED GLOBALLY) | `CreateDirectoryStatement`, `CreateDatabaseLinkStatement`, `CreateContextStatement` | typed | DdlShape |
 | ANALYZE, AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE | `AdminStatement` | header+tree |
 
 ## PL/SQL

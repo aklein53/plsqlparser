@@ -2048,6 +2048,188 @@ public partial class ContinueStatement
     }
 }
 
+public partial class CreateContextStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Package is not null) foreach (var x in Package) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Package is not null) foreach (var x in Package) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateContextStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Package, "CreateContextStatement.Package");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateContextStatement();
+        CopySpan(this, c);
+        c.OrReplace = OrReplace;
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Package = CloneList(Package);
+        c.Initialized = Initialized;
+        c.AccessedGlobally = AccessedGlobally;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateContextStatement)other;
+        return OrReplace == o.OrReplace
+            && IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Package, o.Package, pending)
+            && Initialized == o.Initialized
+            && AccessedGlobally == o.AccessedGlobally
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateDatabaseLinkStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (ConnectUser is not null) yield return ConnectUser;
+        if (ConnectPassword is not null) yield return ConnectPassword;
+        if (AuthenticatedUser is not null) yield return AuthenticatedUser;
+        if (AuthenticatedPassword is not null) yield return AuthenticatedPassword;
+        if (Using is not null) yield return Using;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        ConnectUser?.Accept(visitor);
+        ConnectPassword?.Accept(visitor);
+        AuthenticatedUser?.Accept(visitor);
+        AuthenticatedPassword?.Accept(visitor);
+        Using?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "CreateDatabaseLinkStatement.Name");
+        ConnectUser = SqlNodeRewriter.RewriteOptional(rewriter, ConnectUser, "CreateDatabaseLinkStatement.ConnectUser");
+        ConnectPassword = SqlNodeRewriter.RewriteOptional(rewriter, ConnectPassword, "CreateDatabaseLinkStatement.ConnectPassword");
+        AuthenticatedUser = SqlNodeRewriter.RewriteOptional(rewriter, AuthenticatedUser, "CreateDatabaseLinkStatement.AuthenticatedUser");
+        AuthenticatedPassword = SqlNodeRewriter.RewriteOptional(rewriter, AuthenticatedPassword, "CreateDatabaseLinkStatement.AuthenticatedPassword");
+        Using = SqlNodeRewriter.RewriteOptional(rewriter, Using, "CreateDatabaseLinkStatement.Using");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateDatabaseLinkStatement();
+        CopySpan(this, c);
+        c.OrReplace = OrReplace;
+        c.IfNotExists = IfNotExists;
+        c.Public = Public;
+        c.Shared = Shared;
+        c.Name = CloneList(Name);
+        c.ConnectUser = CloneChild(ConnectUser);
+        c.ConnectPassword = CloneChild(ConnectPassword);
+        c.CurrentUser = CurrentUser;
+        c.AuthenticatedUser = CloneChild(AuthenticatedUser);
+        c.AuthenticatedPassword = CloneChild(AuthenticatedPassword);
+        c.Using = CloneChild(Using);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateDatabaseLinkStatement)other;
+        return OrReplace == o.OrReplace
+            && IfNotExists == o.IfNotExists
+            && Public == o.Public
+            && Shared == o.Shared
+            && PairList(Name, o.Name, pending)
+            && Pair(ConnectUser, o.ConnectUser, pending)
+            && Pair(ConnectPassword, o.ConnectPassword, pending)
+            && CurrentUser == o.CurrentUser
+            && Pair(AuthenticatedUser, o.AuthenticatedUser, pending)
+            && Pair(AuthenticatedPassword, o.AuthenticatedPassword, pending)
+            && Pair(Using, o.Using, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateDirectoryStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Path is not null) yield return Path;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        Path?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateDirectoryStatement.Name");
+        Path = SqlNodeRewriter.RewriteRequired(rewriter, Path, "CreateDirectoryStatement.Path");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateDirectoryStatement();
+        CopySpan(this, c);
+        c.OrReplace = OrReplace;
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Sharing = Sharing;
+        c.Path = CloneChild(Path)!;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateDirectoryStatement)other;
+        return OrReplace == o.OrReplace
+            && IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && Sharing == o.Sharing
+            && Pair(Path, o.Path, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class CreateIndexStatement
 {
     /// <inheritdoc/>
