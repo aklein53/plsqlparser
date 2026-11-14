@@ -15,8 +15,9 @@ public enum TableAccess
     Merge,
     /// <summary>
     /// Named by a DDL or utility statement: CREATE TABLE/VIEW/INDEX/TRIGGER ON, ALTER TABLE, DROP, TRUNCATE,
-    /// COMMENT ON TABLE/COLUMN, LOCK TABLE, FLASHBACK TABLE, ANALYZE, PURGE, and the referenced table of a
-    /// REFERENCES constraint. <see cref="TableUse.Node"/> is then the statement (or the constraint).
+    /// COMMENT ON TABLE/COLUMN, LOCK TABLE, FLASHBACK TABLE, ANALYZE, PURGE, RENAME (both names; the kind of object is not
+    /// recorded), and the referenced table of a REFERENCES constraint. <see cref="TableUse.Node"/> is then the statement
+    /// (or the constraint).
     /// </summary>
     Ddl,
 }
@@ -24,7 +25,10 @@ public enum TableAccess
 /// <summary>A table, view or CTE name found by <see cref="SqlAnalysis.GetTables"/>.</summary>
 public sealed class TableUse
 {
-    /// <summary>The <see cref="NamedTable"/> for a FROM, JOIN or DML reference; the DDL statement (or <see cref="TableConstraint"/>) for <see cref="TableAccess.Ddl"/>.</summary>
+    /// <summary>
+    /// The <see cref="NamedTable"/> for a FROM, JOIN or DML reference; the DDL statement (or <see cref="TableConstraint"/>)
+    /// for <see cref="TableAccess.Ddl"/>; the <see cref="ErrorLogging"/> clause for the error log table (<see cref="TableAccess.Insert"/>).
+    /// </summary>
     public required SqlNode Node { get; init; }
     /// <summary>How the statement uses the name.</summary>
     public required TableAccess Access { get; init; }
@@ -58,7 +62,11 @@ public enum ColumnUseKind
     Column,
     /// <summary>NEXTVAL or CURRVAL on a sequence, e.g. seq.NEXTVAL or sch.seq.CURRVAL. <see cref="ColumnUse.Qualifier"/> is the sequence name.</summary>
     SequenceValue,
-    /// <summary>An unquoted, unqualified Oracle pseudo-column or parameterless SQL function (ROWNUM, ROWID, ORA_ROWSCN, SYSDATE, SYSTIMESTAMP, USER, UID).</summary>
+    /// <summary>
+    /// An unquoted, unqualified Oracle pseudo-column or parameterless SQL function: ROWNUM, ROWID, ORA_ROWSCN, SYSDATE,
+    /// SYSTIMESTAMP, CURRENT_DATE, CURRENT_TIMESTAMP, LOCALTIMESTAMP, USER, UID; LEVEL, CONNECT_BY_ISLEAF and
+    /// CONNECT_BY_ISCYCLE in a hierarchical query; VERSIONS_* in a VERSIONS BETWEEN query.
+    /// </summary>
     PseudoColumn,
     /// <summary>An unqualified name that is a SELECT-list alias, used in the ORDER BY of the same query. Not resolved to a column.</summary>
     SelectAlias,
@@ -69,7 +77,10 @@ public enum ColumnResolution
 {
     /// <summary>The reference was bound to exactly one FROM item (<see cref="ColumnUse.Source"/>).</summary>
     Resolved,
-    /// <summary>An unqualified name with several FROM items in the innermost scope that has any, so the owner cannot be known.</summary>
+    /// <summary>
+    /// The owner cannot be known: an unqualified name with several FROM items in the innermost scope that has any, one FROM
+    /// item while an enclosing block could also own the name, or a name that is also a PL/SQL name in scope.
+    /// </summary>
     Ambiguous,
     /// <summary>No FROM item in scope has the qualifier (e.g. a PL/SQL record variable, a graph element variable, or a name outside the analysed node).</summary>
     Unresolved,
@@ -189,11 +200,13 @@ public static class SqlAnalysis
     /// <summary>
     /// The column references in <paramref name="node"/>, each with the FROM item it belongs to when that is determined.
     /// <para>
-    /// A reference is resolved to the innermost query block that has a matching FROM item: a qualifier must equal an alias
-    /// (or, without an alias, the table name, or schema.table), and an unqualified name is bound when there is exactly one
-    /// FROM item in that block (otherwise <see cref="ColumnResolution.Ambiguous"/>). A block with no FROM items passes the
-    /// name to the enclosing block, so correlated subqueries resolve to the outer query. Owner determination never uses
-    /// column lists, so an unqualified name in a block with one FROM item is bound to it even if that table lacks the column.
+    /// A reference is resolved from the innermost query block outwards. A qualifier must equal an alias (or, without an
+    /// alias, the table name, or schema.table), and it binds to the one FROM item that matches. An unqualified name binds
+    /// to the single FROM item of its block only when no enclosing block has FROM items: a correlated reference might belong
+    /// to the outer query instead, so that case is <see cref="ColumnResolution.Ambiguous"/>, as is any block with several
+    /// FROM items. A block with no FROM items passes the name outwards. Owner determination never reads column lists, so a
+    /// name that is not a column of the one table is still reported as bound to it, unless an outer block could own it.
+    /// Inline views (non-LATERAL) and PIVOT sources cannot see their siblings; LATERAL and APPLY right sides can.
     /// </para>
     /// <para>
     /// Excluded: function names (see <see cref="GetFunctions"/>), bind variables, names with an attribute (cursor%ROWTYPE,
@@ -211,8 +224,11 @@ public static class SqlAnalysis
     /// are reported as <see cref="ColumnResolution.Unresolved"/>.
     /// </para>
     /// <para>
-    /// Unqualified names in PL/SQL can also be variables. The tree does not know which names are declared variables, so a
-    /// name in a SELECT whose query has exactly one FROM item is reported as a column of that item.
+    /// An unqualified name that is also a PL/SQL name in scope (a block variable, a subprogram or cursor parameter, or a
+    /// loop or FORALL index) is <see cref="ColumnResolution.Ambiguous"/>: Oracle prefers a column of the same name, and the
+    /// tree does not know the table's columns. Pseudo-columns LEVEL, CONNECT_BY_ISLEAF and CONNECT_BY_ISCYCLE count only in
+    /// a CONNECT BY or START WITH block, and VERSIONS_* names only in a VERSIONS BETWEEN block. Package variables and
+    /// record fields that are not declared in the analysed tree are not known and are resolved like any other name.
     /// </para>
     /// </summary>
     /// <param name="node">The tree to analyse.</param>
@@ -279,6 +295,10 @@ public static class SqlAnalysis
         private int _sqlDepth = sqlDepth;
         private int _opaqueDepth;
         private int _variableDepth;
+        private bool _hierarchical;
+        private bool _versionsQuery;
+        private bool _lateral;
+        private DeclaredName? _declared;
         private HashSet<string>? _selectAliases;
         private SqlNode? _procedureCall;
 
@@ -354,20 +374,82 @@ public static class SqlAnalysis
 
         public override void ExplicitVisit(QuerySpecification node)
         {
-            // The FROM items of this block form the scope for everything else in it.
-            var scope = new Scope(FlattenAll(node.From), _scope);
-            InScope(scope, () =>
+            // The FROM items of this block form the scope for everything else in it. Hierarchical (CONNECT BY) and
+            // flashback VERSIONS queries change which unqualified names are pseudo-columns; that is per block.
+            var savedHierarchical = _hierarchical;
+            var savedVersions = _versionsQuery;
+            _hierarchical = node.ConnectBy is not null || node.StartWith is not null;
+            _versionsQuery = FlattenAll(node.From).Any(IsVersionsTable);
+            try
             {
-                foreach (var source in node.From) source.Accept(this);
-                foreach (var item in node.SelectList) item.Accept(this);
-                node.Where?.Accept(this);
-                node.StartWith?.Accept(this);
-                node.ConnectBy?.Accept(this);
-                foreach (var expression in node.GroupBy) expression.Accept(this);
-                node.Having?.Accept(this);
-                node.Model?.Accept(this);
-            });
+                var scope = new Scope(FlattenAll(node.From), _scope);
+                InScope(scope, () =>
+                {
+                    foreach (var source in node.From) source.Accept(this);
+                    foreach (var item in node.SelectList) item.Accept(this);
+                    node.Where?.Accept(this);
+                    node.StartWith?.Accept(this);
+                    node.ConnectBy?.Accept(this);
+                    foreach (var expression in node.GroupBy) expression.Accept(this);
+                    node.Having?.Accept(this);
+                    node.Model?.Accept(this);
+                });
+            }
+            finally
+            {
+                _hierarchical = savedHierarchical;
+                _versionsQuery = savedVersions;
+            }
             WalkVariables(node.Into);
+        }
+
+        public override void ExplicitVisit(SubqueryTable node)
+        {
+            // A non-LATERAL inline view cannot see the FROM items beside it, only the enclosing scopes.
+            if (node.Lateral || _lateral) base.ExplicitVisit(node);
+            else InScope(Hidden(), () => base.ExplicitVisit(node));
+        }
+
+        public override void ExplicitVisit(JoinTable node)
+        {
+            if (node.Kind is not (JoinKind.CrossApply or JoinKind.OuterApply))
+            {
+                base.ExplicitVisit(node);
+                return;
+            }
+            // The right side of APPLY is lateral: it sees the left side.
+            node.Left.Accept(this);
+            var savedLateral = _lateral;
+            _lateral = true;
+            try { node.Right.Accept(this); }
+            finally { _lateral = savedLateral; }
+            node.On?.Accept(this);
+        }
+
+        public override void ExplicitVisit(Block node) => WithDeclared(node.Declarations.OfType<VariableDeclaration>().Select(d => d.Name.Value), () => base.ExplicitVisit(node));
+
+        public override void ExplicitVisit(SubprogramDeclaration node) => WithDeclared(node.Parameters.OfType<Parameter>().Select(p => p.Name.Value), () => base.ExplicitVisit(node));
+
+        public override void ExplicitVisit(CursorDeclaration node) => WithDeclared(node.Parameters.OfType<Parameter>().Select(p => p.Name.Value), () => base.ExplicitVisit(node));
+
+        public override void ExplicitVisit(LoopStatement node) => WithDeclared(node.Iterands.Select(i => i.Name.Value), () => base.ExplicitVisit(node));
+
+        public override void ExplicitVisit(ForallStatement node) => WithDeclared([node.Index.Value], () => base.ExplicitVisit(node));
+
+        public override void ExplicitVisit(ErrorLogging node)
+        {
+            // The error log table is written by the DML that has the LOG ERRORS clause.
+            if (node.Table.Count > 0) AddTable(node, node.Table, TableAccess.Insert, cte: null, dbLink: null, alias: null);
+            base.ExplicitVisit(node);
+        }
+
+        public override void ExplicitVisit(RenameStatement node)
+        {
+            // The parser does not record the kind of object renamed (a table, view, sequence or synonym), so both
+            // names are reported as DDL targets.
+            AddDdl(node, node.From);
+            AddDdl(node, node.To);
+            base.ExplicitVisit(node);
         }
 
         public override void ExplicitVisit(GraphTable node)
@@ -768,11 +850,18 @@ public static class SqlAnalysis
                     _columns.Add(Column(node, parts, null, ColumnUseKind.SelectAlias, write, null, ColumnResolution.NotApplicable, start, end));
                     return;
                 }
-                if (PseudoColumns.Contains(name.Value))
+                if (IsPseudoColumn(name.Value))
                 {
                     _columns.Add(Column(node, parts, null, ColumnUseKind.PseudoColumn, write, null, ColumnResolution.NotApplicable, start, end));
                     return;
                 }
+            }
+            // A PL/SQL variable of the same name as an unqualified column: which one Oracle picks depends on the table's
+            // columns, which the tree does not know.
+            if (!write && parts.Count == 1 && IsDeclared(name.Value))
+            {
+                _columns.Add(Column(node, parts, null, ColumnUseKind.Column, write, null, ColumnResolution.Ambiguous, start, end));
+                return;
             }
 
             if (_opaqueDepth > 0)
@@ -817,7 +906,7 @@ public static class SqlAnalysis
             });
         }
 
-        private void InScope(Scope scope, Action walk)
+        private void InScope(Scope? scope, Action walk)
         {
             var saved = _scope;
             _scope = scope;
@@ -825,12 +914,45 @@ public static class SqlAnalysis
             finally { _scope = saved; }
         }
 
-        private void WithSourceScope(TableReference source, Action walk) => InScope(new Scope(FlattenAll([source]), _scope), walk);
+        /// <summary>
+        /// The current scope without the FROM items of the block it belongs to, but with the enclosing scopes. A
+        /// non-LATERAL inline view or a PIVOT source is analysed in this scope, since it cannot see its siblings.
+        /// </summary>
+        private Scope? Hidden() => _scope is null || _scope.StopsLookup ? _scope : new Scope([], _scope.Parent);
+
+        private void WithSourceScope(TableReference source, Action walk) => InScope(new Scope(FlattenAll([source]), Hidden()), walk);
+
+        private void WithDeclared(IEnumerable<string> names, Action walk)
+        {
+            var saved = _declared;
+            foreach (var name in names) _declared = new DeclaredName(name, _declared);
+            try { walk(); }
+            finally { _declared = saved; }
+        }
+
+        private bool IsDeclared(string name)
+        {
+            for (var d = _declared; d is not null; d = d.Next)
+                if (d.Name == name) return true;
+            return false;
+        }
+
+        private static bool IsVersionsTable(TableReference source) =>
+            source is NamedTable named && named.Flashback?.Mode == FlashbackMode.VersionsBetween;
 
         // ---- static helpers ----
 
-        /// <summary>Oracle pseudo-columns and parameterless functions that can be written without a qualifier and are reserved in SQL, so they are never column names.</summary>
-        private static readonly HashSet<string> PseudoColumns = ["ROWNUM", "ROWID", "ORA_ROWSCN", "SYSDATE", "SYSTIMESTAMP", "USER", "UID"];
+        /// <summary>Oracle pseudo-columns and parameterless functions that are reserved words, so they are never column names when unqualified.</summary>
+        private static readonly HashSet<string> PseudoColumns =
+            ["ROWNUM", "ROWID", "ORA_ROWSCN", "SYSDATE", "SYSTIMESTAMP", "CURRENT_DATE", "CURRENT_TIMESTAMP", "LOCALTIMESTAMP", "USER", "UID"];
+
+        /// <summary>Pseudo-columns that are only pseudo-columns in a hierarchical (CONNECT BY or START WITH) query block.</summary>
+        private static readonly HashSet<string> HierarchicalPseudoColumns = ["LEVEL", "CONNECT_BY_ISLEAF", "CONNECT_BY_ISCYCLE"];
+
+        private bool IsPseudoColumn(string name) =>
+            PseudoColumns.Contains(name)
+            || (_hierarchical && HierarchicalPseudoColumns.Contains(name))
+            || (_versionsQuery && name.StartsWith("VERSIONS_", StringComparison.Ordinal));
 
         /// <summary>Resolves a column name to the FROM item that owns it, searching from the innermost scope outwards.</summary>
         private static (ColumnResolution, TableReference?) Resolve(IReadOnlyList<Identifier> parts, Scope? scope)
@@ -842,13 +964,23 @@ public static class SqlAnalysis
                 if (qualifier is null)
                 {
                     if (s.Sources.Count == 0) continue;
-                    return s.Sources.Count == 1 ? (ColumnResolution.Resolved, s.Sources[0]) : (ColumnResolution.Ambiguous, null);
+                    if (s.Sources.Count > 1) return (ColumnResolution.Ambiguous, null);
+                    // One FROM item here, but an enclosing block could own the name too (a correlated reference).
+                    return HasSourcesAbove(s) ? (ColumnResolution.Ambiguous, null) : (ColumnResolution.Resolved, s.Sources[0]);
                 }
                 var matches = s.Sources.Where(source => Matches(source, qualifier)).ToList();
                 if (matches.Count == 1) return (ColumnResolution.Resolved, matches[0]);
                 if (matches.Count > 1) return (ColumnResolution.Ambiguous, null);
             }
             return (ColumnResolution.Unresolved, null);
+        }
+
+        /// <summary>True when an enclosing scope, up to a scope that stops the lookup, has FROM items.</summary>
+        private static bool HasSourcesAbove(Scope scope)
+        {
+            for (var p = scope.Parent; p is not null && !p.StopsLookup; p = p.Parent)
+                if (p.Sources.Count > 0) return true;
+            return false;
         }
 
         /// <summary>
@@ -916,6 +1048,13 @@ public static class SqlAnalysis
             public IReadOnlyList<TableReference> Sources { get; } = sources;
             public Scope? Parent { get; } = parent;
             public bool StopsLookup { get; } = stopsLookup;
+        }
+
+        /// <summary>A PL/SQL name in scope (a variable, parameter or loop index), innermost first.</summary>
+        private sealed class DeclaredName(string name, DeclaredName? next)
+        {
+            public string Name { get; } = name;
+            public DeclaredName? Next { get; } = next;
         }
 
         /// <summary>The WITH names in scope, innermost first.</summary>

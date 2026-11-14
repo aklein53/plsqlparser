@@ -731,4 +731,123 @@ public class SqlAnalysisTests
             ["V.NAME:Column:Unresolved:-"],
             Columns("SELECT * FROM GRAPH_TABLE (g MATCH (v IS person) COLUMNS (v.name AS n))"));
     }
+
+    [Fact]
+    public void Columns_CorrelatedUnqualifiedName_AmbiguousWhenOuterHasSources()
+    {
+        // X may be b.x or a.x: the inner block has one FROM item, but the outer block could own the name too.
+        Assert.Equal(
+            ["B.K:Column:Resolved:B", "X:Column:Ambiguous:-"],
+            Columns("SELECT * FROM a WHERE EXISTS (SELECT 1 FROM b WHERE b.k = x)"));
+    }
+
+    [Fact]
+    public void Columns_UpdateCorrelatedSubquery_UnqualifiedAmbiguous()
+    {
+        Assert.Equal(
+            ["C:Column:Resolved:T:write", "V:Column:Ambiguous:-", "S.K:Column:Resolved:S", "T.K:Column:Resolved:T"],
+            Columns("UPDATE t SET c = (SELECT v FROM s WHERE s.k = t.k)"));
+    }
+
+    [Fact]
+    public void Columns_InlineView_CannotSeeSiblingFromItem()
+    {
+        // Without LATERAL the inline view cannot reference A, so the qualifier does not resolve.
+        Assert.Equal(["A.X:Column:Unresolved:-"], Columns("SELECT * FROM a, (SELECT a.x FROM b) q"));
+    }
+
+    [Fact]
+    public void Columns_LateralCommaForm_SeesSiblingFromItem()
+    {
+        Assert.Equal(
+            ["B.V:Column:Resolved:B", "B.ID:Column:Resolved:B", "A.ID:Column:Resolved:A", "V2:Column:Ambiguous:-"],
+            Columns("SELECT * FROM a, LATERAL (SELECT b.v FROM b WHERE b.id = a.id AND v2 = 1) x"));
+    }
+
+    [Fact]
+    public void Columns_PlsqlDeclaredVariable_IsAmbiguousNotAColumn()
+    {
+        Assert.Equal(
+            ["A:Column:Resolved:T", "K:Column:Resolved:T", "P_K:Column:Ambiguous:-"],
+            Columns("DECLARE p_k NUMBER; BEGIN SELECT a INTO v FROM t WHERE k = p_k; END;"));
+    }
+
+    [Fact]
+    public void Columns_LoopIndex_IsAmbiguous()
+    {
+        Assert.Equal(
+            ["X:Column:Resolved:T", "K:Column:Resolved:T", "I:Column:Ambiguous:-"],
+            Columns("BEGIN FOR i IN 1..3 LOOP SELECT x INTO v FROM t WHERE k = i; END LOOP; END;"));
+    }
+
+    [Fact]
+    public void Columns_HierarchicalPseudoColumns_OnlyInConnectBy()
+    {
+        Assert.Equal(
+            ["LEVEL:PseudoColumn:NotApplicable:-", "LEVEL:PseudoColumn:NotApplicable:-"],
+            Columns("SELECT LEVEL FROM dual CONNECT BY LEVEL <= 3"));
+        Assert.Equal(["LEVEL:Column:Resolved:SKILL"], Columns("SELECT level FROM skill"));
+    }
+
+    [Fact]
+    public void Columns_CurrentDateAndLocaltimestamp_ArePseudoColumns()
+    {
+        Assert.Equal(
+            ["CURRENT_DATE:PseudoColumn:NotApplicable:-", "LOCALTIMESTAMP:PseudoColumn:NotApplicable:-"],
+            Columns("SELECT CURRENT_DATE, LOCALTIMESTAMP FROM dual"));
+    }
+
+    [Fact]
+    public void Columns_VersionsPseudoColumns_OnlyInVersionsQuery()
+    {
+        Assert.Equal(
+            ["VERSIONS_STARTSCN:PseudoColumn:NotApplicable:-", "A:Column:Resolved:T"],
+            Columns("SELECT versions_startscn, a FROM t VERSIONS BETWEEN SCN 1 AND 2"));
+        Assert.Equal(["VERSIONS_STARTSCN:Column:Resolved:T"], Columns("SELECT versions_startscn FROM t"));
+    }
+
+    [Fact]
+    public void Columns_XmlTable_PassingResolvesOutputNamesNotReported()
+    {
+        Assert.Equal(
+            ["X.V:Column:Resolved:X", "T.N:Column:Resolved:T", "T.DOC:Column:Resolved:T"],
+            Columns("SELECT x.v, t.n FROM t, XMLTABLE('/a' PASSING t.doc COLUMNS v VARCHAR2(10) PATH 'b') x"));
+    }
+
+    [Fact]
+    public void Tables_ErrorLoggingTable_IsInsert()
+    {
+        Assert.Equal(
+            ["Insert T", "Read S", "Insert ERR_T"],
+            Tables("INSERT INTO t (a) SELECT a FROM s LOG ERRORS INTO err_t REJECT LIMIT UNLIMITED"));
+    }
+
+    [Fact]
+    public void Tables_Rename_BothNamesAreDdl()
+    {
+        Assert.Equal(["Ddl T1", "Ddl T2"], Tables("RENAME t1 TO t2"));
+    }
+
+    // ---- robustness ----
+
+    /// <summary>Every inline SQL string in the corpus and robustness tests, malformed ones included.</summary>
+    public static IEnumerable<object[]> AllSqlInputs() =>
+        new[] { typeof(SmokeCorpusTests), typeof(RobustnessTests) }
+            .SelectMany(t => t.GetMethods().SelectMany(m => m.CustomAttributes))
+            .Where(a => a.AttributeType.Name == "InlineDataAttribute")
+            .Select(a => ((IEnumerable<System.Reflection.CustomAttributeTypedArgument>)a.ConstructorArguments[0].Value!).FirstOrDefault().Value as string)
+            .Where(s => s is not null)
+            .Select(s => new object[] { s! });
+
+    [Theory]
+    [MemberData(nameof(AllSqlInputs))]
+    public void Helpers_NeverThrow_OnAnyInput(string sql)
+    {
+        // Parse never throws, but its tree may be partial after an error. The helpers must still return.
+        var script = SqlParser.Parse(sql).Script;
+        _ = SqlAnalysis.GetTables(script);
+        _ = SqlAnalysis.GetColumns(script);
+        _ = SqlAnalysis.GetBinds(script, distinct: true);
+        _ = SqlAnalysis.GetFunctions(script);
+    }
 }

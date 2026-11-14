@@ -298,7 +298,8 @@ foreach (var b in SqlAnalysis.GetBinds(script))
 
 - `GetColumns` binds each column reference to the FROM item it belongs to (`Source`) only when the tree decides it. A
   qualifier must match an alias, or the table name when there is no alias. An unqualified name binds when its query has
-  exactly one FROM item. Otherwise the result is `Ambiguous` or `Unresolved`, never a guess.
+  exactly one FROM item and no enclosing query has one too. Otherwise the result is `Ambiguous` or `Unresolved`, never a
+  guess.
 - `GetFunctions` reports calls with their qualified name parts and `OVER` usage. The parser has no catalogue of built-in
   functions, so built-in and user-defined calls are not told apart.
 - Not analysed: SQL inside string literals (`EXECUTE IMMEDIATE`, `OPEN ... FOR`), INTO targets as columns, and column
