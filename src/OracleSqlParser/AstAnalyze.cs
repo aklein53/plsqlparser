@@ -51,7 +51,7 @@ public sealed partial class AnalyzeStatement : Statement
     public bool SamplePercent { get; set; }
     /// <summary>VALIDATE STRUCTURE CASCADE.</summary>
     public bool Cascade { get; set; }
-    /// <summary>VALIDATE STRUCTURE ONLINE (true) or OFFLINE (false).</summary>
+    /// <summary>VALIDATE STRUCTURE ONLINE (true) or OFFLINE (false); null when neither is written.</summary>
     public bool? Online { get; set; }
     /// <summary>LIST CHAINED ROWS INTO table.</summary>
     public List<Identifier> IntoTable { get; set; } = [];

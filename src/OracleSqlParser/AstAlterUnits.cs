@@ -2,7 +2,6 @@ namespace OracleSqlParser;
 
 // ---------- ALTER of compiled units ----------
 
-/// <summary>Which part of a package or type COMPILE recompiles.</summary>
 /// <summary>The part of a package or type that <c>ALTER ... COMPILE</c> recompiles.</summary>
 public enum CompilePart
 {
@@ -43,7 +42,7 @@ public sealed partial class AlterTriggerStatement : Statement
 {
     /// <summary>The trigger name parts, schema first when the name is qualified.</summary>
     public List<Identifier> Name { get; set; } = [];
-    /// <summary>ENABLE (true) or DISABLE (false).</summary>
+    /// <summary>ENABLE (true) or DISABLE (false); null for <c>RENAME TO</c>.</summary>
     public bool? Enable { get; set; }
     /// <summary>The new trigger name for <c>RENAME TO</c>; null for the other forms.</summary>
     public Identifier? RenameTo { get; set; }

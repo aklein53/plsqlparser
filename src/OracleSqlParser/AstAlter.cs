@@ -45,21 +45,21 @@ public sealed partial class AlterIndexAction : SqlNode
     public Identifier? Partition { get; set; }
     /// <summary>True when the action names a <c>SUBPARTITION</c> rather than a <c>PARTITION</c>.</summary>
     public bool Subpartition { get; set; }
-    /// <summary>REVERSE (true) or NOREVERSE (false) on REBUILD.</summary>
+    /// <summary>REVERSE (true) or NOREVERSE (false) on REBUILD; null when neither is written.</summary>
     public bool? Reverse { get; set; }
     /// <summary>True when <c>ONLINE</c> is written.</summary>
     public bool Online { get; set; }
     /// <summary>The new name for <c>RENAME TO</c>; null for every other action.</summary>
     public Identifier? NewName { get; set; }
-    /// <summary>VISIBLE (true) or INVISIBLE (false).</summary>
+    /// <summary>VISIBLE (true) or INVISIBLE (false); null for the other actions.</summary>
     public bool? Visible { get; set; }
-    /// <summary>MONITORING USAGE (true) or NOMONITORING USAGE (false).</summary>
+    /// <summary>MONITORING USAGE (true) or NOMONITORING USAGE (false); null for the other actions.</summary>
     public bool? Monitoring { get; set; }
     /// <summary>COALESCE CLEANUP.</summary>
     public bool Cleanup { get; set; }
     /// <summary>COALESCE ONLY (clean up without coalescing blocks).</summary>
     public bool Only { get; set; }
-    /// <summary>ENABLE (true) or DISABLE (false) for function-based indexes.</summary>
+    /// <summary>ENABLE (true) or DISABLE (false) for function-based indexes; null for the other actions.</summary>
     public bool? Enabled { get; set; }
     /// <summary>SHRINK SPACE COMPACT.</summary>
     public bool Compact { get; set; }
