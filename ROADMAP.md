@@ -56,16 +56,22 @@ fuzz) and were re-verified by hand where cited.
 
 ## Epic 4 — Syntax coverage (all rejections today; none are mis-parses) · S/M each
 
-In likelihood order: `IS [NOT] TRUE/FALSE`; interval expressions `(a - b) DAY TO SECOND`; JSON dot-notation after
-an array step (`t.c.a[0].b`, `[0 to 2]`); lexer bug `'a':1` in `JSON_OBJECT` (reads `:1` as a bind);
-`RETURNING OLD/NEW`; `LOG ERRORS` on MERGE; PL/SQL conditional compilation (`$IF`/`$$`/`$ERROR`);
-`DELETE FROM t FROM <join>`; partitioned outer join; `WITH x AS (VALUES …)`; `FETCH APPROX FIRST`;
-`FOR i IN 1..10 BY 2` and 21c iterator controls; qualified expressions (dedicated node, not `FunctionCall`);
-`arr(1)(2)`; `EXEC :x := 1`; `PERMUTE`; `pivot`/`left`/`sample`/`fetch` as aliases; reject `**`/`%` in SQL context.
-Replace remaining token-tree bodies (generic CREATE/ALTER, ANALYZE/AUDIT, GRAPH_TABLE) with typed nodes over time.
-
-Also: a `ParseOptions.OracleVersion` (19/21/23) to reject newer syntax when targeting older servers, mirroring
-ScriptDom's versioned parsers.
+- [x] `IS [NOT] TRUE/FALSE`; interval expressions `(a - b) DAY[(p)] TO SECOND[(p)]` / `YEAR TO MONTH` (`IntervalExpression`).
+- [x] JSON dot-notation after array steps (`t.c.a[0].b`, `[*]`, `[0 to 2]`, `[1,3]`); `'a':1` in `JSON_OBJECT` no longer lexes `:1` as a bind.
+- [x] `RETURNING OLD/NEW` (`ReturningItem`); `LOG ERRORS` on MERGE; 23ai `UPDATE ... FROM` / `DELETE ... FROM` joins.
+- [x] Partitioned outer join (either side, not both, not FULL); `WITH x AS (VALUES ...)` (`ValuesQuery`); `FETCH APPROX[IMATE] FIRST`.
+- [x] `pivot`/`unpivot`/`left`/`right`/`full`/`sample`/`fetch` as aliases where unambiguous.
+- [x] PL/SQL 21c iteration controls (`BY`, multiple controls, `REPEAT`, `WHILE`/`WHEN`, `VALUES OF`/`INDICES OF`/`PAIRS OF`,
+  typed/`MUTABLE` iterands, `(EXECUTE IMMEDIATE ...)` — verified against Oracle: the parenthesised form is the only one accepted).
+- [x] Conditional compilation (`$IF`/`$ELSIF`/`$ELSE`/`$END`, `$ERROR`, `$$name`) in statement and declaration lists, all branches typed.
+- [x] Qualified expressions with `OTHERS =>`, index choices and `FOR` iterator choices (`QualifiedExpression`; named
+  `rec(a => 1)` stays a `FunctionCall`); chained calls `arr(1)(2)`, `f(x)(y)` (`ChainedCall`); `EXEC :x := 1`.
+- [x] `**` rejected in SQL context (still parsed in PL/SQL). Note: `SqlParser.ParseExpression("2 ** 3")` now throws.
+- [ ] Leftovers: conditional compilation in parameter lists; `FETCH APPROX ... WITH TARGET ACCURACY`; bare identifier
+  JSON keys without a space (`JSON_OBJECT(k:1)`); JSON array steps are accepted inside PL/SQL although only SQL allows them.
+- [ ] Replace remaining token-tree bodies (generic CREATE/ALTER, ANALYZE/AUDIT, GRAPH_TABLE) with typed nodes over time.
+- [ ] `ParseOptions.OracleVersion` (19/21/23) to reject newer syntax when targeting older servers, mirroring
+  ScriptDom's versioned parsers.
 
 ## Epic 5 — API shape and packaging · S/M
 

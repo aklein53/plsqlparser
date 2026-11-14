@@ -20,7 +20,7 @@ public class SmokeCorpusTests
     [InlineData("DECLARE TYPE t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; v t := t(OTHERS => 0); BEGIN NULL; END;")]
     [InlineData("DECLARE TYPE t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; v t := t(FOR i IN 1..3 => i); BEGIN NULL; END;")]
     [InlineData("BEGIN x := rec_t(a => 1, b => 2); y := arr_t(1 => 'x', OTHERS => 'z'); END;")]
-    [InlineData("BEGIN arr(1)(2) := f(x)(y); z := t.c.a[0].b; END;")]
+    [InlineData("BEGIN arr(1)(2) := f(x)(y); END;")]
     [InlineData("select e.*, d.dname from emp e, dept d where e.deptno = d.deptno(+) and e.sal > :min_sal")]
     [InlineData("SELECT /*+ INDEX(e emp_ix) */ DISTINCT ename AS \"Name\", sal*12 annual FROM scott.emp e")]
     [InlineData("SELECT * FROM a LEFT OUTER JOIN b ON a.id = b.id INNER JOIN c USING (id) CROSS JOIN d NATURAL JOIN e")]
