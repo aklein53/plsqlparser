@@ -54,7 +54,7 @@ fuzz) and were re-verified by hand where cited.
   survive; generator used only for new/replaced nodes.
 - [x] Honour `SET DEFINE OFF` for `&` handling in scripts.
 
-## Epic 4 — Syntax coverage (all rejections today; none are mis-parses) · S/M each
+## Epic 4 — Syntax coverage ✅
 
 - [x] `IS [NOT] TRUE/FALSE`; interval expressions `(a - b) DAY[(p)] TO SECOND[(p)]` / `YEAR TO MONTH` (`IntervalExpression`).
 - [x] JSON dot-notation after array steps (`t.c.a[0].b`, `[*]`, `[0 to 2]`, `[1,3]`); `'a':1` in `JSON_OBJECT` no longer lexes `:1` as a bind.
@@ -67,11 +67,22 @@ fuzz) and were re-verified by hand where cited.
 - [x] Qualified expressions with `OTHERS =>`, index choices and `FOR` iterator choices (`QualifiedExpression`; named
   `rec(a => 1)` stays a `FunctionCall`); chained calls `arr(1)(2)`, `f(x)(y)` (`ChainedCall`); `EXEC :x := 1`.
 - [x] `**` rejected in SQL context (still parsed in PL/SQL). Note: `SqlParser.ParseExpression("2 ** 3")` now throws.
-- [ ] Leftovers: conditional compilation in parameter lists; `FETCH APPROX ... WITH TARGET ACCURACY`; bare identifier
-  JSON keys without a space (`JSON_OBJECT(k:1)`); JSON array steps are accepted inside PL/SQL although only SQL allows them.
-- [ ] Replace remaining token-tree bodies (generic CREATE/ALTER, ANALYZE/AUDIT, GRAPH_TABLE) with typed nodes over time.
-- [ ] `ParseOptions.OracleVersion` (19/21/23) to reject newer syntax when targeting older servers, mirroring
-  ScriptDom's versioned parsers.
+- [x] Leftovers: conditional compilation in parameter lists (`ConditionalParameter`); `FETCH APPROX ... WITH TARGET ACCURACY`;
+  `JSON_OBJECT(k:1)`; JSON array steps rejected inside PL/SQL (Oracle: PLS-00103).
+- [x] Token-tree bodies replaced with typed nodes for application/migration DDL: CREATE/ALTER USER, ROLE, PROFILE,
+  TABLESPACE; DIRECTORY, DATABASE LINK, CONTEXT; AUDIT/NOAUDIT and AUDIT POLICY; ALTER INDEX/SEQUENCE/MATERIALIZED VIEW;
+  COMPILE/EDITIONABLE on program units; ALTER TRIGGER/VIEW; ALTER TABLE partition maintenance; ANALYZE; GRAPH_TABLE and
+  CREATE PROPERTY GRAPH; CREATE/ALTER DOMAIN; JSON duality views and `JSON {}`/`JSON []` constructors; `ANNOTATIONS`
+  everywhere Oracle accepts them; `GRANT/REVOKE ... ON SCHEMA`. 23ai graph/domain/duality/annotation syntax was probed
+  against Oracle 23 Free and the parser accepts/rejects the same forms (`*Acceptance` integration tests).
+  Deliberately left as token trees (DBA/storage administration, rarely in application code): ALTER SYSTEM/DATABASE,
+  DISKGROUP, PLUGGABLE DATABASE, CONTROLFILE, SPFILE/PFILE, ROLLBACK SEGMENT, FLASHBACK DATABASE, ADMINISTER KEY
+  MANAGEMENT, ASSOCIATE/DISASSOCIATE STATISTICS, and the less common CREATE kinds (CLUSTER, DIMENSION, OPERATOR,
+  INDEXTYPE, OUTLINE, MV LOG, ZONEMAP, ANALYTIC VIEW, ...). Rare sub-clauses of typed statements keep an `OtherClauses`
+  token list (see COVERAGE.md); typed ALTER forms fall back to the generic node for unmodelled clauses.
+- [x] `ParseOptions.OracleVersion` (19/21/23, default 23): post-19c syntax produces a diagnostic ("'X' requires Oracle 23
+  or later") while the tree is still built — mirroring ScriptDom's versioned parsers. SQL_MACRO is gated at 21
+  (backported to 19.7+ RUs; see README).
 
 ## Epic 5 — API shape and packaging · S/M
 
