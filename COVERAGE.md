@@ -41,7 +41,8 @@ RESULT_CACHE, AGGREGATE, SQL_MACRO, ACCESSIBLE BY, DEPRECATE, DEFAULT COLLATION,
 (Java/C/MLE), triggers (DML, DDL, database, INSTEAD OF, nested table, compound, cross-edition, ordering).
 FOR loops with Oracle 21c+ iteration controls: `ForIterand` (name, type, MUTABLE) plus a list of typed
 `IterationControl`s (`RangeControl` with REVERSE/BY, `ExpressionControl`, `RepeatControl`, `ValuesOfControl`,
-`IndicesOfControl`, `PairsOfControl`, `CursorControl` for `(SELECT ...)`, `DynamicSqlControl`), each with optional
+`IndicesOfControl`, `PairsOfControl`, `CursorControl` for `(SELECT ...)`, `DynamicSqlControl` for the parenthesised
+`(EXECUTE IMMEDIATE ...)` form, which Oracle requires), each with optional
 WHILE/WHEN. A bare cursor or collection name is an `ExpressionControl`. IMMUTABLE is accepted and not recorded.
 Conditional compilation: `$IF`/`$ELSIF`/`$ELSE`/`$END` blocks in statement lists (`ConditionalStatement`) and
 declaration lists (`ConditionalDeclaration`), with every branch parsed as typed nodes; `$ERROR 'msg' $END`

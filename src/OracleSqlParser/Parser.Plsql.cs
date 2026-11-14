@@ -934,13 +934,17 @@ public sealed partial class SqlParser
         else if (IsKw("VALUES") && IsKwAt(1, "OF")) { Next(); Next(); c = new ValuesOfControl { Collection = ParseExpr() }; }
         else if (IsKw("INDICES") && IsKwAt(1, "OF")) { Next(); Next(); c = new IndicesOfControl { Collection = ParseExpr() }; }
         else if (IsKw("PAIRS") && IsKwAt(1, "OF")) { Next(); Next(); c = new PairsOfControl { Collection = ParseExpr() }; }
-        else if (IsKw("EXECUTE") && IsKwAt(1, "IMMEDIATE"))
+        else if (IsOp("(") && IsKwAt(1, "EXECUTE") && IsKwAt(2, "IMMEDIATE"))
         {
-            Next(); Next();
+            // Oracle accepts the dynamic form only parenthesised: FOR r IN (EXECUTE IMMEDIATE sql [USING ...])
+            Next(); Next(); Next();
             var dc = new DynamicSqlControl { Sql = ParseExpr() };
             if (AcceptKw("USING")) dc.Using = ParseUsingList();
+            ExpectOp(")");
             c = dc;
         }
+        else if (IsKw("EXECUTE") && IsKwAt(1, "IMMEDIATE"))
+            throw Fail("EXECUTE IMMEDIATE in a FOR loop must be parenthesised: FOR r IN (EXECUTE IMMEDIATE ...)");
         else if (IsOp("(") && LooksLikeQuery())
         {
             Next();
