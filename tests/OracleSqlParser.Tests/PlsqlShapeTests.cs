@@ -289,6 +289,13 @@ BEGIN NULL; END;");
         "(Block statements=[(AssignmentStatement target=X value=(FunctionCall name=[ARR] arguments=[(Argument value=1)]))])")]
     public void QualifiedExpressions(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
+    [Theory]
+    [InlineData("BEGIN arr(1)(2) := 3; END;",
+        "(Block statements=[(AssignmentStatement target=(ChainedCall target=(FunctionCall name=[ARR] arguments=[(Argument value=1)]) arguments=[(Argument value=2)]) value=3)])")]
+    [InlineData("BEGIN x := f(x)(y); END;",
+        "(Block statements=[(AssignmentStatement target=X value=(ChainedCall target=(FunctionCall name=[F] arguments=[(Argument value=X)]) arguments=[(Argument value=Y)]))])")]
+    public void ChainedCallsInPlsql(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
     [Fact]
     public void Positions_ForNodes()
     {

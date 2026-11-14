@@ -208,6 +208,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="ChainedCall"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(ChainedCall node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="ChainedCall"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(ChainedCall node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="CloseStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(CloseStatement node) => Visit((SqlNode)node);
 

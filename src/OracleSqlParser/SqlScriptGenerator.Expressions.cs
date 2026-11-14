@@ -146,6 +146,7 @@ public sealed partial class SqlScriptGenerator
                 case FunctionCall fc: Function(fc); break;
                 case MethodCall mc: Expr(mc.Target); Add("."); Id(mc.Name); Add("("); Sep(mc.Arguments, Arg); Add(")"); break;
                 case MemberAccess ma: Expr(ma.Target); Add("."); Id(ma.Member); break;
+                case ChainedCall cc: Expr(cc.Target); Add("("); Sep(cc.Arguments, Arg); Add(")"); break;
                 case CellReference cr:
                     Expr(cr.Base); Add("[");
                     Sep(cr.Subscripts, s => Expr(s));

@@ -244,7 +244,8 @@ public sealed partial class SqlParser
         while (Progress(ref prog7))
         {
             if (IsOp("[")) e = ParseSubscripts(e, start);
-            else if (e is CellReference && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier) e = ParseMemberChain(e, start);
+            else if (e is CellReference or ChainedCall && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier) e = ParseMemberChain(e, start);
+            else if (e is FunctionCall or CellReference or ChainedCall && IsOp("(")) e = ParseChainedCall(e, start);
             else if (IsKw("AT") && (IsKwAt(1, "TIME") || IsKwAt(1, "LOCAL")))
             {
                 Next();
@@ -431,10 +432,20 @@ public sealed partial class SqlParser
     /// Continues a postfix chain of '.field' and '.method(args)' steps on a call, collection element or member access:
     /// f(x).field, coll(i).field(j), t.c.a[0].b (JSON dot-notation after an array step).
     /// </summary>
+    /// <summary>Parses the argument list of a call whose callee is itself a call or subscript: f(x)(y).</summary>
+    private Expression ParseChainedCall(Expression target, Token start)
+    {
+        Next(); // (
+        var cc = new ChainedCall { Target = target };
+        if (!IsOp(")")) do cc.Arguments.Add(ParseArgument()); while (AcceptOp(","));
+        ExpectOp(")");
+        return Fin(cc, start);
+    }
+
     private Expression ParseMemberChain(Expression result, Token start)
     {
         int prog114 = -1;
-        while (result is FunctionCall or MethodCall or MemberAccess or CellReference && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog114))
+        while (result is FunctionCall or MethodCall or MemberAccess or CellReference or ChainedCall && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog114))
         {
             Next();
             var m = ParseIdentifier();

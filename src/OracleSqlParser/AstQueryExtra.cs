@@ -273,6 +273,13 @@ public sealed partial class MethodCall : Expression
     public List<Argument> Arguments { get; set; } = [];
 }
 
+/// <summary>Call on the result of a call or subscript, e.g. <c>f(x)(y)</c> or <c>arr(1)(2)</c>; the callee is not a plain name.</summary>
+public sealed partial class ChainedCall : Expression
+{
+    public Expression Target { get; set; } = null!;
+    public List<Argument> Arguments { get; set; } = [];
+}
+
 public sealed partial class CursorExpression : Expression
 {
     public SelectStatement Query { get; set; } = null!;

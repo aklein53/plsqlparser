@@ -173,6 +173,15 @@ public class ExpressionShapeTests
     [InlineData("t.c.a[1,3].b", "(MemberAccess target=(CellReference base=T.C.A subscripts=[1 3]) member=B)")]
     [InlineData("t.c.a[0].b[1].c", "(MemberAccess target=(CellReference base=(MemberAccess target=(CellReference base=T.C.A subscripts=[0]) member=B) subscripts=[1]) member=C)")]
     [InlineData("t.c.a[0].b.c", "(MemberAccess target=(MemberAccess target=(CellReference base=T.C.A subscripts=[0]) member=B) member=C)")]
+    // A call on the result of a call or an index: the left side must already be a call or subscript, so plain
+    // parentheses after other expressions are not consumed.
+    [InlineData("arr(1)(2)", "(ChainedCall target=(FunctionCall name=[ARR] arguments=[(Argument value=1)]) arguments=[(Argument value=2)])")]
+    [InlineData("f(x)(y)", "(ChainedCall target=(FunctionCall name=[F] arguments=[(Argument value=X)]) arguments=[(Argument value=Y)])")]
+    [InlineData("f(x)()", "(ChainedCall target=(FunctionCall name=[F] arguments=[(Argument value=X)]))")]
+    [InlineData("arr(1)(2)(3)", "(ChainedCall target=(ChainedCall target=(FunctionCall name=[ARR] arguments=[(Argument value=1)]) arguments=[(Argument value=2)]) arguments=[(Argument value=3)])")]
+    [InlineData("s['x'](2)", "(ChainedCall target=(CellReference base=S subscripts=['x']) arguments=[(Argument value=2)])")]
+    [InlineData("f(x)(y).z", "(MemberAccess target=(ChainedCall target=(FunctionCall name=[F] arguments=[(Argument value=X)]) arguments=[(Argument value=Y)]) member=Z)")]
+    [InlineData("f(x)(y)[1]", "(CellReference base=(ChainedCall target=(FunctionCall name=[F] arguments=[(Argument value=X)]) arguments=[(Argument value=Y)]) subscripts=[1])")]
     [InlineData("PRIOR x", "(PRIOR X)")]
     [InlineData("CONNECT_BY_ROOT x", "(CONNECT_BY_ROOT X)")]
     [InlineData("CURSOR(SELECT 1 FROM dual)", "(CursorExpression query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[DUAL])])))")]

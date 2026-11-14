@@ -966,6 +966,50 @@ public partial class CellReference
     }
 }
 
+public partial class ChainedCall
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Target is not null) yield return Target;
+        if (Arguments is not null) foreach (var x in Arguments) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Target?.Accept(visitor);
+        if (Arguments is not null) foreach (var x in Arguments) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Target = SqlNodeRewriter.RewriteRequired(rewriter, Target, "ChainedCall.Target");
+        SqlNodeRewriter.RewriteList(rewriter, Arguments, "ChainedCall.Arguments");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ChainedCall();
+        CopySpan(this, c);
+        c.Target = CloneChild(Target)!;
+        c.Arguments = CloneList(Arguments);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ChainedCall)other;
+        return Pair(Target, o.Target, pending)
+            && PairList(Arguments, o.Arguments, pending);
+    }
+}
+
 public partial class CloseStatement
 {
     /// <inheritdoc/>
