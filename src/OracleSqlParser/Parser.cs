@@ -40,6 +40,8 @@ public sealed partial class SqlParser
         var parser = new SqlParser(tokens, sql, options);
         parser._lexErrors = errors.ToList();
         var script = parser.ParseScript(errors);
+        // Version diagnostics do not stop parsing, so they follow the syntax errors in source order of discovery.
+        errors.AddRange(parser._versionErrors);
         return new ParseResult { Source = sql, Script = script, Errors = errors, Tokens = tokens };
     }
 
@@ -55,6 +57,7 @@ public sealed partial class SqlParser
         var p = new SqlParser(Lexer.Tokenize(sql, options?.SubstitutionEnabled ?? true), sql, options);
         var e = p.ParseExpr();
         if (p.Cur.Type != TokenType.EOF) throw p.Fail($"Unexpected '{p.Cur.Text}' after expression");
+        if (p._versionErrors.Count > 0) throw new ParseException(p._versionErrors[0]);
         return e;
     }
 
@@ -68,6 +71,7 @@ public sealed partial class SqlParser
         var s = p.ParseStatementCore();
         while (p.AcceptOp(";") || p.AcceptOp("/")) { }
         if (p.Cur.Type != TokenType.EOF) throw p.Fail($"Unexpected '{p.Cur.Text}' after statement");
+        if (p._versionErrors.Count > 0) throw new ParseException(p._versionErrors[0]);
         return s;
     }
 
@@ -95,10 +99,20 @@ public sealed partial class SqlParser
     private int _depth;
     private List<ParseError> _lexErrors = [];
 
+    /// <summary>The release the input targets (<see cref="ParseOptions.OracleVersion"/>).</summary>
+    private readonly OracleVersion _version;
+
+    /// <summary>
+    /// Non-fatal version diagnostics (<see cref="RequireVersion"/>). They never abort a statement, so the tree is
+    /// still built; <see cref="Parse(string, ParseOptions?)"/> reports them with the syntax errors.
+    /// </summary>
+    private readonly List<ParseError> _versionErrors = [];
+
     private SqlParser(List<Token> tokens, string src, ParseOptions? options = null)
     {
         _src = src;
         _maxDepth = options?.MaxNestingDepth ?? 200;
+        _version = options?.OracleVersion ?? OracleVersion.Oracle23;
         // Keep optimizer hints only where they are meaningful (right after a statement keyword).
         _t = [];
         foreach (var tok in tokens)
@@ -196,6 +210,28 @@ public sealed partial class SqlParser
     private static string Describe(Token t) => t.Type == TokenType.EOF ? "end of input" : $"'{t.Text}'";
 
     private ParseException Fail(string msg) => new(new ParseError(msg, Cur.Start, Cur.Line, Cur.Column));
+
+    /// <summary>
+    /// Records a version diagnostic when <paramref name="feature"/> needs a release newer than the target. It never
+    /// throws and never stops the parse: the construct stays in the tree, so tooling still sees it. A repeat at the
+    /// same position with the same message (a speculative parse that was retried) is recorded once.
+    /// </summary>
+    private void RequireVersion(OracleVersion min, string feature, Token at)
+    {
+        if (_version >= min) return;
+        var message = $"'{feature}' requires Oracle {(int)min} or later (targeting Oracle {(int)_version})";
+        if (_versionErrors.Any(e => e.Offset == at.Start && e.Message == message)) return;
+        _versionErrors.Add(new ParseError(message, at.Start, at.Line, at.Column));
+    }
+
+    /// <summary>Accepts the keyword, recording a version diagnostic when the target predates <paramref name="min"/>.</summary>
+    private bool AcceptVersioned(string kw, OracleVersion min, string feature)
+    {
+        if (!IsKw(kw)) return false;
+        RequireVersion(min, feature, Cur);
+        Next();
+        return true;
+    }
 
     private T Fin<T>(T node, Token start) where T : SqlNode
     {
@@ -388,6 +424,7 @@ public sealed partial class SqlParser
         }
 
         // A bare VALUES list is a query body only in a CTE here (`WITH x AS (VALUES ...)`); elsewhere it is a table constructor.
+        if (IsKw("VALUES")) RequireVersion(OracleVersion.Oracle23, "VALUES table constructor", Cur);
         stmt.Body = IsKw("VALUES") ? ParseValuesQuery() : ParseQueryExpression();
 
         if (IsKw("ORDER"))
@@ -493,6 +530,7 @@ public sealed partial class SqlParser
         {
             do qs.From.Add(ParseJoinedTable()); while (AcceptOp(","));
         }
+        else RequireVersion(OracleVersion.Oracle23, "SELECT without FROM", start);
 
         // WHERE, hierarchical, GROUP BY, HAVING: Oracle permits hierarchical/GROUP BY in either order.
         int prog3 = -1;
@@ -692,6 +730,7 @@ public sealed partial class SqlParser
             Next();
             if (IsKw("VALUES"))
             {
+                RequireVersion(OracleVersion.Oracle23, "VALUES table constructor", Cur);
                 var vt = new ValuesTable();
                 Next();
                 ParseValueRows(vt.Rows);
@@ -762,10 +801,15 @@ public sealed partial class SqlParser
         {
             Next(); st.Columns = ParseIdentifierList(); ExpectOp(")");
         }
+        var valuesTok = Cur;
         if (AcceptKw("VALUES"))
         {
             if (!IsOp("(")) st.RecordValue = ParseExpr();
-            else ParseValueRows(st.ValueRows);
+            else
+            {
+                ParseValueRows(st.ValueRows);
+                if (st.ValueRows.Count > 1) RequireVersion(OracleVersion.Oracle23, "multi-row INSERT VALUES", valuesTok);
+            }
         }
         else if (IsKw("SELECT") || IsKw("WITH") || IsOp("(")) st.Query = ParseSelectStatement();
         else throw Fail($"Expected VALUES or SELECT but found {Describe(Cur)}");
@@ -789,7 +833,7 @@ public sealed partial class SqlParser
         st.Target = ParseTablePrimary();
         ExpectKw("SET");
         st.Set = ParseSetClauses();
-        if (AcceptKw("FROM")) { do st.From.Add(ParseJoinedTable()); while (AcceptOp(",")); }
+        if (AcceptVersioned("FROM", OracleVersion.Oracle23, "UPDATE ... FROM")) { do st.From.Add(ParseJoinedTable()); while (AcceptOp(",")); }
         if (AcceptKw("WHERE")) st.Where = ParseWhereCondition();
         ParseDmlTail(st);
         return Fin(st, start);
@@ -831,7 +875,7 @@ public sealed partial class SqlParser
         if (Cur.Type == TokenType.Hint) st.Hint = ParseHint(Next());
         AcceptKw("FROM");
         st.Target = ParseTablePrimary();
-        if (AcceptKw("FROM")) { do st.From.Add(ParseJoinedTable()); while (AcceptOp(",")); }
+        if (AcceptVersioned("FROM", OracleVersion.Oracle23, "DELETE ... FROM")) { do st.From.Add(ParseJoinedTable()); while (AcceptOp(",")); }
         if (AcceptKw("WHERE")) st.Where = ParseWhereCondition();
         ParseDmlTail(st);
         return Fin(st, start);
@@ -872,6 +916,7 @@ public sealed partial class SqlParser
         bool nextStartsItem = next.Type == TokenType.QuotedIdentifier || (next.Type == TokenType.Identifier && !Reserved.Contains(next.Value));
         if ((IsKw("OLD") || IsKw("NEW")) && nextStartsItem)
         {
+            RequireVersion(OracleVersion.Oracle23, "RETURNING OLD/NEW", Cur);
             item.Image = IsKw("OLD") ? ReturningImage.Old : ReturningImage.New;
             Next();
         }

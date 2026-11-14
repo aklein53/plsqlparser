@@ -136,8 +136,8 @@ public sealed partial class SqlParser
         else if (AcceptKw("EMPTY")) ie.Test = IsTest.Empty;
         else if (AcceptKw("PRESENT")) ie.Test = IsTest.Present;
         else if (AcceptKw("DANGLING")) ie.Test = IsTest.Dangling;
-        else if (AcceptKw("TRUE")) ie.Test = IsTest.True; // Oracle 23ai boolean predicates
-        else if (AcceptKw("FALSE")) ie.Test = IsTest.False;
+        else if (AcceptVersioned("TRUE", OracleVersion.Oracle23, "IS TRUE/FALSE")) ie.Test = IsTest.True; // Oracle 23ai boolean predicates
+        else if (AcceptVersioned("FALSE", OracleVersion.Oracle23, "IS TRUE/FALSE")) ie.Test = IsTest.False;
         else if (IsKw("A") && IsKwAt(1, "SET")) { Next(); Next(); ie.Test = IsTest.ASet; }
         else if (AcceptKw("JSON"))
         {
@@ -344,6 +344,8 @@ public sealed partial class SqlParser
                 case "EXTRACT" when IsOpAt(1, "(") && PeekTok(2).Type == TokenType.Identifier && IsKwAt(3, "FROM"): return ParseExtract();
                 case "TRIM" when IsOpAt(1, "("): return ParseTrim();
                 case "TRUE" or "FALSE" when !IsOpAt(1, ".") && !IsOpAt(1, "("):
+                    // PL/SQL has had BOOLEAN literals since 8i; SQL gained them in 23ai.
+                    if (!_plsql) RequireVersion(OracleVersion.Oracle23, "TRUE/FALSE literal in SQL", start);
                     Next();
                     return Fin(new Literal { Kind = LiteralKind.Boolean, Value = start.Value }, start);
                 case "CURSOR" when IsOpAt(1, "("):
@@ -1006,6 +1008,15 @@ public sealed partial class SqlParser
             }
             else if (Cur.Type == TokenType.Identifier && TypeWords.Contains(Cur.Value)) words.Add(Next().Value);
             else break;
+        }
+        if (!first.Quoted && words.Count == 1)
+        {
+            switch (first.Value)
+            {
+                case "JSON": RequireVersion(OracleVersion.Oracle21, "JSON data type", start); break;
+                case "VECTOR": RequireVersion(OracleVersion.Oracle23, "VECTOR data type", start); break;
+                case "BOOLEAN": if (!_plsql) RequireVersion(OracleVersion.Oracle23, "BOOLEAN data type", start); break;
+            }
         }
         dt.Name = string.Join(" ", words);
         return Fin(dt, start);

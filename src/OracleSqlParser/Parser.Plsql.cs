@@ -384,6 +384,7 @@ public sealed partial class SqlParser
                 case "AGGREGATE": Next(); ExpectKw("USING"); po.AggregateUsing = ParseDottedName(); break;
                 case "SQL_MACRO" or "SQL_TABLE_MACRO":
                 {
+                    RequireVersion(OracleVersion.Oracle21, "SQL_MACRO", Cur);
                     bool tableMacro = Next().Value == "SQL_TABLE_MACRO";
                     po.SqlMacro = tableMacro ? MacroKind.Table : MacroKind.Scalar;
                     if (IsOp("(") && IsKwAt(1, "TYPE"))
@@ -465,6 +466,7 @@ public sealed partial class SqlParser
         var ec = new ExternalCall();
         if (IsKw("MLE"))
         {
+            RequireVersion(OracleVersion.Oracle23, "LANGUAGE MLE", s);
             ec.Language = ExternalLanguage.JavaScript;
             Next();
             if (AcceptKw("MODULE")) ec.MleModule = ParseDottedName();
@@ -946,7 +948,11 @@ public sealed partial class SqlParser
             lp.Kind = LoopKind.For;
             do lp.Iterands.Add(ParseForIterand()); while (AcceptOp(","));
             ExpectKw("IN");
-            do lp.Controls.Add(ParseIterationControl()); while (AcceptOp(","));
+            do
+            {
+                if (lp.Controls.Count > 0) RequireVersion(OracleVersion.Oracle21, "multiple FOR loop iteration controls", Cur);
+                lp.Controls.Add(ParseIterationControl());
+            } while (AcceptOp(","));
         }
         ExpectKw("LOOP");
         lp.Body = ParseStatements(AtBlockEnd);
@@ -960,9 +966,13 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         var fi = new ForIterand { Name = ParseIdentifier() };
-        if (!IsKw("IN") && !IsOp(",") && !IsKw("MUTABLE") && !IsKw("IMMUTABLE")) fi.Type = ParseDataType();
-        if (AcceptKw("MUTABLE")) fi.Mutable = true;
-        else AcceptKw("IMMUTABLE");
+        if (!IsKw("IN") && !IsOp(",") && !IsKw("MUTABLE") && !IsKw("IMMUTABLE"))
+        {
+            RequireVersion(OracleVersion.Oracle21, "typed FOR iterand", start);
+            fi.Type = ParseDataType();
+        }
+        if (AcceptVersioned("MUTABLE", OracleVersion.Oracle21, "MUTABLE FOR iterand")) fi.Mutable = true;
+        else AcceptVersioned("IMMUTABLE", OracleVersion.Oracle21, "IMMUTABLE FOR iterand");
         return Fin(fi, start);
     }
 
@@ -974,13 +984,14 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         IterationControl c;
-        if (IsKw("REPEAT")) { Next(); c = new RepeatControl { Value = ParseExpr() }; }
-        else if (IsKw("VALUES") && IsKwAt(1, "OF")) { Next(); Next(); c = new ValuesOfControl { Collection = ParseExpr() }; }
-        else if (IsKw("INDICES") && IsKwAt(1, "OF")) { Next(); Next(); c = new IndicesOfControl { Collection = ParseExpr() }; }
-        else if (IsKw("PAIRS") && IsKwAt(1, "OF")) { Next(); Next(); c = new PairsOfControl { Collection = ParseExpr() }; }
+        if (IsKw("REPEAT")) { RequireVersion(OracleVersion.Oracle21, "FOR loop REPEAT", Cur); Next(); c = new RepeatControl { Value = ParseExpr() }; }
+        else if (IsKw("VALUES") && IsKwAt(1, "OF")) { RequireVersion(OracleVersion.Oracle21, "FOR loop VALUES OF", Cur); Next(); Next(); c = new ValuesOfControl { Collection = ParseExpr() }; }
+        else if (IsKw("INDICES") && IsKwAt(1, "OF")) { RequireVersion(OracleVersion.Oracle21, "FOR loop INDICES OF", Cur); Next(); Next(); c = new IndicesOfControl { Collection = ParseExpr() }; }
+        else if (IsKw("PAIRS") && IsKwAt(1, "OF")) { RequireVersion(OracleVersion.Oracle21, "FOR loop PAIRS OF", Cur); Next(); Next(); c = new PairsOfControl { Collection = ParseExpr() }; }
         else if (IsOp("(") && IsKwAt(1, "EXECUTE") && IsKwAt(2, "IMMEDIATE"))
         {
             // Oracle accepts the dynamic form only parenthesised: FOR r IN (EXECUTE IMMEDIATE sql [USING ...])
+            RequireVersion(OracleVersion.Oracle21, "FOR loop EXECUTE IMMEDIATE", Cur);
             Next(); Next(); Next();
             var dc = new DynamicSqlControl { Sql = ParseExpr() };
             if (AcceptKw("USING")) dc.Using = ParseUsingList();
@@ -1003,7 +1014,7 @@ public sealed partial class SqlParser
             if (AcceptOp(".."))
             {
                 var rc = new RangeControl { Reverse = reverse, Lower = e, Upper = ParseExpr() };
-                if (AcceptKw("BY")) rc.By = ParseExpr();
+                if (AcceptVersioned("BY", OracleVersion.Oracle21, "FOR loop BY")) rc.By = ParseExpr();
                 c = rc;
             }
             else
@@ -1012,8 +1023,8 @@ public sealed partial class SqlParser
                 c = new ExpressionControl { Value = e };
             }
         }
-        if (AcceptKw("WHILE")) c.While = ParseExpr();
-        if (AcceptKw("WHEN")) c.When = ParseExpr();
+        if (AcceptVersioned("WHILE", OracleVersion.Oracle21, "FOR loop WHILE/WHEN")) c.While = ParseExpr();
+        if (AcceptVersioned("WHEN", OracleVersion.Oracle21, "FOR loop WHILE/WHEN")) c.When = ParseExpr();
         return Fin(c, start);
     }
 

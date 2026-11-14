@@ -54,7 +54,7 @@ public sealed partial class SqlParser
         List<Token> toks;
         try { toks = Lexer.Tokenize(tok.Value); }
         catch (ParseException) { return h; }
-        var sub = new SqlParser(toks, tok.Value, new ParseOptions { MaxNestingDepth = _maxDepth });
+        var sub = new SqlParser(toks, tok.Value, new ParseOptions { MaxNestingDepth = _maxDepth, OracleVersion = _version });
         while (sub.Cur.Type != TokenType.EOF)
         {
             if (sub.Cur.Type == TokenType.Identifier)

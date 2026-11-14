@@ -1,5 +1,17 @@
 namespace OracleSqlParser;
 
+/// <summary>
+/// The Oracle Database release a script targets. Constructs introduced after the target release are still
+/// parsed into the tree, but reported as a ParseError ("... requires Oracle 23 or later (targeting Oracle 19)").
+/// The values are the major release numbers, mirroring ScriptDom's versioned parsers.
+/// </summary>
+public enum OracleVersion
+{
+    Oracle19 = 19,
+    Oracle21 = 21,
+    Oracle23 = 23,
+}
+
 /// <summary>Options for <see cref="SqlParser"/>.</summary>
 public sealed class ParseOptions
 {
@@ -14,4 +26,10 @@ public sealed class ParseOptions
     /// an ordinary operator, as after SQL*Plus <c>SET DEFINE OFF</c>. Scripts can also switch it within the input.
     /// </summary>
     public bool SubstitutionEnabled { get; init; } = true;
+
+    /// <summary>
+    /// The Oracle release the input must run on. The default, Oracle23, accepts every construct the parser knows.
+    /// Older targets keep the tree and add one ParseError per construct introduced after the target.
+    /// </summary>
+    public OracleVersion OracleVersion { get; init; } = OracleVersion.Oracle23;
 }

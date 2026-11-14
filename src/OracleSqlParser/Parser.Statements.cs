@@ -401,8 +401,23 @@ public sealed partial class SqlParser
     private static bool ObjectKindHasName(ObjectKind k) =>
         k is not (ObjectKind.MaterializedViewLog or ObjectKind.ControlFile or ObjectKind.Pfile or ObjectKind.Spfile or ObjectKind.System or ObjectKind.Session or ObjectKind.ResourceCost or ObjectKind.Schema or ObjectKind.Other);
 
-    private bool TryIfNotExists() { if (IsKw("IF") && IsKwAt(1, "NOT") && IsKwAt(2, "EXISTS")) { Next(); Next(); Next(); return true; } return false; }
-    private bool TryIfExists() { if (IsKw("IF") && IsKwAt(1, "EXISTS")) { Next(); Next(); return true; } return false; }
+    private bool TryIfNotExists() { if (IsKw("IF") && IsKwAt(1, "NOT") && IsKwAt(2, "EXISTS")) { RequireVersion(OracleVersion.Oracle23, "IF [NOT] EXISTS", Cur); Next(); Next(); Next(); return true; } return false; }
+    private bool TryIfExists() { if (IsKw("IF") && IsKwAt(1, "EXISTS")) { RequireVersion(OracleVersion.Oracle23, "IF [NOT] EXISTS", Cur); Next(); Next(); return true; } return false; }
+
+    /// <summary>Object kinds that need a newer release than the target, for CREATE, ALTER and DROP alike.</summary>
+    private void RequireKindVersion(string verb, ObjectKind kind, Token at)
+    {
+        var (min, name) = kind switch
+        {
+            ObjectKind.Domain => (OracleVersion.Oracle23, "DOMAIN"),
+            ObjectKind.PropertyGraph => (OracleVersion.Oracle23, "PROPERTY GRAPH"),
+            ObjectKind.JsonRelationalDualityView => (OracleVersion.Oracle23, "JSON RELATIONAL DUALITY VIEW"),
+            ObjectKind.MleModule => (OracleVersion.Oracle23, "MLE MODULE"),
+            ObjectKind.MleEnv => (OracleVersion.Oracle23, "MLE ENV"),
+            _ => (OracleVersion.Oracle19, string.Empty),
+        };
+        if (name.Length > 0) RequireVersion(min, $"{verb} {name}", at);
+    }
 
     // ---- CREATE / ALTER USER ----
 
@@ -1008,6 +1023,7 @@ public sealed partial class SqlParser
         var st = new DropStatement { Public = AcceptKw("PUBLIC") };
         if (!TryParseObjectKind(out var kind)) throw Fail($"Unsupported DROP target {Describe(Cur)}");
         st.Kind = kind;
+        RequireKindVersion("DROP", kind, start);
         st.IfExists = TryIfExists();
         if (kind == ObjectKind.MaterializedViewLog) { ExpectKw("ON"); st.OnTable = ParseDottedName(); }
         else if (ObjectKindHasName(kind)) st.Name = ParseDottedName();
@@ -1032,6 +1048,7 @@ public sealed partial class SqlParser
         var start = Next();
         var pub = AcceptKw("PUBLIC");
         if (!TryParseObjectKind(out var kind)) kind = ObjectKind.Other;
+        RequireKindVersion("ALTER", kind, start);
         if (kind == ObjectKind.Table) return ParseAlterTable(start);
         if (kind == ObjectKind.Session) return ParseAlterSession(start);
         if (kind == ObjectKind.User) return ParseAlterUser(start, pub);
@@ -1141,6 +1158,7 @@ public sealed partial class SqlParser
             return ParseCreateJava(start, orReplace, andResolve, andCompile, noForce);
         }
         TryParseObjectKind(out var kind);
+        RequireKindVersion("CREATE", kind, start);
         switch (kind)
         {
             case ObjectKind.AuditPolicy: return ParseCreateAuditPolicy(start, orReplace, pub);
@@ -1201,6 +1219,8 @@ public sealed partial class SqlParser
 
     private Statement ParseCreateTable(Token start, bool orReplace, bool gtt, bool ptt, bool dup, bool imm, bool blk)
     {
+        if (imm) RequireVersion(OracleVersion.Oracle21, "IMMUTABLE table", start);
+        if (blk) RequireVersion(OracleVersion.Oracle21, "BLOCKCHAIN table", start);
         var st = new CreateTableStatement { OrReplace = orReplace, GlobalTemporary = gtt, PrivateTemporary = ptt, Duplicated = dup, Immutable = imm, Blockchain = blk };
         st.IfNotExists = TryIfNotExists();
         st.Name = ParseDottedName();
@@ -1296,7 +1316,7 @@ public sealed partial class SqlParser
             else if (AcceptKw("VISIBLE")) cd.Visible = true;
             else if (AcceptKw("INVISIBLE")) cd.Visible = false;
             else if (AcceptKw("COLLATE")) cd.Collation = ParseIdentifier();
-            else if (AcceptKw("DOMAIN")) cd.Domain = ParseDottedName();
+            else if (AcceptVersioned("DOMAIN", OracleVersion.Oracle23, "column DOMAIN")) cd.Domain = ParseDottedName();
             else if (AcceptKw("SORT")) cd.Sort = true;
             else if (IsKw("ENCRYPT"))
             {

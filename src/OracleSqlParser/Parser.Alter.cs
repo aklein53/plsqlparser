@@ -10,7 +10,7 @@ public sealed partial class SqlParser
     /// </summary>
     private Statement? TryParseTypedAlter(Token start, ObjectKind kind)
     {
-        int save = _p;
+        int save = _p, versionMark = _versionErrors.Count;
         Statement? typed = kind switch
         {
             ObjectKind.Index => ParseAlterIndex(start),
@@ -19,7 +19,11 @@ public sealed partial class SqlParser
             _ when IsAlterUnitKind(kind) => ParseAlterUnitIfModeled(start, kind),
             _ => null,
         };
-        if (typed == null) _p = save;
+        if (typed == null)
+        {
+            _p = save;
+            _versionErrors.RemoveRange(versionMark, _versionErrors.Count - versionMark);
+        }
         return typed;
     }
 

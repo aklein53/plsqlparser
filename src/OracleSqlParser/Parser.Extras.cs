@@ -362,14 +362,16 @@ public sealed partial class SqlParser
     private TableReference ParseGraphTable()
     {
         var start = Cur;
+        RequireVersion(OracleVersion.Oracle23, "GRAPH_TABLE", start);
         Next(); Next();
         var gt = new GraphTable { Graph = ParseDottedName() };
-        int mark = _p;
+        int mark = _p, versionMark = _versionErrors.Count;
         try { ParseGraphBody(gt); }
         catch (ParseException)
         {
             // Syntax outside the typed grammar (e.g. quantified sub-path patterns) keeps the body as a token tree.
             _p = mark;
+            _versionErrors.RemoveRange(versionMark, _versionErrors.Count - versionMark);
             gt.Match.Clear(); gt.Where = null; gt.RowsPer = null; gt.RowsPerVariables.Clear(); gt.Columns.Clear();
             gt.OtherClauses = ParseSyntaxItems(() => false);
         }
