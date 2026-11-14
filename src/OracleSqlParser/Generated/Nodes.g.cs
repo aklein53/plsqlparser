@@ -4820,6 +4820,55 @@ public partial class IndexColumn
     }
 }
 
+public partial class IndexIterator
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Variable is not null) yield return Variable;
+        if (Low is not null) yield return Low;
+        if (High is not null) yield return High;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Variable?.Accept(visitor);
+        Low?.Accept(visitor);
+        High?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Variable = SqlNodeRewriter.RewriteRequired(rewriter, Variable, "IndexIterator.Variable");
+        Low = SqlNodeRewriter.RewriteRequired(rewriter, Low, "IndexIterator.Low");
+        High = SqlNodeRewriter.RewriteRequired(rewriter, High, "IndexIterator.High");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new IndexIterator();
+        CopySpan(this, c);
+        c.Variable = CloneChild(Variable)!;
+        c.Low = CloneChild(Low)!;
+        c.High = CloneChild(High)!;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (IndexIterator)other;
+        return Pair(Variable, o.Variable, pending)
+            && Pair(Low, o.Low, pending)
+            && Pair(High, o.High, pending);
+    }
+}
+
 public partial class InsertIntoClause
 {
     /// <inheritdoc/>
@@ -7983,6 +8032,57 @@ public partial class PurgeStatement
             && PairList(Name, o.Name, pending)
             && Pair(User, o.User, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class QualifiedExpression
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Choice is not null) yield return Choice;
+        if (Iterator is not null) yield return Iterator;
+        if (Value is not null) yield return Value;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Choice?.Accept(visitor);
+        Iterator?.Accept(visitor);
+        Value?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Choice = SqlNodeRewriter.RewriteOptional(rewriter, Choice, "QualifiedExpression.Choice");
+        Iterator = SqlNodeRewriter.RewriteOptional(rewriter, Iterator, "QualifiedExpression.Iterator");
+        Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "QualifiedExpression.Value");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new QualifiedExpression();
+        CopySpan(this, c);
+        c.Choice = CloneChild(Choice);
+        c.Others = Others;
+        c.Iterator = CloneChild(Iterator);
+        c.Value = CloneChild(Value)!;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (QualifiedExpression)other;
+        return Pair(Choice, o.Choice, pending)
+            && Others == o.Others
+            && Pair(Iterator, o.Iterator, pending)
+            && Pair(Value, o.Value, pending);
     }
 }
 

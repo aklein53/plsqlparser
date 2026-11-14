@@ -221,6 +221,28 @@ public sealed partial class CellReference : Expression
     public List<Expression> Subscripts { get; set; } = [];
 }
 
+/// <summary>
+/// Index choice of a PL/SQL qualified expression: <c>index =&gt; value</c>, <c>OTHERS =&gt; value</c> or
+/// <c>FOR i IN lo..hi =&gt; value</c>. Only the index is modeled; <c>name =&gt; value</c> with a plain name stays
+/// <see cref="Argument.Name"/> on a <see cref="FunctionCall"/>, which is the same syntax for record fields.
+/// </summary>
+public sealed partial class QualifiedExpression : Expression
+{
+    /// <summary>The index or key expression; null for OTHERS and for an iterator choice.</summary>
+    public Expression? Choice { get; set; }
+    public bool Others { get; set; }
+    public IndexIterator? Iterator { get; set; }
+    public Expression Value { get; set; } = null!;
+}
+
+/// <summary>The <c>FOR variable IN low..high</c> index choice of a qualified expression.</summary>
+public sealed partial class IndexIterator : SqlNode
+{
+    public Identifier Variable { get; set; } = null!;
+    public Expression Low { get; set; } = null!;
+    public Expression High { get; set; } = null!;
+}
+
 /// <summary>Inclusive range subscript <c>from TO to</c> in a JSON dot-notation array step, e.g. t.c.a[0 to 2].</summary>
 public sealed partial class SubscriptRange : Expression
 {

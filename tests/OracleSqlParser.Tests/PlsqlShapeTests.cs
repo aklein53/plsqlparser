@@ -271,6 +271,24 @@ BEGIN NULL; END;");
         Assert.Contains("Unterminated string", r.Errors[^1].Message);
     }
 
+    // Qualified expressions (PL/SQL 18c+). Named record fields `a => 1` stay Argument.Name on a FunctionCall: a field
+    // name and an index variable are the same syntax, so the parser cannot tell them apart and needs no node for it.
+    [Theory]
+    [InlineData("BEGIN x := rec_t(a => 1, b => 2); END;",
+        "(Block statements=[(AssignmentStatement target=X value=(FunctionCall name=[REC_T] arguments=[(Argument name=A value=1) (Argument name=B value=2)]))])")]
+    // Index choices that are not names: a literal index, OTHERS and the FOR iterator each get a QualifiedExpression.
+    [InlineData("BEGIN x := arr_t(1 => 'x', 2 => 'y'); END;",
+        "(Block statements=[(AssignmentStatement target=X value=(FunctionCall name=[ARR_T] arguments=[(Argument value=(QualifiedExpression choice=1 value='x')) (Argument value=(QualifiedExpression choice=2 value='y'))]))])")]
+    [InlineData("BEGIN x := arr_t(OTHERS => 0); END;",
+        "(Block statements=[(AssignmentStatement target=X value=(FunctionCall name=[ARR_T] arguments=[(Argument value=(QualifiedExpression others value=0))]))])")]
+    [InlineData("BEGIN x := arr_t(FOR i IN 1..3 => i); END;",
+        "(Block statements=[(AssignmentStatement target=X value=(FunctionCall name=[ARR_T] arguments=[(Argument value=(QualifiedExpression iterator=(IndexIterator variable=I low=1 high=3) value=I))]))])")]
+    [InlineData("BEGIN x := arr_t(1 => 'x', OTHERS => 'z'); END;",
+        "(Block statements=[(AssignmentStatement target=X value=(FunctionCall name=[ARR_T] arguments=[(Argument value=(QualifiedExpression choice=1 value='x')) (Argument value=(QualifiedExpression others value='z'))]))])")]
+    [InlineData("BEGIN x := arr(1); END;",
+        "(Block statements=[(AssignmentStatement target=X value=(FunctionCall name=[ARR] arguments=[(Argument value=1)]))])")]
+    public void QualifiedExpressions(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
     [Fact]
     public void Positions_ForNodes()
     {

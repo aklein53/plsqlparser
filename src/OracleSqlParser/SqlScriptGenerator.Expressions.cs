@@ -153,6 +153,12 @@ public sealed partial class SqlScriptGenerator
                     break;
                 case ForIterationSubscript fi: ForIteration(fi); break;
                 case SubscriptRange sr: Expr(sr.From); Add(" TO "); Expr(sr.To); break;
+                case QualifiedExpression qx:
+                    if (qx.Others) Add("OTHERS");
+                    else if (qx.Iterator is { } it) { Add("FOR "); Id(it.Variable); Add(" IN "); Expr(it.Low); Add(".."); Expr(it.High); }
+                    else Expr(qx.Choice!);
+                    Add(" => "); Expr(qx.Value);
+                    break;
                 case CurrentOfExpression co2: Add("CURRENT OF "); Id(co2.Cursor); break;
                 default: throw Unsupported(e);
             }

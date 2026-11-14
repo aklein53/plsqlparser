@@ -532,6 +532,25 @@ public sealed partial class SqlParser
         var a = Cur;
         var arg = new Argument();
         if (IsOp("*")) { Next(); arg.Value = Fin(new StarExpression(), a); return Fin(arg, a); }
+        // PL/SQL qualified expression choices (OTHERS and the iterator cannot be a FunctionCall argument name)
+        if (IsKw("OTHERS") && Cur.Type == TokenType.Identifier && IsOpAt(1, "=>"))
+        {
+            Next(); Next();
+            arg.Value = Fin(new QualifiedExpression { Others = true, Value = ParseExpr() }, a);
+            return Fin(arg, a);
+        }
+        if (IsKw("FOR") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && IsKwAt(2, "IN"))
+        {
+            var fs = Next();
+            var it = new IndexIterator { Variable = ParseIdentifier() };
+            ExpectKw("IN");
+            it.Low = ParseAdditive();
+            ExpectOp("..");
+            it.High = ParseAdditive();
+            ExpectOp("=>");
+            arg.Value = Fin(new QualifiedExpression { Iterator = Fin(it, fs), Value = ParseExpr() }, a);
+            return Fin(arg, a);
+        }
         if (Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier && IsOpAt(1, "=>"))
         {
             arg.Name = ParseIdentifier();
@@ -547,6 +566,13 @@ public sealed partial class SqlParser
             };
         }
         arg.Value = ParseExpr();
+        if (IsOp("=>") && arg.Name == null)
+        {
+            // index => value with a non-name index: a PL/SQL qualified expression
+            Next();
+            arg.Value = Fin(new QualifiedExpression { Choice = arg.Value, Value = ParseExpr() }, a);
+            return Fin(arg, a);
+        }
         if (AcceptKw("VALUE")) arg.MappedValue = ParseExpr();
         else if (Cur.Text == ":" && Cur.Type is TokenType.Operator or TokenType.Bind) { Next(); arg.MappedValue = ParseExpr(); } // 'key' : value
         if (IsKw("FORMAT") && IsKwAt(1, "JSON")) arg.Format = (FormatClause)ParseFunctionClause();
