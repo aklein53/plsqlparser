@@ -11,6 +11,7 @@ namespace OracleSqlParser;
 /// </summary>
 public static class AstPrinter
 {
+    /// <summary>Returns the canonical text of <paramref name="node"/> (any node, or a value such as an identifier or literal); an empty string for <c>null</c>.</summary>
     public static string Print(object? node)
     {
         var sb = new StringBuilder();
