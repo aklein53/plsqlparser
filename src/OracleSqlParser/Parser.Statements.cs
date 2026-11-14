@@ -1065,6 +1065,7 @@ public sealed partial class SqlParser
         if (kind == ObjectKind.Tablespace) return ParseAlterTablespace(start, pub);
         if (kind == ObjectKind.AuditPolicy) return ParseAlterAuditPolicy(start, pub);
         if (kind == ObjectKind.Domain) return ParseAlterDomain(start);
+        if (kind is ObjectKind.View or ObjectKind.MaterializedView or ObjectKind.Index && TryParseAlterAnnotations(start, kind, out var annotated)) return annotated;
         // typed forms rewind to the generic node when a clause is not modeled, and never apply to ALTER ... IF EXISTS
         if (!pub && !(IsKw("IF") && IsKwAt(1, "EXISTS")) && TryParseTypedAlter(start, kind) is { } typed) return typed;
         var st = new AlterObjectStatement { Kind = kind, Public = pub };
@@ -1268,10 +1269,19 @@ public sealed partial class SqlParser
     private static readonly HashSet<string> ColumnClauseWords = new(StringComparer.Ordinal)
     {
         "DEFAULT","GENERATED","CONSTRAINT","NOT","NULL","PRIMARY","UNIQUE","REFERENCES","CHECK","AS","VISIBLE",
-        "INVISIBLE","ENCRYPT","COLLATE","SORT","DROP","SET","RENAME","ADD","MODIFY","DOMAIN",
+        "INVISIBLE","ENCRYPT","COLLATE","SORT","DROP","SET","RENAME","ADD","MODIFY","DOMAIN","ANNOTATIONS",
     };
 
-    private ColumnDefinition ParseColumnDefinition(Func<bool>? stop = null)
+    /// <summary>A view column: name [ANNOTATIONS (...)].</summary>
+    private ViewColumn ParseViewColumn(bool allowDrop)
+    {
+        var s = Cur;
+        var vc = new ViewColumn { Name = ParseIdentifier() };
+        if (AcceptKw("ANNOTATIONS")) vc.Annotations = ParseAnnotations(allowDrop);
+        return Fin(vc, s);
+    }
+
+    private ColumnDefinition ParseColumnDefinition(Func<bool>? stop = null, bool alter = false)
     {
         var s = Cur;
         var cd = new ColumnDefinition { Name = ParseIdentifier() };
@@ -1280,6 +1290,8 @@ public sealed partial class SqlParser
         int prog130 = -1;
         while (!IsOp(",") && !IsOp(")") && !AtStatementEnd() && !(stop?.Invoke() ?? false) && Progress(ref prog130))
         {
+            if (cd.Annotations != null) throw Fail("A column ANNOTATIONS clause must be the last column property (ORA-03099)");
+            if (AcceptKw("ANNOTATIONS")) { cd.Annotations = ParseAnnotations(allowDrop: alter); continue; }
             if (IsKw("DEFAULT"))
             {
                 Next();
@@ -1491,7 +1503,7 @@ public sealed partial class SqlParser
         if (IsOp("(") && !LooksLikeQueryAfterParen())
         {
             Next();
-            st.Columns = ParseIdentifierList();
+            do st.Columns.Add(ParseViewColumn(allowDrop: false)); while (AcceptOp(","));
             ExpectOp(")");
         }
         if (IsKw("BEQUEATH")) { Next(); st.Bequeath = AcceptKw("CURRENT_USER") ? ViewBequeath.CurrentUser : (AcceptKw("DEFINER") ? ViewBequeath.Definer : throw Fail("Expected CURRENT_USER or DEFINER")); }
@@ -1587,7 +1599,14 @@ public sealed partial class SqlParser
         RequireVersion(OracleVersion.Oracle23, "ANNOTATIONS", Prev);
         var c = new AnnotationsClause();
         ExpectOp("(");
-        do c.Items.Add(ParseAnnotationItem(allowDrop)); while (AcceptOp(","));
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        do
+        {
+            var item = ParseAnnotationItem(allowDrop);
+            // Oracle rejects the same annotation name twice in one clause (ORA-11562).
+            if (!names.Add(item.Name.Value)) throw Fail($"Duplicate annotation {item.Name.Value} in the ANNOTATIONS clause");
+            c.Items.Add(item);
+        } while (AcceptOp(","));
         ExpectOp(")");
         return c;
     }
@@ -1612,6 +1631,50 @@ public sealed partial class SqlParser
         // A DROP item names an existing annotation only; other items may carry a value.
         if (it.Action != AnnotationAction.Drop && !IsOp(",") && !IsOp(")")) it.Value = ParseExpr();
         return Fin(it, s);
+    }
+
+    /// <summary>
+    /// ALTER VIEW/MATERIALIZED VIEW/INDEX ... ANNOTATIONS (...), and MODIFY (column ANNOTATIONS (...)). Other ALTER forms
+    /// return false (position restored) and stay generic.
+    /// </summary>
+    private bool TryParseAlterAnnotations(Token start, ObjectKind kind, out Statement result)
+    {
+        result = null!;
+        int mark = _p;
+        var st = new AlterAnnotationsStatement { Kind = kind };
+        st.Name = ParseDottedName();
+        if (IsKw("ANNOTATIONS") && IsOpAt(1, "("))
+        {
+            Next();
+            st.Annotations = ParseAnnotations(allowDrop: true);
+        }
+        else if (IsKw("MODIFY") && (IsOpAt(1, "(") || (kind == ObjectKind.MaterializedView && IsKwAt(2, "ANNOTATIONS"))))
+        {
+            Next();
+            if (AcceptOp("("))
+            {
+                do st.ColumnAnnotations.Add(ParseAlterViewColumn()); while (AcceptOp(","));
+                ExpectOp(")");
+            }
+            else st.ColumnAnnotations.Add(ParseAlterViewColumn());
+        }
+        else
+        {
+            _p = mark;
+            return false;
+        }
+        if (!AtStatementEnd()) throw Fail($"Unexpected {Describe(Cur)} after ALTER {kind} annotations");
+        result = Fin(st, start);
+        return true;
+    }
+
+    private ViewColumn ParseAlterViewColumn()
+    {
+        var s = Cur;
+        var vc = new ViewColumn { Name = ParseIdentifier() };
+        ExpectKw("ANNOTATIONS");
+        vc.Annotations = ParseAnnotations(allowDrop: true);
+        return Fin(vc, s);
     }
 
     private Statement ParseAlterDomain(Token start)
@@ -1785,12 +1848,19 @@ public sealed partial class SqlParser
         if (AtPartitionMaintenanceStart()) return ParsePartitionMaintenance();
         var s = Cur;
         var a = new AlterTableAction();
+        if (IsKw("ANNOTATIONS") && IsOpAt(1, "("))
+        {
+            Next();
+            a.Kind = AlterTableActionKind.Annotations;
+            a.Annotations = ParseAnnotations(allowDrop: true);
+            return Fin(a, s);
+        }
         if (IsKw("ADD") && !(IsKwAt(1, "PARTITION") || IsKwAt(1, "SUPPLEMENTAL") || IsKwAt(1, "PERIOD") || IsKwAt(1, "SUBPARTITION") || IsKwAt(1, "OVERFLOW") || IsKwAt(1, "ATTRIBUTE")))
         {
             Next();
             if (Cur.Type == TokenType.Identifier && ConstraintStarts.Contains(Cur.Value)) { a.Kind = AlterTableActionKind.AddConstraint; a.Constraints.Add(ParseConstraint(false)); }
             else if (IsOp("(")) { a.Kind = AlterTableActionKind.AddColumns; ParseColumnOrConstraintList(a); if (a.Columns.Count == 0) a.Kind = AlterTableActionKind.AddConstraint; }
-            else { a.Kind = AlterTableActionKind.AddColumns; a.Columns.Add(ParseColumnDefinition(AtAlterActionStart)); }
+            else { if (IsKw("ANNOTATIONS")) throw Fail("ADD ANNOTATIONS is not an ALTER TABLE form; use ANNOTATIONS (ADD ...)"); a.Kind = AlterTableActionKind.AddColumns; a.Columns.Add(ParseColumnDefinition(AtAlterActionStart, alter: true)); }
         }
         else if (IsKw("MODIFY") && (IsOpAt(1, "(") || (PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier &&
                  !IsKwAt(1, "CONSTRAINT") && !IsKwAt(1, "PRIMARY") && !IsKwAt(1, "UNIQUE") && !IsKwAt(1, "PARTITION") && !IsKwAt(1, "SUBPARTITION") &&
@@ -1798,8 +1868,8 @@ public sealed partial class SqlParser
         {
             Next();
             a.Kind = AlterTableActionKind.ModifyColumns;
-            if (IsOp("(")) { Next(); do a.Columns.Add(ParseColumnDefinition()); while (AcceptOp(",")); ExpectOp(")"); }
-            else a.Columns.Add(ParseColumnDefinition(AtAlterActionStart));
+            if (IsOp("(")) { Next(); do a.Columns.Add(ParseColumnDefinition(alter: true)); while (AcceptOp(",")); ExpectOp(")"); }
+            else a.Columns.Add(ParseColumnDefinition(AtAlterActionStart, alter: true));
         }
         else if (IsKw("MODIFY") && (IsKwAt(1, "CONSTRAINT") || IsKwAt(1, "PRIMARY") || IsKwAt(1, "UNIQUE")))
         {

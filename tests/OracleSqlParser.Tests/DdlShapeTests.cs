@@ -104,7 +104,7 @@ public class DdlShapeTests
 
     [Theory]
     [InlineData("CREATE OR REPLACE FORCE VIEW v (a, b) AS SELECT 1, 2 FROM dual WITH READ ONLY",
-        "(CreateViewStatement orReplace force name=[V] columns=[A B] query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1) (ExpressionSelectItem expression=2)] from=[(NamedTable name=[DUAL])])) readOnly)")]
+        "(CreateViewStatement orReplace force name=[V] columns=[(ViewColumn name=A) (ViewColumn name=B)] query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1) (ExpressionSelectItem expression=2)] from=[(NamedTable name=[DUAL])])) readOnly)")]
     [InlineData("CREATE VIEW v AS SELECT 1 FROM dual WITH CHECK OPTION CONSTRAINT c1", "(CreateViewStatement name=[V] query=" + SelDual + " checkOption checkOptionConstraint=C1)")]
     [InlineData("CREATE EDITIONING VIEW v BEQUEATH CURRENT_USER AS SELECT 1 FROM dual", "(CreateViewStatement editioning name=[V] bequeath=CurrentUser query=" + SelDual + ")")]
     [InlineData("CREATE MATERIALIZED VIEW mv TABLESPACE users BUILD IMMEDIATE REFRESH FAST ON COMMIT ENABLE QUERY REWRITE AS SELECT 1 FROM dual",

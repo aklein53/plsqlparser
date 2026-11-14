@@ -22,6 +22,13 @@ public abstract partial class SqlNodeRewriter
         return node;
     }
 
+    /// <summary>Rewrites a <see cref="AlterAnnotationsStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(AlterAnnotationsStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
     /// <summary>Rewrites a <see cref="AlterAuditPolicyStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(AlterAuditPolicyStatement node)
     {
@@ -157,6 +164,13 @@ public abstract partial class SqlNodeRewriter
 
     /// <summary>Rewrites a <see cref="AnnotationItem"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(AnnotationItem node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="AnnotationsAttribute"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(AnnotationsAttribute node)
     {
         node.RewriteChildren(this);
         return node;
@@ -2040,6 +2054,13 @@ public abstract partial class SqlNodeRewriter
 
     /// <summary>Rewrites a <see cref="VariableDeclaration"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(VariableDeclaration node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="ViewColumn"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(ViewColumn node)
     {
         node.RewriteChildren(this);
         return node;

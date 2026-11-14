@@ -762,6 +762,8 @@ public sealed partial class ColumnDefinition : SqlNode
     public List<Identifier> Domain { get; set; } = [];
     public EncryptClause? Encrypt { get; set; }
     public bool Sort { get; set; }
+    /// <summary>ANNOTATIONS (...); Oracle requires it to be the last column property.</summary>
+    public AnnotationsClause? Annotations { get; set; }
     /// <summary>Column properties without a dedicated node (LOB storage, substitutable, ...).</summary>
     public List<SyntaxItem> OtherProperties { get; set; } = [];
 }
@@ -799,6 +801,28 @@ public sealed partial class TableConstraint : SqlNode
     public List<Identifier> RefColumns { get; set; } = [];
     public ReferentialAction? OnDelete { get; set; }
     public ConstraintState? State { get; set; }
+}
+
+/// <summary>ANNOTATIONS (...) among the physical attributes of CREATE TABLE, CREATE INDEX, CREATE VIEW and CREATE MATERIALIZED VIEW.</summary>
+public sealed partial class AnnotationsAttribute : PhysicalAttribute
+{
+    public AnnotationsClause Clause { get; set; } = null!;
+}
+
+/// <summary>A column (or view column) with its own ANNOTATIONS clause: name [ANNOTATIONS (...)].</summary>
+public sealed partial class ViewColumn : SqlNode
+{
+    public Identifier Name { get; set; } = null!;
+    public AnnotationsClause? Annotations { get; set; }
+}
+
+/// <summary>ALTER VIEW | ALTER MATERIALIZED VIEW | ALTER INDEX name ANNOTATIONS (...) or ... MODIFY (column ANNOTATIONS (...), ...).</summary>
+public sealed partial class AlterAnnotationsStatement : Statement
+{
+    public ObjectKind Kind { get; set; }
+    public List<Identifier> Name { get; set; } = [];
+    public AnnotationsClause? Annotations { get; set; }
+    public List<ViewColumn> ColumnAnnotations { get; set; } = [];
 }
 
 public sealed partial class CreateIndexStatement : Statement
@@ -852,7 +876,7 @@ public sealed partial class CreateViewStatement : Statement
     public bool NoForce { get; set; }
     public bool Editioning { get; set; }
     public List<Identifier> Name { get; set; } = [];
-    public List<Identifier> Columns { get; set; } = [];
+    public List<ViewColumn> Columns { get; set; } = [];
     public ViewBequeath? Bequeath { get; set; }
     // materialized view options
     public bool? BuildImmediate { get; set; }
@@ -1019,7 +1043,7 @@ public enum AlterTableActionKind
     AddColumns, AddConstraint, ModifyColumns, DropColumns, DropConstraint, DropPrimaryKey, DropUnique,
     RenameColumn, RenameConstraint, RenameTo, ModifyConstraint, SetUnused, Attributes,
     AddPartition, DropPartition, TruncatePartition, SplitPartition, MergePartitions, ExchangePartition, MovePartition,
-    RenamePartition, ModifyPartitionValues, SetInterval, Other,
+    RenamePartition, ModifyPartitionValues, SetInterval, Annotations, Other,
 }
 
 public sealed partial class AlterTableAction : SqlNode
@@ -1034,6 +1058,8 @@ public sealed partial class AlterTableAction : SqlNode
     public List<PhysicalAttribute> Attributes { get; set; } = [];
     /// <summary>Partition or subpartition targets of partition maintenance (DROP, TRUNCATE, SPLIT, MERGE, EXCHANGE, MOVE, RENAME, MODIFY).</summary>
     public List<PartitionReference> PartitionRefs { get; set; } = [];
+    /// <summary>ALTER TABLE t ANNOTATIONS (...).</summary>
+    public AnnotationsClause? Annotations { get; set; }
     /// <summary>Partitions defined by ADD PARTITION, SPLIT ... INTO (...) or MERGE ... INTO PARTITION.</summary>
     public List<PartitionDefinition> Partitions { get; set; } = [];
     /// <summary>Boundary values of SPLIT ... AT/VALUES (...), MODIFY PARTITION ... ADD/DROP VALUES (...), or SET INTERVAL (...).</summary>

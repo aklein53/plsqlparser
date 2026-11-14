@@ -104,3 +104,9 @@ Not gated:
   `arr[i]`-style subscripts are `CellReference` (MODEL measures, JSON dot-notation array steps such as `t.c.a[0 to 2].b`).
 - Expressions: `IS [NOT] TRUE/FALSE` (`IsExpression`), interval suffixes `(a - b) DAY(p) TO SECOND(fs)` and
   `(a - b) YEAR TO MONTH` (`IntervalExpression`). `**` is accepted only in PL/SQL procedural code; SQL rejects it.
+
+ANNOTATIONS (23ai, `AnnotationsClause`): accepted on CREATE TABLE (table level among the attributes, and per column as its last
+property), CREATE VIEW / MATERIALIZED VIEW (before AS, and per view column), CREATE INDEX (before tablespace/other attributes).
+ALTER TABLE ... ANNOTATIONS (...), ALTER TABLE ... MODIFY/ADD column ANNOTATIONS, and ALTER VIEW / ALTER MATERIALIZED VIEW /
+ALTER INDEX ANNOTATIONS (`AlterAnnotationsStatement`). DROP items are ALTER-only (ORA-11555 in CREATE). Verified against
+USER_ANNOTATIONS_USAGE by AnnotationsAcceptanceTests.

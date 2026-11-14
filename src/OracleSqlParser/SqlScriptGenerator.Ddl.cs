@@ -175,6 +175,7 @@ public sealed partial class SqlScriptGenerator
                 case CreatePropertyGraphStatement pg: PropertyGraph(pg); break;
                 case CreateDomainStatement dm: CreateDomain(dm); break;
                 case CreateDualityViewStatement dv: DualityView(dv); break;
+                case AlterAnnotationsStatement aa: AlterAnnotations(aa); break;
                 case AlterDomainStatement ad: AlterDomain(ad); break;
                 case CreateSequenceStatement cs:
                     Add("CREATE SEQUENCE");
@@ -705,6 +706,7 @@ public sealed partial class SqlScriptGenerator
             if (c.Sort) Add(" SORT");
             foreach (var k in c.Constraints) { Sp(); Constraint(k); }
             if (c.OtherProperties.Count > 0) { Sp(); SyntaxList(c.OtherProperties); }
+            if (c.Annotations != null) { Add(" ANNOTATIONS "); Annotations(c.Annotations); }
         }
 
         private static bool NamedSeqOption(string n) => n is "START WITH" or "INCREMENT BY" or "MAXVALUE" or "MINVALUE" or "CACHE" or "START WITH LIMIT VALUE";
@@ -806,7 +808,7 @@ public sealed partial class SqlScriptGenerator
             if (v.IfNotExists) Add(" IF NOT EXISTS");
             Sp(); Name(v.Name);
             SharingClause(v.Sharing);
-            if (v.Columns.Count > 0) { Add(" ("); IdList(v.Columns); Add(")"); }
+            if (v.Columns.Count > 0) { Add(" ("); Sep(v.Columns, ViewColumnDef); Add(")"); }
             if (v.Bequeath != null) Add(v.Bequeath == ViewBequeath.CurrentUser ? " BEQUEATH CURRENT_USER" : " BEQUEATH DEFINER");
             if (v.BuildImmediate != null) Add(v.BuildImmediate == true ? " BUILD IMMEDIATE" : " BUILD DEFERRED");
             if (v.Refresh != null) { Sp(); Refresh(v.Refresh); }
@@ -843,10 +845,24 @@ public sealed partial class SqlScriptGenerator
             if (a.Syntax.Count > 0) { Sp(); SyntaxList(a.Syntax); }
         }
 
+        private void ViewColumnDef(ViewColumn vc)
+        {
+            Id(vc.Name);
+            if (vc.Annotations != null) { Add(" ANNOTATIONS "); Annotations(vc.Annotations); }
+        }
+
+        private void AlterAnnotations(AlterAnnotationsStatement st)
+        {
+            Add("ALTER "); KindKeyword(st.Kind); Sp(); Name(st.Name);
+            if (st.Annotations != null) { Add(" ANNOTATIONS "); Annotations(st.Annotations); }
+            else { Add(" MODIFY ("); Sep(st.ColumnAnnotations, ViewColumnDef); Add(")"); }
+        }
+
         private void AlterAction(AlterTableAction a)
         {
             switch (a.Kind)
             {
+                case AlterTableActionKind.Annotations: Add("ANNOTATIONS "); Annotations(a.Annotations!); break;
                 case AlterTableActionKind.AddColumns:
                     Add("ADD (");
                     Sep(a.Columns, ColumnDef);
@@ -896,6 +912,7 @@ public sealed partial class SqlScriptGenerator
         {
             switch (pa)
             {
+                case AnnotationsAttribute aa: Add("ANNOTATIONS "); Annotations(aa.Clause); break;
                 case TablespaceAttribute ts: Add(ts.Default ? "TABLESPACE DEFAULT " : "TABLESPACE "); Id(ts.Name); break;
                 case NumericAttribute na:
                     Add(na.Kind switch
