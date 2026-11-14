@@ -12,7 +12,7 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 | Statement | Node | Level | Tests |
 |---|---|---|---|
 | SELECT (all clauses, set ops, WITH incl. SEARCH/CYCLE/`WITH FUNCTION`, partitioned outer join) | `SelectStatement`, `QuerySpecification` | typed | QueryShape |
-| PIVOT / UNPIVOT / MATCH_RECOGNIZE / MODEL / XMLTABLE / JSON_TABLE / flashback / SAMPLE / VALUES table | `PivotTable` … `ValuesTable` | typed | QueryShape, MiscShape |
+| PIVOT / UNPIVOT / MATCH_RECOGNIZE / MODEL / XMLTABLE / JSON_TABLE / flashback / SAMPLE / VALUES table (also as a CTE body) | `PivotTable` … `ValuesTable`, `ValuesQuery` | typed | QueryShape, MiscShape |
 | GRAPH_TABLE | `GraphTable` | header+tree (body) | QueryShape |
 | INSERT (single, multitable, RETURNING, LOG ERRORS, `VALUES rec`) | `InsertStatement`, `MultiTableInsertStatement` | typed | DmlAndSessionShape, MiscShape |
 | UPDATE (incl. `SET ROW`, 23ai `FROM`, RETURNING `OLD`/`NEW`), DELETE (23ai `FROM` direct joins), MERGE (incl. `LOG ERRORS`) | `UpdateStatement` … | typed | DmlAndSessionShape, MiscShape |

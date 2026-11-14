@@ -129,6 +129,10 @@ public sealed partial class SqlScriptGenerator
                     break;
                 }
                 case ParenthesizedQuery pq: ParenQuery(pq.Query); break;
+                case ValuesQuery vq:
+                    Add("VALUES ");
+                    Sep(vq.Rows, r => { Add("("); Sep(r, e => Expr(e)); Add(")"); });
+                    break;
                 default: throw Unsupported(q);
             }
         }

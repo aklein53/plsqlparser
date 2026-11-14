@@ -225,6 +225,12 @@ public sealed partial class ValuesTable : TableReference
     public List<Identifier> ColumnAliases { get; set; } = [];
 }
 
+/// <summary>A bare VALUES row list used as a query body, e.g. the body of `WITH x(a, b) AS (VALUES (1, 2))`.</summary>
+public sealed partial class ValuesQuery : QueryExpression
+{
+    public List<List<Expression>> Rows { get; set; } = [];
+}
+
 // ---------- Misc expressions ----------
 
 public sealed partial class MemberAccess : Expression

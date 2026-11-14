@@ -111,6 +111,8 @@ public class QueryShapeTests
     [Theory]
     [InlineData("WITH x (a, b) AS (SELECT 1, 2 FROM dual) SELECT * FROM x",
         "(CommonTableExpression name=X columns=[A B] query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1) (ExpressionSelectItem expression=2)] from=[(NamedTable name=[DUAL])])))")]
+    [InlineData("WITH x(a, b) AS (VALUES (1, 2), (3, 4)) SELECT * FROM x",
+        "(CommonTableExpression name=X columns=[A B] query=(SelectStatement body=(ValuesQuery rows=[[1 2] [3 4]])))")]
     [InlineData("WITH t(n) AS (SELECT 1 FROM dual) SEARCH DEPTH FIRST BY n DESC SET ord CYCLE n SET is_cycle TO 'Y' DEFAULT 'N' SELECT * FROM t",
         "(CommonTableExpression name=T columns=[N] query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[DUAL])])) search=(SearchClause depthFirst by=[(OrderByItem expression=N descending)] setColumn=ORD) cycle=(CycleClause columns=[N] setColumn=IS_CYCLE cycleValue='Y' defaultValue='N'))")]
     [InlineData("WITH t AS (SELECT 1 FROM dual) SEARCH BREADTH FIRST BY n SET o SELECT * FROM t",

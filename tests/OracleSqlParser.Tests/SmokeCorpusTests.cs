@@ -18,6 +18,8 @@ public class SmokeCorpusTests
     [InlineData("SELECT a, b FROM t GROUP BY GROUPING SETS ((a,b),(a),()), CUBE(a, b)")]
     [InlineData("SELECT empno, LEVEL, SYS_CONNECT_BY_PATH(ename, '/') FROM emp START WITH mgr IS NULL CONNECT BY NOCYCLE PRIOR empno = mgr ORDER SIBLINGS BY ename")]
     [InlineData("WITH x (a, b) AS (SELECT 1, 2 FROM dual), y AS (SELECT * FROM x) SELECT * FROM y")]
+    [InlineData("WITH x(a, b) AS (VALUES (1, 2), (3, 4)) SELECT * FROM x")]
+    [InlineData("SELECT * FROM (VALUES (1, 'a'), (2, 'b')) v(n, s)")]
     [InlineData("SELECT a FROM t UNION ALL SELECT b FROM u MINUS (SELECT c FROM v) ORDER BY 1")]
     [InlineData("SELECT * FROM t OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY")]
     [InlineData("SELECT * FROM t FETCH FIRST 10 PERCENT ROWS WITH TIES")]

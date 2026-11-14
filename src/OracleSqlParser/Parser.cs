@@ -312,6 +312,14 @@ public sealed partial class SqlParser
         return r;
     }
 
+    private ValuesQuery ParseValuesQuery()
+    {
+        var start = Next(); // VALUES
+        var vq = new ValuesQuery();
+        ParseValueRows(vq.Rows);
+        return Fin(vq, start);
+    }
+
     private SelectStatement ParseSelectStatementCore()
     {
         var start = Cur;
@@ -336,7 +344,8 @@ public sealed partial class SqlParser
             } while (AcceptOp(","));
         }
 
-        stmt.Body = ParseQueryExpression();
+        // A bare VALUES list is a query body only in a CTE here (`WITH x AS (VALUES ...)`); elsewhere it is a table constructor.
+        stmt.Body = IsKw("VALUES") ? ParseValuesQuery() : ParseQueryExpression();
 
         if (IsKw("ORDER"))
         {
@@ -588,6 +597,19 @@ public sealed partial class SqlParser
         return left;
     }
 
+    /// <summary>`(e, e), (e, e)`: the row list of a VALUES constructor, up to but not including the closing parenthesis.</summary>
+    private void ParseValueRows(List<List<Expression>> rows)
+    {
+        do
+        {
+            ExpectOp("(");
+            var row = new List<Expression>();
+            do row.Add(ParseExpr()); while (AcceptOp(","));
+            ExpectOp(")");
+            rows.Add(row);
+        } while (AcceptOp(","));
+    }
+
     /// <summary>The parenthesized list after PARTITION BY in a partitioned outer join (the parentheses are required there).</summary>
     private List<Expression> ParsePartitionByList()
     {
@@ -609,14 +631,7 @@ public sealed partial class SqlParser
             {
                 var vt = new ValuesTable();
                 Next();
-                do
-                {
-                    ExpectOp("(");
-                    var row = new List<Expression>();
-                    do row.Add(ParseExpr()); while (AcceptOp(","));
-                    ExpectOp(")");
-                    vt.Rows.Add(row);
-                } while (AcceptOp(","));
+                ParseValueRows(vt.Rows);
                 ExpectOp(")");
                 t = vt;
                 var alias = ParseOptionalAlias();
@@ -687,15 +702,7 @@ public sealed partial class SqlParser
         if (AcceptKw("VALUES"))
         {
             if (!IsOp("(")) st.RecordValue = ParseExpr();
-            else
-                do
-                {
-                    ExpectOp("(");
-                    var row = new List<Expression>();
-                    do row.Add(ParseExpr()); while (AcceptOp(","));
-                    ExpectOp(")");
-                    st.ValueRows.Add(row);
-                } while (AcceptOp(","));
+            else ParseValueRows(st.ValueRows);
         }
         else if (IsKw("SELECT") || IsKw("WITH") || IsOp("(")) st.Query = ParseSelectStatement();
         else throw Fail($"Expected VALUES or SELECT but found {Describe(Cur)}");

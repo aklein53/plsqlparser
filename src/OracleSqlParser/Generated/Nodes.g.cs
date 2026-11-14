@@ -10477,6 +10477,45 @@ public partial class ValueClause
     }
 }
 
+public partial class ValuesQuery
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Rows is not null) foreach (var row in Rows) if (row is not null) foreach (var x in row) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Rows is not null) foreach (var row in Rows) if (row is not null) foreach (var x in row) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteNested(rewriter, Rows, "ValuesQuery.Rows");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ValuesQuery();
+        CopySpan(this, c);
+        c.Rows = CloneNested(Rows);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ValuesQuery)other;
+        return PairNested(Rows, o.Rows, pending);
+    }
+}
+
 public partial class ValuesTable
 {
     /// <inheritdoc/>
