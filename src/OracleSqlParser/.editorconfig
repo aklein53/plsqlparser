@@ -5,5 +5,5 @@
 [*.cs]
 dotnet_diagnostic.CS1591.severity = none
 
-[{ParseError,ParseOptions,Parser,Lexer}.cs]
+[{ParseError,ParseOptions,Parser,Lexer,SqlAnalysis}.cs]
 dotnet_diagnostic.CS1591.severity = warning
