@@ -90,6 +90,98 @@ public partial class AdminStatement
     }
 }
 
+public partial class AlterDomainAction
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Value is not null) yield return Value;
+        if (Annotations is not null) foreach (var x in Annotations) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Value?.Accept(visitor);
+        if (Annotations is not null) foreach (var x in Annotations) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "AlterDomainAction.Value");
+        SqlNodeRewriter.RewriteList(rewriter, Annotations, "AlterDomainAction.Annotations");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterDomainAction();
+        CopySpan(this, c);
+        c.Kind = Kind;
+        c.Value = CloneChild(Value);
+        c.Annotations = CloneList(Annotations);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterDomainAction)other;
+        return Kind == o.Kind
+            && Pair(Value, o.Value, pending)
+            && PairList(Annotations, o.Annotations, pending);
+    }
+}
+
+public partial class AlterDomainStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Action is not null) yield return Action;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        Action?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AlterDomainStatement.Name");
+        Action = SqlNodeRewriter.RewriteRequired(rewriter, Action, "AlterDomainStatement.Action");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterDomainStatement();
+        CopySpan(this, c);
+        c.Name = CloneList(Name);
+        c.Action = CloneChild(Action)!;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterDomainStatement)other;
+        return PairList(Name, o.Name, pending)
+            && Pair(Action, o.Action, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class AlterObjectStatement
 {
     /// <inheritdoc/>
@@ -1165,6 +1257,7 @@ public partial class ColumnDefinition
         if (VirtualExpression is not null) yield return VirtualExpression;
         if (Constraints is not null) foreach (var x in Constraints) yield return x;
         if (Collation is not null) yield return Collation;
+        if (Domain is not null) foreach (var x in Domain) yield return x;
         if (Encrypt is not null) yield return Encrypt;
         if (OtherProperties is not null) foreach (var x in OtherProperties) yield return x;
     }
@@ -1179,6 +1272,7 @@ public partial class ColumnDefinition
         VirtualExpression?.Accept(visitor);
         if (Constraints is not null) foreach (var x in Constraints) x.Accept(visitor);
         Collation?.Accept(visitor);
+        if (Domain is not null) foreach (var x in Domain) x.Accept(visitor);
         Encrypt?.Accept(visitor);
         if (OtherProperties is not null) foreach (var x in OtherProperties) x.Accept(visitor);
     }
@@ -1192,6 +1286,7 @@ public partial class ColumnDefinition
         VirtualExpression = SqlNodeRewriter.RewriteOptional(rewriter, VirtualExpression, "ColumnDefinition.VirtualExpression");
         SqlNodeRewriter.RewriteList(rewriter, Constraints, "ColumnDefinition.Constraints");
         Collation = SqlNodeRewriter.RewriteOptional(rewriter, Collation, "ColumnDefinition.Collation");
+        SqlNodeRewriter.RewriteList(rewriter, Domain, "ColumnDefinition.Domain");
         Encrypt = SqlNodeRewriter.RewriteOptional(rewriter, Encrypt, "ColumnDefinition.Encrypt");
         SqlNodeRewriter.RewriteList(rewriter, OtherProperties, "ColumnDefinition.OtherProperties");
     }
@@ -1215,6 +1310,7 @@ public partial class ColumnDefinition
         c.Constraints = CloneList(Constraints);
         c.Visible = Visible;
         c.Collation = CloneChild(Collation);
+        c.Domain = CloneList(Domain);
         c.Encrypt = CloneChild(Encrypt);
         c.Sort = Sort;
         c.OtherProperties = CloneList(OtherProperties);
@@ -1234,6 +1330,7 @@ public partial class ColumnDefinition
             && PairList(Constraints, o.Constraints, pending)
             && Visible == o.Visible
             && Pair(Collation, o.Collation, pending)
+            && PairList(Domain, o.Domain, pending)
             && Pair(Encrypt, o.Encrypt, pending)
             && Sort == o.Sort
             && PairList(OtherProperties, o.OtherProperties, pending);
@@ -1889,6 +1986,88 @@ public partial class ContinueStatement
         var o = (ContinueStatement)other;
         return Pair(Label, o.Label, pending)
             && Pair(When, o.When, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateDomainStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Type is not null) yield return Type;
+        if (Default is not null) yield return Default;
+        if (Constraints is not null) foreach (var x in Constraints) yield return x;
+        if (Collation is not null) yield return Collation;
+        if (Display is not null) yield return Display;
+        if (Order is not null) yield return Order;
+        if (Annotations is not null) foreach (var x in Annotations) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        Type?.Accept(visitor);
+        Default?.Accept(visitor);
+        if (Constraints is not null) foreach (var x in Constraints) x.Accept(visitor);
+        Collation?.Accept(visitor);
+        Display?.Accept(visitor);
+        Order?.Accept(visitor);
+        if (Annotations is not null) foreach (var x in Annotations) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "CreateDomainStatement.Name");
+        Type = SqlNodeRewriter.RewriteOptional(rewriter, Type, "CreateDomainStatement.Type");
+        Default = SqlNodeRewriter.RewriteOptional(rewriter, Default, "CreateDomainStatement.Default");
+        SqlNodeRewriter.RewriteList(rewriter, Constraints, "CreateDomainStatement.Constraints");
+        Collation = SqlNodeRewriter.RewriteOptional(rewriter, Collation, "CreateDomainStatement.Collation");
+        Display = SqlNodeRewriter.RewriteOptional(rewriter, Display, "CreateDomainStatement.Display");
+        Order = SqlNodeRewriter.RewriteOptional(rewriter, Order, "CreateDomainStatement.Order");
+        SqlNodeRewriter.RewriteList(rewriter, Annotations, "CreateDomainStatement.Annotations");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateDomainStatement();
+        CopySpan(this, c);
+        c.OrReplace = OrReplace;
+        c.UseCase = UseCase;
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneList(Name);
+        c.Type = CloneChild(Type);
+        c.Default = CloneChild(Default);
+        c.Constraints = CloneList(Constraints);
+        c.Collation = CloneChild(Collation);
+        c.Display = CloneChild(Display);
+        c.Order = CloneChild(Order);
+        c.Annotations = CloneList(Annotations);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateDomainStatement)other;
+        return OrReplace == o.OrReplace
+            && UseCase == o.UseCase
+            && IfNotExists == o.IfNotExists
+            && PairList(Name, o.Name, pending)
+            && Pair(Type, o.Type, pending)
+            && Pair(Default, o.Default, pending)
+            && PairList(Constraints, o.Constraints, pending)
+            && Pair(Collation, o.Collation, pending)
+            && Pair(Display, o.Display, pending)
+            && Pair(Order, o.Order, pending)
+            && PairList(Annotations, o.Annotations, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -3290,6 +3469,50 @@ public partial class DeleteStatement
             && PairList(ReturningInto, o.ReturningInto, pending)
             && Pair(ErrorLogging, o.ErrorLogging, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class DomainAnnotation
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Value is not null) yield return Value;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        Value?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "DomainAnnotation.Name");
+        Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "DomainAnnotation.Value");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new DomainAnnotation();
+        CopySpan(this, c);
+        c.Name = CloneChild(Name)!;
+        c.Value = CloneChild(Value);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (DomainAnnotation)other;
+        return Pair(Name, o.Name, pending)
+            && Pair(Value, o.Value, pending);
     }
 }
 

@@ -64,6 +64,8 @@ public sealed partial class SqlScriptGenerator
                 case CreateIndexStatement ci: CreateIndex(ci); break;
                 case CreateViewStatement cv: CreateView(cv); break;
                 case CreatePropertyGraphStatement pg: PropertyGraph(pg); break;
+                case CreateDomainStatement dm: CreateDomain(dm); break;
+                case AlterDomainStatement ad: AlterDomain(ad); break;
                 case CreateSequenceStatement cs:
                     Add("CREATE SEQUENCE");
                     if (cs.IfNotExists) Add(" IF NOT EXISTS");
@@ -202,6 +204,40 @@ public sealed partial class SqlScriptGenerator
             if (t.AsQuery != null) { Add(" AS "); Select(t.AsQuery); }
         }
 
+        private void CreateDomain(CreateDomainStatement d)
+        {
+            Add("CREATE "); if (d.OrReplace) Add("OR REPLACE "); if (d.UseCase) Add("USECASE "); Add("DOMAIN ");
+            if (d.IfNotExists) Add("IF NOT EXISTS "); Name(d.Name);
+            Add(" AS "); if (d.Type != null) Type(d.Type);
+            if (d.Default != null) { Add(" DEFAULT "); Expr(d.Default); }
+            foreach (var k in d.Constraints) { Sp(); Constraint(k); }
+            if (d.Collation != null) { Add(" COLLATE "); Id(d.Collation); }
+            if (d.Display != null) { Add(" DISPLAY "); Expr(d.Display); }
+            if (d.Order != null) { Add(" ORDER "); Expr(d.Order); }
+            if (d.Annotations.Count > 0) { Add(" ANNOTATIONS ("); Sep(d.Annotations, DomainAnnotationDef); Add(")"); }
+        }
+
+        private void AlterDomain(AlterDomainStatement d)
+        {
+            Add("ALTER DOMAIN "); Name(d.Name); Add(" ");
+            var a = d.Action;
+            switch (a.Kind)
+            {
+                case AlterDomainActionKind.AddDisplay: Add("ADD DISPLAY "); Expr(a.Value!); break;
+                case AlterDomainActionKind.DropDisplay: Add("DROP DISPLAY"); break;
+                case AlterDomainActionKind.AddOrder: Add("ADD ORDER "); Expr(a.Value!); break;
+                case AlterDomainActionKind.DropOrder: Add("DROP ORDER"); break;
+                case AlterDomainActionKind.AddAnnotations: Add("ADD ANNOTATIONS ("); Sep(a.Annotations, DomainAnnotationDef); Add(")"); break;
+                default: Add("DROP ANNOTATIONS ("); Sep(a.Annotations, DomainAnnotationDef); Add(")"); break;
+            }
+        }
+
+        private void DomainAnnotationDef(DomainAnnotation a)
+        {
+            Id(a.Name);
+            if (a.Value != null) { Add(" "); Expr(a.Value); }
+        }
+
         private void PropertyGraph(CreatePropertyGraphStatement g)
         {
             Add("CREATE "); if (g.OrReplace) Add("OR REPLACE "); Add("PROPERTY GRAPH "); Name(g.Name);
@@ -250,6 +286,7 @@ public sealed partial class SqlScriptGenerator
             Id(c.Name);
             if (c.Type != null) { Sp(); Type(c.Type); }
             if (c.Collation != null) { Add(" COLLATE "); Id(c.Collation); }
+            if (c.Domain.Count > 0) { Add(" DOMAIN "); Name(c.Domain); }
             if (c.Default != null)
             {
                 Add(c.DefaultOnNull ? " DEFAULT ON NULL" : " DEFAULT");

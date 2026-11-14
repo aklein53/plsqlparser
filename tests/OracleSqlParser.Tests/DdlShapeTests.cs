@@ -166,7 +166,6 @@ public class DdlShapeTests
     [InlineData("CREATE OR REPLACE PUBLIC DATABASE LINK l USING 'x'", "(CreateObjectStatement kind=DatabaseLink orReplace public name=[L] body=[(WordItem value=USING) (LiteralItem kind=String value=x)])")]
     [InlineData("CREATE DIRECTORY d AS '/tmp'", "(CreateObjectStatement kind=Directory name=[D] body=[(WordItem value=AS) (LiteralItem kind=String value=/tmp)])")]
     [InlineData("CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M", "(CreateObjectStatement kind=Tablespace name=[TS] body=[(WordItem value=DATAFILE) (LiteralItem kind=String value=f.dbf) (WordItem value=SIZE) (LiteralItem kind=Number value=10M)])")]
-    [InlineData("CREATE DOMAIN d AS NUMBER(3)", "(CreateObjectStatement kind=Domain name=[D] body=[(WordItem value=AS) (WordItem value=NUMBER) (GroupItem items=[(LiteralItem kind=Number value=3)])])")]
     [InlineData("CREATE JSON RELATIONAL DUALITY VIEW dv AS SELECT 1", "(CreateObjectStatement kind=JsonRelationalDualityView name=[DV] body=[(WordItem value=AS) (WordItem value=SELECT) (LiteralItem kind=Number value=1)])")]
     [InlineData("CREATE MATERIALIZED VIEW LOG ON t WITH PRIMARY KEY", "(CreateObjectStatement kind=MaterializedViewLog body=[(WordItem value=ON) (WordItem value=T) (WordItem value=WITH) (WordItem value=PRIMARY) (WordItem value=KEY)])")]
     [InlineData("ALTER SYSTEM FLUSH SHARED_POOL", "(AlterObjectStatement kind=System body=[(WordItem value=FLUSH) (WordItem value=SHARED_POOL)])")]

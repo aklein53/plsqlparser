@@ -24,11 +24,12 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 | TRUNCATE, COMMENT, RENAME, PURGE, FLASHBACK TABLE | `TruncateStatement` … `FlashbackTableStatement` | typed | DmlAndSessionShape |
 | CREATE TABLE (columns, constraints, identity, virtual, partitioning, storage, CTAS) | `CreateTableStatement` | typed; LOB/external-table/other physical details are `OtherAttribute` token trees | DdlShape |
 | CREATE INDEX, VIEW, MATERIALIZED VIEW, SEQUENCE, SYNONYM | `CreateIndexStatement` … | typed | DdlShape |
+| CREATE [OR REPLACE] [USECASE] DOMAIN, ALTER DOMAIN (DISPLAY, ORDER, ANNOTATIONS); column `DOMAIN d` | `CreateDomainStatement`, `AlterDomainStatement`, `ColumnDefinition.Domain` | typed; multi-column and flexible domains not modelled | DomainShape |
 | CREATE [OR REPLACE] PROPERTY GRAPH (VERTEX/EDGE TABLES, KEY, SOURCE/DESTINATION, LABEL, PROPERTIES) | `CreatePropertyGraphStatement` | typed | PropertyGraphShape |
 | ALTER TABLE | `AlterTableStatement` | typed (partition/other maintenance actions: `Syntax` token tree) | DdlShape |
 | DROP (any object kind) | `DropStatement` | typed | DdlShape |
 | CREATE PROCEDURE/FUNCTION/PACKAGE [BODY]/TRIGGER/TYPE [BODY]/LIBRARY/JAVA | `CreateProgramStatement` … | typed | PlsqlShape, DdlShape |
-| CREATE of any other object (USER, ROLE, PROFILE, TABLESPACE, DATABASE LINK, DIRECTORY, CLUSTER, CONTEXT, DIMENSION, DOMAIN, EDITION, OPERATOR, INDEXTYPE, OUTLINE, JSON DUALITY VIEW, MV LOG, ZONEMAP, ANALYTIC VIEW, ...) | `CreateObjectStatement` | header+tree |
+| CREATE of any other object (USER, ROLE, PROFILE, TABLESPACE, DATABASE LINK, DIRECTORY, CLUSTER, CONTEXT, DIMENSION, EDITION, OPERATOR, INDEXTYPE, OUTLINE, JSON DUALITY VIEW, MV LOG, ZONEMAP, ANALYTIC VIEW, ...) | `CreateObjectStatement` | header+tree |
 | ALTER of any object other than TABLE/SESSION (INDEX, VIEW, SEQUENCE, MV, TRIGGER, PROCEDURE, USER, SYSTEM, DATABASE, ...) | `AlterObjectStatement` | header+tree |
 | ANALYZE, AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE | `AdminStatement` | header+tree |
 

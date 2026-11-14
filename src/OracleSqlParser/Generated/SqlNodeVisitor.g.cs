@@ -28,6 +28,26 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="AlterDomainAction"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterDomainAction node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterDomainAction"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterDomainAction node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AlterDomainStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterDomainStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterDomainStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterDomainStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="AlterObjectStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(AlterObjectStatement node) => Visit((SqlNode)node);
 
@@ -398,6 +418,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="CreateDomainStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(CreateDomainStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="CreateDomainStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(CreateDomainStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="CreateIndexStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(CreateIndexStatement node) => Visit((SqlNode)node);
 
@@ -613,6 +643,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="DeleteStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(DeleteStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="DomainAnnotation"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(DomainAnnotation node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="DomainAnnotation"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(DomainAnnotation node)
     {
         Visit(node);
         node.AcceptChildren(this);

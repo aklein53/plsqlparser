@@ -436,6 +436,7 @@ public sealed partial class SqlParser
         if (!TryParseObjectKind(out var kind)) kind = ObjectKind.Other;
         if (kind == ObjectKind.Table) return ParseAlterTable(start);
         if (kind == ObjectKind.Session) return ParseAlterSession(start);
+        if (kind == ObjectKind.Domain) return ParseAlterDomain(start);
         var st = new AlterObjectStatement { Kind = kind, Public = pub };
         st.IfExists = TryIfExists();
         if (ObjectKindHasName(kind) && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) st.Name = ParseDottedName();
@@ -498,7 +499,7 @@ public sealed partial class SqlParser
     {
         var start = Next();
         bool orReplace = false, unique = false, bitmap = false, pub = false, andResolve = false, andCompile = false, noForce = false;
-        bool force = false, editioning = false, gtt = false, ptt = false, dup = false, imm = false, blk = false;
+        bool force = false, editioning = false, gtt = false, ptt = false, dup = false, imm = false, blk = false, useCase = false;
         EditionableKind? editionable = null;
         int prog22 = -1;
         while (Progress(ref prog22))
@@ -514,6 +515,7 @@ public sealed partial class SqlParser
             else if (IsKw("DUPLICATED")) { Next(); dup = true; }
             else if (IsKw("IMMUTABLE")) { Next(); imm = true; }
             else if (IsKw("BLOCKCHAIN")) { Next(); blk = true; }
+            else if (IsKw("USECASE")) { Next(); useCase = true; }
             else if (IsKw("AND") && (IsKwAt(1, "RESOLVE") || IsKwAt(1, "COMPILE"))) { Next(); if (Next().Value == "RESOLVE") andResolve = true; else andCompile = true; }
             else if (IsKw("UNIQUE")) { Next(); unique = true; }
             else if (IsKw("BITMAP")) { Next(); bitmap = true; }
@@ -536,6 +538,7 @@ public sealed partial class SqlParser
             case ObjectKind.MaterializedView: return ParseCreateView(start, orReplace, force, noForce, editioning, true);
             case ObjectKind.Sequence: return ParseCreateSequence(start);
             case ObjectKind.PropertyGraph: return ParseCreatePropertyGraph(start, orReplace);
+            case ObjectKind.Domain: return ParseCreateDomain(start, orReplace, useCase);
             case ObjectKind.Synonym: return ParseCreateSynonym(start, orReplace, pub);
             case ObjectKind.Procedure: case ObjectKind.Function:
             {
@@ -617,7 +620,7 @@ public sealed partial class SqlParser
     private static readonly HashSet<string> ColumnClauseWords = new(StringComparer.Ordinal)
     {
         "DEFAULT","GENERATED","CONSTRAINT","NOT","NULL","PRIMARY","UNIQUE","REFERENCES","CHECK","AS","VISIBLE",
-        "INVISIBLE","ENCRYPT","COLLATE","SORT","DROP","SET","RENAME","ADD","MODIFY",
+        "INVISIBLE","ENCRYPT","COLLATE","SORT","DROP","SET","RENAME","ADD","MODIFY","DOMAIN",
     };
 
     private ColumnDefinition ParseColumnDefinition(Func<bool>? stop = null)
@@ -674,6 +677,7 @@ public sealed partial class SqlParser
             else if (AcceptKw("VISIBLE")) cd.Visible = true;
             else if (AcceptKw("INVISIBLE")) cd.Visible = false;
             else if (AcceptKw("COLLATE")) cd.Collation = ParseIdentifier();
+            else if (AcceptKw("DOMAIN")) cd.Domain = ParseDottedName();
             else if (AcceptKw("SORT")) cd.Sort = true;
             else if (IsKw("ENCRYPT"))
             {
@@ -900,6 +904,65 @@ public sealed partial class SqlParser
             list.Add(Fin(opt, s));
         }
         return list;
+    }
+
+    private Statement ParseCreateDomain(Token start, bool orReplace, bool useCase)
+    {
+        var st = new CreateDomainStatement { OrReplace = orReplace, UseCase = useCase, IfNotExists = TryIfNotExists() };
+        st.Name = ParseDottedName();
+        ExpectKw("AS");
+        st.Type = ParseDataType();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog))
+        {
+            if (AcceptKw("DEFAULT")) st.Default = ParseExpr();
+            else if (IsKw("CONSTRAINT") || IsKw("NOT") || IsKw("NULL") || IsKw("CHECK")) st.Constraints.Add(ParseConstraint(true));
+            else if (AcceptKw("COLLATE")) st.Collation = ParseIdentifier();
+            else if (AcceptKw("DISPLAY")) st.Display = ParseExpr();
+            else if (AcceptKw("ORDER")) st.Order = ParseExpr();
+            else if (AcceptKw("ANNOTATIONS")) st.Annotations = ParseDomainAnnotations();
+            else break;
+        }
+        return Fin(st, start);
+    }
+
+    /// <summary>ANNOTATIONS ( name [value], ... ) as used by CREATE/ALTER DOMAIN.</summary>
+    private List<DomainAnnotation> ParseDomainAnnotations()
+    {
+        var list = new List<DomainAnnotation>();
+        ExpectOp("(");
+        do
+        {
+            var s = Cur;
+            var an = new DomainAnnotation { Name = ParseIdentifier() };
+            if (!IsOp(",") && !IsOp(")")) an.Value = ParseExpr();
+            list.Add(Fin(an, s));
+        } while (AcceptOp(","));
+        ExpectOp(")");
+        return list;
+    }
+
+    private Statement ParseAlterDomain(Token start)
+    {
+        var st = new AlterDomainStatement { Name = ParseDottedName() };
+        var a = new AlterDomainAction();
+        if (AcceptKw("ADD"))
+        {
+            if (AcceptKw("DISPLAY")) { a.Kind = AlterDomainActionKind.AddDisplay; a.Value = ParseExpr(); }
+            else if (AcceptKw("ORDER")) { a.Kind = AlterDomainActionKind.AddOrder; a.Value = ParseExpr(); }
+            else if (AcceptKw("ANNOTATIONS")) { a.Kind = AlterDomainActionKind.AddAnnotations; a.Annotations = ParseDomainAnnotations(); }
+            else throw Fail($"Expected DISPLAY, ORDER or ANNOTATIONS after ALTER DOMAIN ADD but found {Describe(Cur)}");
+        }
+        else if (AcceptKw("DROP"))
+        {
+            if (AcceptKw("DISPLAY")) a.Kind = AlterDomainActionKind.DropDisplay;
+            else if (AcceptKw("ORDER")) a.Kind = AlterDomainActionKind.DropOrder;
+            else if (AcceptKw("ANNOTATIONS")) { a.Kind = AlterDomainActionKind.DropAnnotations; a.Annotations = ParseDomainAnnotations(); }
+            else throw Fail($"Expected DISPLAY, ORDER or ANNOTATIONS after ALTER DOMAIN DROP but found {Describe(Cur)}");
+        }
+        else throw Fail($"Expected ADD or DROP after ALTER DOMAIN name but found {Describe(Cur)}");
+        st.Action = Fin(a, start);
+        return Fin(st, start);
     }
 
     private Statement ParseCreatePropertyGraph(Token start, bool orReplace)

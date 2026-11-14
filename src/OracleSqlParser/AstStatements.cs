@@ -417,6 +417,8 @@ public sealed partial class ColumnDefinition : SqlNode
     public List<TableConstraint> Constraints { get; set; } = [];
     public bool? Visible { get; set; }
     public Identifier? Collation { get; set; }
+    /// <summary>DOMAIN domain_name: the column takes its type and constraints from a domain (empty when none).</summary>
+    public List<Identifier> Domain { get; set; } = [];
     public EncryptClause? Encrypt { get; set; }
     public bool Sort { get; set; }
     /// <summary>Column properties without a dedicated node (LOB storage, substitutable, ...).</summary>
@@ -520,6 +522,45 @@ public sealed partial class CreateViewStatement : Statement
     public bool ReadOnly { get; set; }
     public bool CheckOption { get; set; }
     public Identifier? CheckOptionConstraint { get; set; }
+}
+
+/// <summary>CREATE [OR REPLACE] [USECASE] DOMAIN d AS type [DEFAULT ...] [constraints] [COLLATE ...] [DISPLAY ...] [ORDER ...] [ANNOTATIONS (...)].</summary>
+public sealed partial class CreateDomainStatement : Statement
+{
+    public bool OrReplace { get; set; }
+    public bool UseCase { get; set; }
+    public bool IfNotExists { get; set; }
+    public List<Identifier> Name { get; set; } = [];
+    public DataType? Type { get; set; }
+    public Expression? Default { get; set; }
+    public List<TableConstraint> Constraints { get; set; } = [];
+    public Identifier? Collation { get; set; }
+    public Expression? Display { get; set; }
+    public Expression? Order { get; set; }
+    public List<DomainAnnotation> Annotations { get; set; } = [];
+}
+
+public sealed partial class DomainAnnotation : SqlNode
+{
+    public Identifier Name { get; set; } = null!;
+    public Expression? Value { get; set; }
+}
+
+public enum AlterDomainActionKind { AddDisplay, DropDisplay, AddOrder, DropOrder, AddAnnotations, DropAnnotations }
+
+/// <summary>ALTER DOMAIN d ADD|DROP DISPLAY/ORDER/ANNOTATIONS (...).</summary>
+public sealed partial class AlterDomainStatement : Statement
+{
+    public List<Identifier> Name { get; set; } = [];
+    public AlterDomainAction Action { get; set; } = null!;
+}
+
+public sealed partial class AlterDomainAction : SqlNode
+{
+    public AlterDomainActionKind Kind { get; set; }
+    /// <summary>The DISPLAY or ORDER expression for the Add forms.</summary>
+    public Expression? Value { get; set; }
+    public List<DomainAnnotation> Annotations { get; set; } = [];
 }
 
 /// <summary>CREATE [OR REPLACE] PROPERTY GRAPH g VERTEX TABLES (...) [EDGE TABLES (...)] (SQL/PGQ).</summary>
