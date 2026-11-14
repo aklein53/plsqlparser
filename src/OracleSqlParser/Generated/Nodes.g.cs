@@ -1790,6 +1790,104 @@ public partial class ConditionalDeclarationBranch
     }
 }
 
+public partial class ConditionalParameter
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Condition is not null) yield return Condition;
+        if (ThenParameters is not null) foreach (var x in ThenParameters) yield return x;
+        if (ElsifBranches is not null) foreach (var x in ElsifBranches) yield return x;
+        if (ElseParameters is not null) foreach (var x in ElseParameters) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Condition?.Accept(visitor);
+        if (ThenParameters is not null) foreach (var x in ThenParameters) x.Accept(visitor);
+        if (ElsifBranches is not null) foreach (var x in ElsifBranches) x.Accept(visitor);
+        if (ElseParameters is not null) foreach (var x in ElseParameters) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Condition = SqlNodeRewriter.RewriteRequired(rewriter, Condition, "ConditionalParameter.Condition");
+        SqlNodeRewriter.RewriteList(rewriter, ThenParameters, "ConditionalParameter.ThenParameters");
+        SqlNodeRewriter.RewriteList(rewriter, ElsifBranches, "ConditionalParameter.ElsifBranches");
+        SqlNodeRewriter.RewriteList(rewriter, ElseParameters, "ConditionalParameter.ElseParameters");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ConditionalParameter();
+        CopySpan(this, c);
+        c.Condition = CloneChild(Condition)!;
+        c.ThenParameters = CloneList(ThenParameters);
+        c.ElsifBranches = CloneList(ElsifBranches);
+        c.ElseParameters = CloneList(ElseParameters);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ConditionalParameter)other;
+        return Pair(Condition, o.Condition, pending)
+            && PairList(ThenParameters, o.ThenParameters, pending)
+            && PairList(ElsifBranches, o.ElsifBranches, pending)
+            && PairList(ElseParameters, o.ElseParameters, pending);
+    }
+}
+
+public partial class ConditionalParameterBranch
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Condition is not null) yield return Condition;
+        if (Parameters is not null) foreach (var x in Parameters) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Condition?.Accept(visitor);
+        if (Parameters is not null) foreach (var x in Parameters) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Condition = SqlNodeRewriter.RewriteRequired(rewriter, Condition, "ConditionalParameterBranch.Condition");
+        SqlNodeRewriter.RewriteList(rewriter, Parameters, "ConditionalParameterBranch.Parameters");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ConditionalParameterBranch();
+        CopySpan(this, c);
+        c.Condition = CloneChild(Condition)!;
+        c.Parameters = CloneList(Parameters);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ConditionalParameterBranch)other;
+        return Pair(Condition, o.Condition, pending)
+            && PairList(Parameters, o.Parameters, pending);
+    }
+}
+
 public partial class ConditionalStatement
 {
     /// <inheritdoc/>
@@ -4368,17 +4466,20 @@ public partial class FetchClause
     public override IEnumerable<SqlNode> GetChildren()
     {
         if (Count is not null) yield return Count;
+        if (TargetAccuracy is not null) yield return TargetAccuracy;
     }
 
     /// <inheritdoc/>
     public override void AcceptChildren(SqlNodeVisitor visitor)
     {
         Count?.Accept(visitor);
+        TargetAccuracy?.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
     {
         Count = SqlNodeRewriter.RewriteOptional(rewriter, Count, "FetchClause.Count");
+        TargetAccuracy = SqlNodeRewriter.RewriteOptional(rewriter, TargetAccuracy, "FetchClause.TargetAccuracy");
     }
 
     /// <inheritdoc/>
@@ -4395,6 +4496,7 @@ public partial class FetchClause
         c.Percent = Percent;
         c.WithTies = WithTies;
         c.Accuracy = Accuracy;
+        c.TargetAccuracy = CloneChild(TargetAccuracy);
         return c;
     }
 
@@ -4405,7 +4507,8 @@ public partial class FetchClause
             && Pair(Count, o.Count, pending)
             && Percent == o.Percent
             && WithTies == o.WithTies
-            && Accuracy == o.Accuracy;
+            && Accuracy == o.Accuracy
+            && Pair(TargetAccuracy, o.TargetAccuracy, pending);
     }
 }
 

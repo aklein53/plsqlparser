@@ -401,7 +401,10 @@ public sealed partial class SqlParser
                 f.Percent = AcceptKw("PERCENT");
             }
             if (!AcceptKw("ROWS")) ExpectKw("ROW");
-            if (AcceptKw("ONLY")) { }
+            if (AcceptKw("ONLY"))
+            {
+                if (IsKw("WITH") && IsKwAt(1, "TARGET")) { Next(); Next(); ExpectKw("ACCURACY"); f.TargetAccuracy = ParseAdditive(); ExpectKw("PERCENT"); }
+            }
             else { ExpectKw("WITH"); ExpectKw("TIES"); f.WithTies = true; }
             stmt.Fetch = Fin(f, fs);
         }

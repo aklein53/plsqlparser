@@ -244,7 +244,7 @@ public sealed partial class SqlParser
         int prog7 = -1;
         while (Progress(ref prog7))
         {
-            if (IsOp("[")) e = ParseSubscripts(e, start);
+            if (IsOp("[")) { if (_plsql) throw Fail("Array steps are not valid in PL/SQL expressions (PLS-00103)"); e = ParseSubscripts(e, start); }
             else if (e is CellReference or ChainedCall && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier) e = ParseMemberChain(e, start);
             else if (e is FunctionCall or CellReference or ChainedCall && IsOp("(")) e = ParseChainedCall(e, start);
             else if (IsKw("AT") && (IsKwAt(1, "TIME") || IsKwAt(1, "LOCAL")))
@@ -589,6 +589,12 @@ public sealed partial class SqlParser
         }
         if (AcceptKw("VALUE")) arg.MappedValue = ParseExpr();
         else if (Cur.Text == ":" && Cur.Type is TokenType.Operator or TokenType.Bind) { Next(); arg.MappedValue = ParseExpr(); } // 'key' : value
+        else if (Cur.Type == TokenType.Bind && Cur.Text.Length > 1 && char.IsDigit(Cur.Text[1]))
+        {
+            // 'key':1 with no space lexes ':1' as a bind; in this position it is a colon and a number
+            var bt = Next();
+            arg.MappedValue = Fin(new Literal { Kind = LiteralKind.Number, Value = bt.Text[1..] }, bt);
+        }
         if (IsKw("FORMAT") && IsKwAt(1, "JSON")) arg.Format = (FormatClause)ParseFunctionClause();
         if (IsKw("AS") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier) { Next(); arg.Alias = ParseIdentifier(); }
         return Fin(arg, a);

@@ -183,25 +183,64 @@ public sealed partial class SqlParser
         return Fin(v, start);
     }
 
-    private List<Parameter> ParseParameters()
+    private List<ParameterItem> ParseParameters()
     {
         using var _ = SetContext(true);
-        var list = new List<Parameter>();
+        var list = new List<ParameterItem>();
         ExpectOp("(");
         if (AcceptOp(")")) return list;
-        do
-        {
-            var s = Cur;
-            var p = new Parameter { Name = ParseIdentifier() };
-            if (IsKw("IN") && IsKwAt(1, "OUT")) { Next(); Next(); p.Mode = ParamMode.InOut; }
-            else if (IsKw("IN")) { Next(); p.Mode = ParamMode.In; }
-            else if (IsKw("OUT")) { Next(); p.Mode = ParamMode.Out; }
-            p.NoCopy = AcceptKw("NOCOPY");
-            if (!IsOp(",") && !IsOp(")") && !IsKw("DEFAULT") && !IsOp(":=")) p.Type = ParseDataType();
-            if (AcceptOp(":=") || AcceptKw("DEFAULT")) p.Default = ParseExpr();
-            list.Add(Fin(p, s));
-        } while (AcceptOp(","));
+        // A $IF group may follow an item with no comma of its own: its branches carry the separating commas.
+        do list.Add(ParseParameterItem()); while (AcceptOp(",") || IsKw("$IF"));
         ExpectOp(")");
+        return list;
+    }
+
+    private ParameterItem ParseParameterItem() => IsKw("$IF") ? ParseConditionalParameter() : ParseParameter();
+
+    private Parameter ParseParameter()
+    {
+        var s = Cur;
+        var p = new Parameter { Name = ParseIdentifier() };
+        if (IsKw("IN") && IsKwAt(1, "OUT")) { Next(); Next(); p.Mode = ParamMode.InOut; }
+        else if (IsKw("IN")) { Next(); p.Mode = ParamMode.In; }
+        else if (IsKw("OUT")) { Next(); p.Mode = ParamMode.Out; }
+        p.NoCopy = AcceptKw("NOCOPY");
+        if (!IsOp(",") && !IsOp(")") && !IsKw("DEFAULT") && !IsOp(":=") && !IsKw("$IF") && !IsKw("$ELSIF") && !IsKw("$ELSE") && !IsKw("$END"))
+            p.Type = ParseDataType();
+        if (AcceptOp(":=") || AcceptKw("DEFAULT")) p.Default = ParseExpr();
+        return Fin(p, s);
+    }
+
+    private ConditionalParameter ParseConditionalParameter()
+    {
+        var start = Next();
+        var cp = new ConditionalParameter { Condition = ParseExpr() };
+        ExpectKw("$THEN");
+        cp.ThenParameters = ParseParameterBranch();
+        int prog = -1;
+        while (IsKw("$ELSIF") && Progress(ref prog))
+        {
+            var bs = Next();
+            var br = new ConditionalParameterBranch { Condition = ParseExpr() };
+            ExpectKw("$THEN");
+            br.Parameters = ParseParameterBranch();
+            cp.ElsifBranches.Add(Fin(br, bs));
+        }
+        if (AcceptKw("$ELSE")) cp.ElseParameters = ParseParameterBranch();
+        ExpectKw("$END");
+        return Fin(cp, start);
+    }
+
+    /// <summary>The items of one branch; the branch may open with the comma that separates it from the item before the $IF.</summary>
+    private List<ParameterItem> ParseParameterBranch()
+    {
+        var list = new List<ParameterItem>();
+        AcceptOp(",");
+        while (!IsKw("$ELSIF") && !IsKw("$ELSE") && !IsKw("$END") && !IsOp(")"))
+        {
+            list.Add(ParseParameterItem());
+            if (!AcceptOp(",")) break;
+        }
         return list;
     }
 

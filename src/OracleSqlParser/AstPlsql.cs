@@ -81,6 +81,21 @@ public sealed partial class VariableDeclaration : Declaration
     public Expression? Default { get; set; }
 }
 
+/// <summary>$IF cond $THEN ... [$ELSIF cond $THEN ...] [$ELSE ...] $END around parameters (the commas are inside the branches).</summary>
+public sealed partial class ConditionalParameter : ParameterItem
+{
+    public Expression Condition { get; set; } = null!;
+    public List<ParameterItem> ThenParameters { get; set; } = [];
+    public List<ConditionalParameterBranch> ElsifBranches { get; set; } = [];
+    public List<ParameterItem>? ElseParameters { get; set; }
+}
+
+public sealed partial class ConditionalParameterBranch : SqlNode
+{
+    public Expression Condition { get; set; } = null!;
+    public List<ParameterItem> Parameters { get; set; } = [];
+}
+
 public sealed partial class ExceptionDeclaration : Declaration
 {
     public Identifier Name { get; set; } = null!;
@@ -94,7 +109,12 @@ public sealed partial class PragmaDeclaration : Declaration
 
 public enum ParamMode { In, Out, InOut }
 
-public sealed partial class Parameter : SqlNode
+/// <summary>An entry in a parameter list: a plain parameter or a conditional group (see <see cref="ConditionalParameter"/>).</summary>
+public abstract partial class ParameterItem : SqlNode
+{
+}
+
+public sealed partial class Parameter : ParameterItem
 {
     public Identifier Name { get; set; } = null!;
     public ParamMode? Mode { get; set; }
@@ -106,7 +126,7 @@ public sealed partial class Parameter : SqlNode
 public sealed partial class CursorDeclaration : Declaration
 {
     public Identifier Name { get; set; } = null!;
-    public List<Parameter> Parameters { get; set; } = [];
+    public List<ParameterItem> Parameters { get; set; } = [];
     public DataType? ReturnType { get; set; }
     public SelectStatement? Query { get; set; }
 }
@@ -229,7 +249,7 @@ public sealed partial class SubprogramDeclaration : Declaration
     public bool IsFunction { get; set; }
     public MemberModifiers Modifiers { get; set; }
     public List<Identifier> Name { get; set; } = [];
-    public List<Parameter> Parameters { get; set; } = [];
+    public List<ParameterItem> Parameters { get; set; } = [];
     public DataType? ReturnType { get; set; }
     /// <summary>CONSTRUCTOR FUNCTION ... RETURN SELF AS RESULT.</summary>
     public bool ReturnSelfAsResult { get; set; }

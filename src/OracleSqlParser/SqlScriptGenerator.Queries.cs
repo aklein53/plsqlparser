@@ -96,6 +96,7 @@ public sealed partial class SqlScriptGenerator
                 if (s.Fetch.Count != null) { Add(" "); Child(s.Fetch.Count, 5); if (s.Fetch.Percent) Add(" PERCENT"); Add(" ROWS"); }
                 else Add(" ROW");
                 Add(s.Fetch.WithTies ? " WITH TIES" : " ONLY");
+                if (s.Fetch.TargetAccuracy != null) { Add(" WITH TARGET ACCURACY "); Child(s.Fetch.TargetAccuracy, 5); Add(" PERCENT"); }
             }
             if (s.ForUpdate != null)
             {

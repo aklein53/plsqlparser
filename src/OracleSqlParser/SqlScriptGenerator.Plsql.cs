@@ -79,9 +79,39 @@ public sealed partial class SqlScriptGenerator
             if (p.Default != null) { Add(" DEFAULT "); Expr(p.Default); }
         }
 
-        private void ParamList(List<Parameter> ps)
+        private void ParamList(List<ParameterItem> ps)
         {
-            if (ps.Count > 0) { Add(" ("); Sep(ps, Param); Add(")"); }
+            if (ps.Count > 0) { Add(" ("); ParamItems(ps); Add(")"); }
+        }
+
+        /// <summary>Items separated by commas; a $IF group takes no comma of its own, its branches open with one unless first.</summary>
+        private void ParamItems(List<ParameterItem> items)
+        {
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (i > 0) Add(items[i] is Parameter ? ", " : " ");
+                switch (items[i])
+                {
+                    case Parameter p: Param(p); break;
+                    case ConditionalParameter cp:
+                        Add("$IF "); Expr(cp.Condition); Add(" $THEN ");
+                        ParamBranch(cp.ThenParameters, i > 0);
+                        foreach (var b in cp.ElsifBranches) { Add(" $ELSIF "); Expr(b.Condition); Add(" $THEN "); ParamBranch(b.Parameters, true); }
+                        if (cp.ElseParameters != null) { Add(" $ELSE "); ParamBranch(cp.ElseParameters, true); }
+                        Add(" $END");
+                        break;
+                    default: throw Unsupported(items[i]);
+                }
+            }
+        }
+
+        private void ParamBranch(List<ParameterItem> items, bool leadingComma)
+        {
+            for (int j = 0; j < items.Count; j++)
+            {
+                if (j > 0 || leadingComma) Add(", ");
+                if (items[j] is Parameter p) Param(p); else ParamItems([items[j]]);
+            }
         }
 
         private void Declaration(Declaration d)

@@ -294,6 +294,8 @@ public sealed partial class FetchClause : SqlNode
     public bool WithTies { get; set; }
     /// <summary>23ai vector search: EXACT, or APPROX / APPROXIMATE (synonyms). Null when the keyword is omitted.</summary>
     public FetchAccuracy? Accuracy { get; set; }
+    /// <summary>23ai approximate fetch: WITH TARGET ACCURACY p PERCENT (the percentage expression); null when absent.</summary>
+    public Expression? TargetAccuracy { get; set; }
 }
 
 public enum FetchAccuracy { Exact, Approximate }

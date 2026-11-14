@@ -50,7 +50,7 @@ WHILE/WHEN. A bare cursor or collection name is an `ExpressionControl`. IMMUTABL
 Conditional compilation: `$IF`/`$ELSIF`/`$ELSE`/`$END` blocks in statement lists (`ConditionalStatement`) and
 declaration lists (`ConditionalDeclaration`), with every branch parsed as typed nodes; `$ERROR 'msg' $END`
 (`CompilationErrorStatement`/`CompilationErrorDeclaration`); inquiry directives `$$name` (`InquiryDirective`).
-Conditional blocks are not accepted in parameter lists.
+Conditional blocks (``) in parameter lists are typed (`ConditionalParameter`); the branches hold `Parameter` items. `JSON` array steps (`t.c.a[0]`) are rejected in PL/SQL expressions (PLS-00103) and accepted in SQL, including SQL inside PL/SQL.
 
 ## Script level
 
