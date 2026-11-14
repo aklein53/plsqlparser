@@ -279,6 +279,8 @@ public sealed partial class SqlParser
     private Expression ParsePrimary()
     {
         var start = Cur;
+        if (IsKw("JSON") && IsOpAt(1, "{")) return ParseJsonObject();
+        if (IsKw("JSON") && IsOpAt(1, "[")) return ParseJsonArray(keyword: true);
         switch (Cur.Type)
         {
             case TokenType.Number:

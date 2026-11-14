@@ -33,7 +33,7 @@ public sealed partial class SqlScriptGenerator
                 case AlterMaterializedViewStatement amv: AlterMaterializedView(amv); break;
                 case CreateObjectStatement or AlterObjectStatement or DropStatement or CreateTableStatement or CreateIndexStatement
                     or CreateViewStatement or CreateSequenceStatement or CreateSynonymStatement or AlterTableStatement or CreatePropertyGraphStatement
-                    or CreateDomainStatement or AlterDomainStatement
+                    or CreateDomainStatement or AlterDomainStatement or CreateDualityViewStatement
                     or CreateJavaStatement or CreateLibraryStatement or CreateUserStatement or AlterUserStatement
                     or CreateRoleStatement or AlterRoleStatement
                     or CreateProfileStatement or AlterProfileStatement

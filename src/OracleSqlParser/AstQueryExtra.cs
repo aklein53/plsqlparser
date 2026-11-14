@@ -1,5 +1,52 @@
 namespace OracleSqlParser;
 
+// ---------- JSON constructors (23ai shorthand) and JSON relational duality views ----------
+
+/// <summary>JSON { 'k' : expr [ABSENT|NULL ON NULL] [RETURNING type], ... }; JSON {*} sets Wildcard.</summary>
+public sealed partial class JsonObjectConstructor : Expression
+{
+    public bool Wildcard { get; set; }
+    public List<JsonMember> Members { get; set; } = [];
+}
+
+/// <summary>One member of a JSON object constructor. The value is an expression, or a <see cref="JsonArrayConstructor"/>.</summary>
+public sealed partial class JsonMember : SqlNode
+{
+    public Expression Key { get; set; } = null!;
+    public Expression Value { get; set; } = null!;
+    public JsonNullHandling? NullHandling { get; set; }
+    public DataType? Returning { get; set; }
+}
+
+public enum JsonNullHandling { AbsentOnNull, NullOnNull }
+
+/// <summary>JSON [ expr, ... ] or JSON [ SELECT ... ]; as a member value the JSON keyword is omitted.</summary>
+public sealed partial class JsonArrayConstructor : Expression
+{
+    public List<Expression> Elements { get; set; } = [];
+    public SelectStatement? Query { get; set; }
+}
+
+/// <summary>Table annotations of a JSON relational duality view query.</summary>
+public enum DualityAnnotation { Insert, Update, Delete, NoInsert, NoUpdate, NoDelete, NoCheck, Etag, NoEtag }
+
+public sealed partial class DualityAnnotationItem : SqlNode
+{
+    public DualityAnnotation Kind { get; set; }
+}
+
+/// <summary>CREATE [OR REPLACE] JSON [RELATIONAL] DUALITY VIEW v AS SELECT JSON {...} FROM ... (SQL form; the GraphQL form is not modelled).</summary>
+public sealed partial class CreateDualityViewStatement : Statement
+{
+    public bool OrReplace { get; set; }
+    public bool Relational { get; set; }
+    public List<Identifier> Name { get; set; } = [];
+    /// <summary>The SQL form's query; null for the GraphQL form (kept in <see cref="OtherClauses"/>).</summary>
+    public SelectStatement Query { get; set; } = null!;
+    /// <summary>The GraphQL form (v AS t @insert @update { ... }), as a token tree.</summary>
+    public List<SyntaxItem> OtherClauses { get; set; } = [];
+}
+
 // ---------- Table reference modifiers ----------
 
 public sealed partial class SampleClause : SqlNode
@@ -169,8 +216,6 @@ public sealed partial class GraphTable : TableReference
     /// <summary>The variables named in ONE ROW PER VERTEX(v) or STEP(v1, e, v2); empty for MATCH.</summary>
     public List<Identifier> RowsPerVariables { get; set; } = [];
     public List<GraphColumn> Columns { get; set; } = [];
-    /// <summary>The whole body as a token tree, when the body uses syntax outside the typed grammar (empty otherwise).</summary>
-    public List<SyntaxItem> OtherClauses { get; set; } = [];
 }
 
 public enum GraphRowsPer { Match, Vertex, Step }
@@ -194,7 +239,8 @@ public sealed partial class GraphVertexPattern : GraphPatternElement
     public Expression? Where { get; set; }
 }
 
-public enum GraphEdgeDirection { Right, Left, Any }
+/// <summary>Right: -&gt;, Left: &lt;-, Any: -, LeftOrRight: &lt;-[...]-&gt; (bracketed only).</summary>
+public enum GraphEdgeDirection { Right, Left, Any, LeftOrRight }
 
 /// <summary>-[e IS lbl WHERE cond]-&gt;, &lt;-[...]-, -[...]-; abbreviated -&gt;, &lt;-, - when Bracketed is false.</summary>
 public sealed partial class GraphEdgePattern : GraphPatternElement
@@ -213,15 +259,22 @@ public sealed partial class GraphLabelExpression : SqlNode
     public List<Identifier> Labels { get; set; } = [];
 }
 
-public enum GraphQuantifierKind { Star, Plus, Exact, Range }
+public enum GraphQuantifierKind { Exact, Range }
 
-/// <summary>Repetition of a bracketed edge: * (zero or more), + (one or more), {n} (exact), {n,m} / {n,} / {,m} (range).</summary>
+/// <summary>Repetition of an edge or group: {n} (exact), {n,m} / {,m} (range). Oracle rejects * and + on edges and {n,} (ORA-40984/40985).</summary>
 public sealed partial class GraphQuantifier : SqlNode
 {
     public GraphQuantifierKind Kind { get; set; }
     /// <summary>The count for Exact, or the lower bound for Range (null when omitted).</summary>
     public Expression? Min { get; set; }
     public Expression? Max { get; set; }
+}
+
+/// <summary>( path ) quantifier: a parenthesised sub-path pattern that repeats.</summary>
+public sealed partial class GraphSubpatternElement : GraphPatternElement
+{
+    public GraphPathPattern Path { get; set; } = null!;
+    public GraphQuantifier? Quantifier { get; set; }
 }
 
 /// <summary>One COLUMNS item: expr [AS alias].</summary>

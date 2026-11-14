@@ -253,6 +253,7 @@ public partial class AlterDomainStatement
     {
         if (Name is not null) foreach (var x in Name) yield return x;
         if (Action is not null) yield return Action;
+        if (Annotations is not null) yield return Annotations;
         if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
     }
 
@@ -261,6 +262,7 @@ public partial class AlterDomainStatement
     {
         if (Name is not null) foreach (var x in Name) x.Accept(visitor);
         Action?.Accept(visitor);
+        Annotations?.Accept(visitor);
         if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
     }
 
@@ -268,6 +270,7 @@ public partial class AlterDomainStatement
     {
         SqlNodeRewriter.RewriteList(rewriter, Name, "AlterDomainStatement.Name");
         Action = SqlNodeRewriter.RewriteOptional(rewriter, Action, "AlterDomainStatement.Action");
+        Annotations = SqlNodeRewriter.RewriteOptional(rewriter, Annotations, "AlterDomainStatement.Annotations");
         SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "AlterDomainStatement.OtherClauses");
     }
 
@@ -282,6 +285,7 @@ public partial class AlterDomainStatement
         CopySpan(this, c);
         c.Name = CloneList(Name);
         c.Action = CloneChild(Action);
+        c.Annotations = CloneChild(Annotations);
         c.OtherClauses = CloneList(OtherClauses);
         c.Labels = CloneStrings(Labels);
         return c;
@@ -292,6 +296,7 @@ public partial class AlterDomainStatement
         var o = (AlterDomainStatement)other;
         return PairList(Name, o.Name, pending)
             && Pair(Action, o.Action, pending)
+            && Pair(Annotations, o.Annotations, pending)
             && PairList(OtherClauses, o.OtherClauses, pending)
             && SameStrings(Labels, o.Labels);
     }
@@ -1175,6 +1180,95 @@ public partial class AnalyzeStatement
             && PairList(IntoTable, o.IntoTable, pending)
             && PairList(OtherClauses, o.OtherClauses, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class AnnotationItem
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Value is not null) yield return Value;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        Value?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "AnnotationItem.Name");
+        Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "AnnotationItem.Value");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AnnotationItem();
+        CopySpan(this, c);
+        c.Action = Action;
+        c.IfNotExists = IfNotExists;
+        c.IfExists = IfExists;
+        c.Name = CloneChild(Name)!;
+        c.Value = CloneChild(Value);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AnnotationItem)other;
+        return Action == o.Action
+            && IfNotExists == o.IfNotExists
+            && IfExists == o.IfExists
+            && Pair(Name, o.Name, pending)
+            && Pair(Value, o.Value, pending);
+    }
+}
+
+public partial class AnnotationsClause
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Items is not null) foreach (var x in Items) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Items is not null) foreach (var x in Items) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Items, "AnnotationsClause.Items");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AnnotationsClause();
+        CopySpan(this, c);
+        c.Items = CloneList(Items);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AnnotationsClause)other;
+        return PairList(Items, o.Items, pending);
     }
 }
 
@@ -3343,7 +3437,7 @@ public partial class CreateDomainStatement
         if (Collation is not null) yield return Collation;
         if (Display is not null) yield return Display;
         if (Order is not null) yield return Order;
-        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
+        if (Annotations is not null) yield return Annotations;
     }
 
     /// <inheritdoc/>
@@ -3356,7 +3450,7 @@ public partial class CreateDomainStatement
         Collation?.Accept(visitor);
         Display?.Accept(visitor);
         Order?.Accept(visitor);
-        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
+        Annotations?.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
@@ -3368,7 +3462,7 @@ public partial class CreateDomainStatement
         Collation = SqlNodeRewriter.RewriteOptional(rewriter, Collation, "CreateDomainStatement.Collation");
         Display = SqlNodeRewriter.RewriteOptional(rewriter, Display, "CreateDomainStatement.Display");
         Order = SqlNodeRewriter.RewriteOptional(rewriter, Order, "CreateDomainStatement.Order");
-        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreateDomainStatement.OtherClauses");
+        Annotations = SqlNodeRewriter.RewriteOptional(rewriter, Annotations, "CreateDomainStatement.Annotations");
     }
 
     /// <inheritdoc/>
@@ -3390,7 +3484,7 @@ public partial class CreateDomainStatement
         c.Collation = CloneChild(Collation);
         c.Display = CloneChild(Display);
         c.Order = CloneChild(Order);
-        c.OtherClauses = CloneList(OtherClauses);
+        c.Annotations = CloneChild(Annotations);
         c.Labels = CloneStrings(Labels);
         return c;
     }
@@ -3408,6 +3502,61 @@ public partial class CreateDomainStatement
             && Pair(Collation, o.Collation, pending)
             && Pair(Display, o.Display, pending)
             && Pair(Order, o.Order, pending)
+            && Pair(Annotations, o.Annotations, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateDualityViewStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Query is not null) yield return Query;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        Query?.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "CreateDualityViewStatement.Name");
+        Query = SqlNodeRewriter.RewriteRequired(rewriter, Query, "CreateDualityViewStatement.Query");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreateDualityViewStatement.OtherClauses");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateDualityViewStatement();
+        CopySpan(this, c);
+        c.OrReplace = OrReplace;
+        c.Relational = Relational;
+        c.Name = CloneList(Name);
+        c.Query = CloneChild(Query)!;
+        c.OtherClauses = CloneList(OtherClauses);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateDualityViewStatement)other;
+        return OrReplace == o.OrReplace
+            && Relational == o.Relational
+            && PairList(Name, o.Name, pending)
+            && Pair(Query, o.Query, pending)
             && PairList(OtherClauses, o.OtherClauses, pending)
             && SameStrings(Labels, o.Labels);
     }
@@ -3933,7 +4082,6 @@ public partial class CreatePropertyGraphStatement
         if (Name is not null) foreach (var x in Name) yield return x;
         if (VertexTables is not null) foreach (var x in VertexTables) yield return x;
         if (EdgeTables is not null) foreach (var x in EdgeTables) yield return x;
-        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
     }
 
     /// <inheritdoc/>
@@ -3942,7 +4090,6 @@ public partial class CreatePropertyGraphStatement
         if (Name is not null) foreach (var x in Name) x.Accept(visitor);
         if (VertexTables is not null) foreach (var x in VertexTables) x.Accept(visitor);
         if (EdgeTables is not null) foreach (var x in EdgeTables) x.Accept(visitor);
-        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
@@ -3950,7 +4097,6 @@ public partial class CreatePropertyGraphStatement
         SqlNodeRewriter.RewriteList(rewriter, Name, "CreatePropertyGraphStatement.Name");
         SqlNodeRewriter.RewriteList(rewriter, VertexTables, "CreatePropertyGraphStatement.VertexTables");
         SqlNodeRewriter.RewriteList(rewriter, EdgeTables, "CreatePropertyGraphStatement.EdgeTables");
-        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreatePropertyGraphStatement.OtherClauses");
     }
 
     /// <inheritdoc/>
@@ -3966,7 +4112,6 @@ public partial class CreatePropertyGraphStatement
         c.Name = CloneList(Name);
         c.VertexTables = CloneList(VertexTables);
         c.EdgeTables = CloneList(EdgeTables);
-        c.OtherClauses = CloneList(OtherClauses);
         c.Labels = CloneStrings(Labels);
         return c;
     }
@@ -3978,7 +4123,6 @@ public partial class CreatePropertyGraphStatement
             && PairList(Name, o.Name, pending)
             && PairList(VertexTables, o.VertexTables, pending)
             && PairList(EdgeTables, o.EdgeTables, pending)
-            && PairList(OtherClauses, o.OtherClauses, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -5188,6 +5332,28 @@ public partial class DropStatement
             && Invalidate == o.Invalidate
             && PairList(Rest, o.Rest, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class DualityAnnotationItem
+{
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new DualityAnnotationItem();
+        CopySpan(this, c);
+        c.Kind = Kind;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (DualityAnnotationItem)other;
+        return Kind == o.Kind;
     }
 }
 
@@ -6963,8 +7129,8 @@ public partial class GraphEdgeTable
         if (Table is not null) foreach (var x in Table) yield return x;
         if (Alias is not null) yield return Alias;
         if (Key is not null) foreach (var x in Key) yield return x;
+        if (Properties is not null) yield return Properties;
         if (Labels is not null) foreach (var x in Labels) yield return x;
-        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
     }
 
     /// <inheritdoc/>
@@ -6975,8 +7141,8 @@ public partial class GraphEdgeTable
         if (Table is not null) foreach (var x in Table) x.Accept(visitor);
         Alias?.Accept(visitor);
         if (Key is not null) foreach (var x in Key) x.Accept(visitor);
+        Properties?.Accept(visitor);
         if (Labels is not null) foreach (var x in Labels) x.Accept(visitor);
-        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
@@ -6986,8 +7152,8 @@ public partial class GraphEdgeTable
         SqlNodeRewriter.RewriteList(rewriter, Table, "GraphEdgeTable.Table");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphEdgeTable.Alias");
         SqlNodeRewriter.RewriteList(rewriter, Key, "GraphEdgeTable.Key");
+        Properties = SqlNodeRewriter.RewriteOptional(rewriter, Properties, "GraphEdgeTable.Properties");
         SqlNodeRewriter.RewriteList(rewriter, Labels, "GraphEdgeTable.Labels");
-        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "GraphEdgeTable.OtherClauses");
     }
 
     /// <inheritdoc/>
@@ -7004,8 +7170,8 @@ public partial class GraphEdgeTable
         c.Table = CloneList(Table);
         c.Alias = CloneChild(Alias);
         c.Key = CloneList(Key);
+        c.Properties = CloneChild(Properties);
         c.Labels = CloneList(Labels);
-        c.OtherClauses = CloneList(OtherClauses);
         return c;
     }
 
@@ -7017,8 +7183,8 @@ public partial class GraphEdgeTable
             && PairList(Table, o.Table, pending)
             && Pair(Alias, o.Alias, pending)
             && PairList(Key, o.Key, pending)
-            && PairList(Labels, o.Labels, pending)
-            && PairList(OtherClauses, o.OtherClauses, pending);
+            && Pair(Properties, o.Properties, pending)
+            && PairList(Labels, o.Labels, pending);
     }
 }
 
@@ -7190,6 +7356,50 @@ public partial class GraphPropertiesClause
     }
 }
 
+public partial class GraphProperty
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Property is not null) yield return Property;
+        if (Alias is not null) yield return Alias;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Property?.Accept(visitor);
+        Alias?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Property = SqlNodeRewriter.RewriteRequired(rewriter, Property, "GraphProperty.Property");
+        Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphProperty.Alias");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new GraphProperty();
+        CopySpan(this, c);
+        c.Property = CloneChild(Property)!;
+        c.Alias = CloneChild(Alias);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (GraphProperty)other;
+        return Pair(Property, o.Property, pending)
+            && Pair(Alias, o.Alias, pending);
+    }
+}
+
 public partial class GraphQuantifier
 {
     /// <inheritdoc/>
@@ -7236,6 +7446,50 @@ public partial class GraphQuantifier
     }
 }
 
+public partial class GraphSubpatternElement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Path is not null) yield return Path;
+        if (Quantifier is not null) yield return Quantifier;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Path?.Accept(visitor);
+        Quantifier?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Path = SqlNodeRewriter.RewriteRequired(rewriter, Path, "GraphSubpatternElement.Path");
+        Quantifier = SqlNodeRewriter.RewriteOptional(rewriter, Quantifier, "GraphSubpatternElement.Quantifier");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new GraphSubpatternElement();
+        CopySpan(this, c);
+        c.Path = CloneChild(Path)!;
+        c.Quantifier = CloneChild(Quantifier);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (GraphSubpatternElement)other;
+        return Pair(Path, o.Path, pending)
+            && Pair(Quantifier, o.Quantifier, pending);
+    }
+}
+
 public partial class GraphTable
 {
     /// <inheritdoc/>
@@ -7246,7 +7500,6 @@ public partial class GraphTable
         if (Where is not null) yield return Where;
         if (RowsPerVariables is not null) foreach (var x in RowsPerVariables) yield return x;
         if (Columns is not null) foreach (var x in Columns) yield return x;
-        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
         if (Alias is not null) yield return Alias;
     }
 
@@ -7258,7 +7511,6 @@ public partial class GraphTable
         Where?.Accept(visitor);
         if (RowsPerVariables is not null) foreach (var x in RowsPerVariables) x.Accept(visitor);
         if (Columns is not null) foreach (var x in Columns) x.Accept(visitor);
-        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
         Alias?.Accept(visitor);
     }
 
@@ -7269,7 +7521,6 @@ public partial class GraphTable
         Where = SqlNodeRewriter.RewriteOptional(rewriter, Where, "GraphTable.Where");
         SqlNodeRewriter.RewriteList(rewriter, RowsPerVariables, "GraphTable.RowsPerVariables");
         SqlNodeRewriter.RewriteList(rewriter, Columns, "GraphTable.Columns");
-        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "GraphTable.OtherClauses");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphTable.Alias");
     }
 
@@ -7288,7 +7539,6 @@ public partial class GraphTable
         c.RowsPer = RowsPer;
         c.RowsPerVariables = CloneList(RowsPerVariables);
         c.Columns = CloneList(Columns);
-        c.OtherClauses = CloneList(OtherClauses);
         c.Alias = CloneChild(Alias);
         return c;
     }
@@ -7302,7 +7552,6 @@ public partial class GraphTable
             && RowsPer == o.RowsPer
             && PairList(RowsPerVariables, o.RowsPerVariables, pending)
             && PairList(Columns, o.Columns, pending)
-            && PairList(OtherClauses, o.OtherClauses, pending)
             && Pair(Alias, o.Alias, pending);
     }
 }
@@ -7364,8 +7613,8 @@ public partial class GraphVertexTable
         if (Table is not null) foreach (var x in Table) yield return x;
         if (Alias is not null) yield return Alias;
         if (Key is not null) foreach (var x in Key) yield return x;
+        if (Properties is not null) yield return Properties;
         if (Labels is not null) foreach (var x in Labels) yield return x;
-        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
     }
 
     /// <inheritdoc/>
@@ -7374,8 +7623,8 @@ public partial class GraphVertexTable
         if (Table is not null) foreach (var x in Table) x.Accept(visitor);
         Alias?.Accept(visitor);
         if (Key is not null) foreach (var x in Key) x.Accept(visitor);
+        Properties?.Accept(visitor);
         if (Labels is not null) foreach (var x in Labels) x.Accept(visitor);
-        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
@@ -7383,8 +7632,8 @@ public partial class GraphVertexTable
         SqlNodeRewriter.RewriteList(rewriter, Table, "GraphVertexTable.Table");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphVertexTable.Alias");
         SqlNodeRewriter.RewriteList(rewriter, Key, "GraphVertexTable.Key");
+        Properties = SqlNodeRewriter.RewriteOptional(rewriter, Properties, "GraphVertexTable.Properties");
         SqlNodeRewriter.RewriteList(rewriter, Labels, "GraphVertexTable.Labels");
-        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "GraphVertexTable.OtherClauses");
     }
 
     /// <inheritdoc/>
@@ -7399,8 +7648,8 @@ public partial class GraphVertexTable
         c.Table = CloneList(Table);
         c.Alias = CloneChild(Alias);
         c.Key = CloneList(Key);
+        c.Properties = CloneChild(Properties);
         c.Labels = CloneList(Labels);
-        c.OtherClauses = CloneList(OtherClauses);
         return c;
     }
 
@@ -7410,8 +7659,8 @@ public partial class GraphVertexTable
         return PairList(Table, o.Table, pending)
             && Pair(Alias, o.Alias, pending)
             && PairList(Key, o.Key, pending)
-            && PairList(Labels, o.Labels, pending)
-            && PairList(OtherClauses, o.OtherClauses, pending);
+            && Pair(Properties, o.Properties, pending)
+            && PairList(Labels, o.Labels, pending);
     }
 }
 
@@ -8323,6 +8572,142 @@ public partial class JoinTable
             && PairList(LeftPartitionBy, o.LeftPartitionBy, pending)
             && PairList(RightPartitionBy, o.RightPartitionBy, pending)
             && Pair(Alias, o.Alias, pending);
+    }
+}
+
+public partial class JsonArrayConstructor
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Elements is not null) foreach (var x in Elements) yield return x;
+        if (Query is not null) yield return Query;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Elements is not null) foreach (var x in Elements) x.Accept(visitor);
+        Query?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Elements, "JsonArrayConstructor.Elements");
+        Query = SqlNodeRewriter.RewriteOptional(rewriter, Query, "JsonArrayConstructor.Query");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new JsonArrayConstructor();
+        CopySpan(this, c);
+        c.Elements = CloneList(Elements);
+        c.Query = CloneChild(Query);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (JsonArrayConstructor)other;
+        return PairList(Elements, o.Elements, pending)
+            && Pair(Query, o.Query, pending);
+    }
+}
+
+public partial class JsonMember
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Key is not null) yield return Key;
+        if (Value is not null) yield return Value;
+        if (Returning is not null) yield return Returning;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Key?.Accept(visitor);
+        Value?.Accept(visitor);
+        Returning?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Key = SqlNodeRewriter.RewriteRequired(rewriter, Key, "JsonMember.Key");
+        Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "JsonMember.Value");
+        Returning = SqlNodeRewriter.RewriteOptional(rewriter, Returning, "JsonMember.Returning");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new JsonMember();
+        CopySpan(this, c);
+        c.Key = CloneChild(Key)!;
+        c.Value = CloneChild(Value)!;
+        c.NullHandling = NullHandling;
+        c.Returning = CloneChild(Returning);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (JsonMember)other;
+        return Pair(Key, o.Key, pending)
+            && Pair(Value, o.Value, pending)
+            && NullHandling == o.NullHandling
+            && Pair(Returning, o.Returning, pending);
+    }
+}
+
+public partial class JsonObjectConstructor
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Members is not null) foreach (var x in Members) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Members is not null) foreach (var x in Members) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Members, "JsonObjectConstructor.Members");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new JsonObjectConstructor();
+        CopySpan(this, c);
+        c.Wildcard = Wildcard;
+        c.Members = CloneList(Members);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (JsonObjectConstructor)other;
+        return Wildcard == o.Wildcard
+            && PairList(Members, o.Members, pending);
     }
 }
 
@@ -9327,6 +9712,7 @@ public partial class NamedTable
         if (Partition is not null) yield return Partition;
         if (Sample is not null) yield return Sample;
         if (Flashback is not null) yield return Flashback;
+        if (DualityAnnotations is not null) foreach (var x in DualityAnnotations) yield return x;
         if (Alias is not null) yield return Alias;
     }
 
@@ -9338,6 +9724,7 @@ public partial class NamedTable
         Partition?.Accept(visitor);
         Sample?.Accept(visitor);
         Flashback?.Accept(visitor);
+        if (DualityAnnotations is not null) foreach (var x in DualityAnnotations) x.Accept(visitor);
         Alias?.Accept(visitor);
     }
 
@@ -9348,6 +9735,7 @@ public partial class NamedTable
         Partition = SqlNodeRewriter.RewriteOptional(rewriter, Partition, "NamedTable.Partition");
         Sample = SqlNodeRewriter.RewriteOptional(rewriter, Sample, "NamedTable.Sample");
         Flashback = SqlNodeRewriter.RewriteOptional(rewriter, Flashback, "NamedTable.Flashback");
+        SqlNodeRewriter.RewriteList(rewriter, DualityAnnotations, "NamedTable.DualityAnnotations");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "NamedTable.Alias");
     }
 
@@ -9365,6 +9753,7 @@ public partial class NamedTable
         c.Partition = CloneChild(Partition);
         c.Sample = CloneChild(Sample);
         c.Flashback = CloneChild(Flashback);
+        c.DualityAnnotations = CloneList(DualityAnnotations);
         c.Alias = CloneChild(Alias);
         return c;
     }
@@ -9377,6 +9766,7 @@ public partial class NamedTable
             && Pair(Partition, o.Partition, pending)
             && Pair(Sample, o.Sample, pending)
             && Pair(Flashback, o.Flashback, pending)
+            && PairList(DualityAnnotations, o.DualityAnnotations, pending)
             && Pair(Alias, o.Alias, pending);
     }
 }

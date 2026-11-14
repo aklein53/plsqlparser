@@ -1175,6 +1175,7 @@ public sealed partial class SqlParser
             case ObjectKind.MaterializedView: return ParseCreateView(start, orReplace, force, noForce, editioning, true);
             case ObjectKind.Sequence: return ParseCreateSequence(start);
             case ObjectKind.PropertyGraph: return ParseCreatePropertyGraph(start, orReplace);
+            case ObjectKind.JsonRelationalDualityView: return ParseCreateDualityView(start, orReplace, _t[kindPos + 1].Value == "RELATIONAL");
             case ObjectKind.Domain: return ParseCreateDomain(start, orReplace, useCase);
             case ObjectKind.Synonym: return ParseCreateSynonym(start, orReplace, pub);
             case ObjectKind.Procedure: case ObjectKind.Function:
@@ -1548,22 +1549,57 @@ public sealed partial class SqlParser
 
     private Statement ParseCreateDomain(Token start, bool orReplace, bool useCase)
     {
-        var st = new CreateDomainStatement { OrReplace = orReplace, UseCase = useCase, IfNotExists = TryIfNotExists() };
+        // Oracle rejects OR REPLACE on domains (ORA-00922).
+        if (orReplace) throw Fail("CREATE OR REPLACE is not supported for DOMAIN");
+        var st = new CreateDomainStatement { UseCase = useCase, IfNotExists = TryIfNotExists() };
         st.Name = ParseDottedName();
         ExpectKw("AS");
-        if (!IsOp("(")) st.Type = ParseDataType();
+        st.Type = ParseDataType();
         int prog = -1;
         while (!AtStatementEnd() && Progress(ref prog))
         {
             if (AcceptKw("DEFAULT")) st.Default = ParseExpr();
+            else if (IsKw("CONSTRAINT") && IsKwAt(2, "NOT")) throw Fail("A NOT NULL constraint on a domain cannot be named (ORA-02253)");
             else if (IsKw("CONSTRAINT") || IsKw("NOT") || IsKw("NULL") || IsKw("CHECK")) st.Constraints.Add(ParseConstraint(true));
             else if (AcceptKw("COLLATE")) st.Collation = ParseIdentifier();
             else if (AcceptKw("DISPLAY")) st.Display = ParseExpr();
             else if (AcceptKw("ORDER")) st.Order = ParseExpr();
-            else break;
+            else if (AcceptKw("ANNOTATIONS")) st.Annotations = ParseAnnotations(allowDrop: false);
+            else throw Fail($"Unexpected {Describe(Cur)} in CREATE DOMAIN");
         }
-        if (!AtStatementEnd()) st.OtherClauses = ParseSyntaxItems(AtStatementEnd);
         return Fin(st, start);
+    }
+
+    /// <summary>ANNOTATIONS ( item [, item]... ); the keyword has been consumed.</summary>
+    private AnnotationsClause ParseAnnotations(bool allowDrop)
+    {
+        var c = new AnnotationsClause();
+        ExpectOp("(");
+        do c.Items.Add(ParseAnnotationItem(allowDrop)); while (AcceptOp(","));
+        ExpectOp(")");
+        return c;
+    }
+
+    private AnnotationItem ParseAnnotationItem(bool allowDrop)
+    {
+        var s = Cur;
+        var it = new AnnotationItem();
+        if (AcceptKw("ADD"))
+        {
+            it.Action = AnnotationAction.Add;
+            if (IsKw("IF") && IsKwAt(1, "NOT") && IsKwAt(2, "EXISTS")) { Next(); Next(); Next(); it.IfNotExists = true; }
+        }
+        else if (IsKw("DROP"))
+        {
+            if (!allowDrop) throw Fail("DROP is not allowed in an annotation list of a CREATE statement (ORA-11555)");
+            Next();
+            it.Action = AnnotationAction.Drop;
+            if (IsKw("IF") && IsKwAt(1, "EXISTS")) { Next(); Next(); it.IfExists = true; }
+        }
+        it.Name = ParseIdentifier();
+        // A DROP item names an existing annotation only; other items may carry a value.
+        if (it.Action != AnnotationAction.Drop && !IsOp(",") && !IsOp(")")) it.Value = ParseExpr();
+        return Fin(it, s);
     }
 
     private Statement ParseAlterDomain(Token start)
@@ -1579,6 +1615,7 @@ public sealed partial class SqlParser
             if (add) a.Value = ParseExpr();
             st.Action = Fin(a, start);
         }
+        else if (AcceptKw("ANNOTATIONS")) st.Annotations = ParseAnnotations(allowDrop: true);
         if (!AtStatementEnd()) st.OtherClauses = ParseSyntaxItems(AtStatementEnd);
         return Fin(st, start);
     }
@@ -1595,7 +1632,6 @@ public sealed partial class SqlParser
             do st.EdgeTables.Add(ParseGraphEdgeTable()); while (AcceptOp(","));
             ExpectOp(")");
         }
-        if (!AtStatementEnd()) st.OtherClauses = ParseSyntaxItems(AtStatementEnd);
         return Fin(st, start);
     }
 
@@ -1629,25 +1665,22 @@ public sealed partial class SqlParser
         if (AcceptKw("KEY")) { ExpectOp("("); t.Key = ParseIdentifierList(); ExpectOp(")"); }
     }
 
-    /// <summary>The LABEL clauses that close a vertex or edge table definition.</summary>
-    private void ParseGraphLabels(GraphElementTable t)
-    {
-        while (AcceptKw("LABEL"))
-        {
-            var l = new GraphElementLabel { Name = ParseIdentifier() };
-            if (IsKw("PROPERTIES") || (IsKw("NO") && IsKwAt(1, "PROPERTIES"))) l.Properties = ParseGraphProperties();
-            t.Labels.Add(l);
-        }
-        if (!IsOp(",") && !IsOp(")")) t.OtherClauses = ParseSyntaxItems(() => IsOp(","));
-    }
-
+    /// <summary>
+    /// SOURCE/DESTINATION: KEY (cols) REFERENCES vertex_table (cols), or just vertex_table (Oracle rejects a column list
+    /// without KEY, and REFERENCES without its columns).
+    /// </summary>
     private GraphEdgeEndpoint ParseGraphEdgeEndpoint()
     {
         var s = Cur;
         var ep = new GraphEdgeEndpoint();
-        if (AcceptKw("KEY")) { ExpectOp("("); ep.Keys = ParseIdentifierList(); ExpectOp(")"); ExpectKw("REFERENCES"); }
-        ep.Table = ParseDottedName();
-        if (AcceptOp("(")) { ep.Columns = ParseIdentifierList(); ExpectOp(")"); }
+        if (AcceptKw("KEY"))
+        {
+            ExpectOp("("); ep.Keys = ParseIdentifierList(); ExpectOp(")");
+            ExpectKw("REFERENCES");
+            ep.Table = ParseDottedName();
+            ExpectOp("("); ep.Columns = ParseIdentifierList(); ExpectOp(")");
+        }
+        else ep.Table = ParseDottedName();
         return Fin(ep, s);
     }
 
@@ -1659,7 +1692,17 @@ public sealed partial class SqlParser
         else
         {
             ExpectKw("PROPERTIES");
-            if (AcceptOp("(")) { p.Columns = ParseIdentifierList(); ExpectOp(")"); }
+            if (AcceptOp("("))
+            {
+                do
+                {
+                    var ps = Cur;
+                    var gp = new GraphProperty { Property = ParseIdentifier() };
+                    if (AcceptKw("AS")) gp.Alias = ParseIdentifier();
+                    p.Columns.Add(Fin(gp, ps));
+                } while (AcceptOp(","));
+                ExpectOp(")");
+            }
             else
             {
                 ExpectKw("ARE"); ExpectKw("ALL"); ExpectKw("COLUMNS");
@@ -1668,6 +1711,18 @@ public sealed partial class SqlParser
             }
         }
         return Fin(p, s);
+    }
+
+    /// <summary>The LABEL clauses that close a vertex or edge table definition, with PROPERTIES allowed before any LABEL.</summary>
+    private void ParseGraphLabels(GraphElementTable t)
+    {
+        if (IsKw("PROPERTIES") || (IsKw("NO") && IsKwAt(1, "PROPERTIES"))) t.Properties = ParseGraphProperties();
+        while (AcceptKw("LABEL"))
+        {
+            var l = new GraphElementLabel { Name = ParseIdentifier() };
+            if (IsKw("PROPERTIES") || (IsKw("NO") && IsKwAt(1, "PROPERTIES"))) l.Properties = ParseGraphProperties();
+            t.Labels.Add(l);
+        }
     }
 
     private Statement ParseCreateSequence(Token start)

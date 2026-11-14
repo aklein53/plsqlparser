@@ -46,7 +46,7 @@ public class OracleVersionTests
         ["SELECT * FROM GRAPH_TABLE(g MATCH (a) COLUMNS (a.name)) gt", "GRAPH_TABLE", OracleVersion.Oracle23],
         ["CREATE DOMAIN d AS NUMBER(3)", "CREATE DOMAIN", OracleVersion.Oracle23],
         ["CREATE TABLE t (c NUMBER DOMAIN d)", "column DOMAIN", OracleVersion.Oracle23],
-        ["CREATE JSON RELATIONAL DUALITY VIEW dv AS SELECT 1", "CREATE JSON RELATIONAL DUALITY VIEW", OracleVersion.Oracle23],
+        ["CREATE JSON RELATIONAL DUALITY VIEW dv AS SELECT 1 FROM dual", "CREATE JSON RELATIONAL DUALITY VIEW", OracleVersion.Oracle23],
         ["CREATE PROPERTY GRAPH g VERTEX TABLES (t KEY (id) PROPERTIES (id))", "CREATE PROPERTY GRAPH", OracleVersion.Oracle23],
         ["CREATE TABLE t (v VECTOR(3))", "VECTOR data type", OracleVersion.Oracle23],
         ["CREATE MLE MODULE m LANGUAGE JAVASCRIPT AS export function f() {}", "CREATE MLE MODULE", OracleVersion.Oracle23],

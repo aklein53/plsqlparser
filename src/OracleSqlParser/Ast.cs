@@ -383,6 +383,8 @@ public sealed partial class NamedTable : TableReference
     public Identifier? Partition { get; set; }
     public SampleClause? Sample { get; set; }
     public FlashbackClause? Flashback { get; set; }
+    /// <summary>JSON duality view annotations written after the table (WITH INSERT UPDATE DELETE, WITH NOCHECK, ...).</summary>
+    public List<DualityAnnotationItem> DualityAnnotations { get; set; } = [];
 }
 
 public sealed partial class SubqueryTable : TableReference
