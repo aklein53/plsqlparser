@@ -446,4 +446,289 @@ public class SqlAnalysisTests
         var functions = Functions("BEGIN FORALL i IN 1..n DELETE FROM t WHERE k = x(i); v := SQL%BULK_ROWCOUNT(1); END;");
         Assert.Equal(["Function X"], functions);
     }
+
+    [Fact]
+    public void Binds_IntoTarget_IsStillABind()
+    {
+        Assert.Equal(["x"], Binds("BEGIN SELECT a INTO :x FROM t; END;"));
+    }
+
+    // ---- GetColumns: resolution ----
+
+    [Fact]
+    public void Columns_QualifiedByAlias_Resolved()
+    {
+        Assert.Equal(["E.ID:Column:Resolved:E"], Columns("SELECT e.id FROM emp e"));
+    }
+
+    [Fact]
+    public void Columns_QualifiedByTableName_WhenUnaliased()
+    {
+        Assert.Equal(["EMP.ID:Column:Resolved:HR.EMP"], Columns("SELECT emp.id FROM hr.emp"));
+    }
+
+    [Fact]
+    public void Columns_TableNameIsNotAQualifier_WhenAliased()
+    {
+        // Oracle: an aliased table is known only by its alias, so the table name does not resolve.
+        Assert.Equal(["EMP.ID:Column:Unresolved:-"], Columns("SELECT emp.id FROM hr.emp e"));
+    }
+
+    [Fact]
+    public void Columns_UnqualifiedSingleSource_Resolved()
+    {
+        Assert.Equal(["ID:Column:Resolved:EMP"], Columns("SELECT id FROM emp"));
+    }
+
+    [Fact]
+    public void Columns_UnqualifiedWithTwoSources_Ambiguous()
+    {
+        Assert.Equal(["ID:Column:Ambiguous:-"], Columns("SELECT id FROM a JOIN b ON 1 = 1"));
+    }
+
+    [Fact]
+    public void Columns_JoinCondition_BothSidesQualified()
+    {
+        Assert.Equal(
+            ["A.X:Column:Resolved:A", "B.ID:Column:Resolved:B", "A.ID:Column:Resolved:A"],
+            Columns("SELECT a.x FROM a JOIN b ON b.id = a.id"));
+    }
+
+    [Fact]
+    public void Columns_CorrelatedScalarSubquery_OuterAliasResolves()
+    {
+        Assert.Equal(
+            ["X.V:Column:Resolved:X", "X.K:Column:Resolved:X", "T1.K:Column:Resolved:T1"],
+            Columns("SELECT (SELECT max(x.v) FROM t2 x WHERE x.k = t1.k) FROM t1"));
+    }
+
+    [Fact]
+    public void Columns_SubqueryWithoutFrom_ResolvesToOuterSource()
+    {
+        Assert.Equal(["K:Column:Resolved:T1"], Columns("SELECT (SELECT k + 1) FROM t1"));
+    }
+
+    [Fact]
+    public void Columns_InnermostWithTwoSources_Ambiguous_OuterStillResolves()
+    {
+        Assert.Equal(
+            ["ID:Column:Resolved:A", "ID:Column:Ambiguous:-"],
+            Columns("SELECT id FROM a WHERE EXISTS (SELECT 1 FROM b, c WHERE id = 1)"));
+    }
+
+    [Fact]
+    public void Columns_DerivedTable_InnerAndOuterResolve()
+    {
+        Assert.Equal(
+            ["S.A:Column:Resolved:S", "A:Column:Resolved:T"],
+            Columns("SELECT s.a FROM (SELECT a FROM t) s"));
+    }
+
+    [Fact]
+    public void Columns_ApplyRightSide_SeesLeftSource()
+    {
+        Assert.Equal(
+            ["B.V:Column:Resolved:B", "B.ID:Column:Resolved:B", "A.ID:Column:Resolved:A"],
+            Columns("SELECT * FROM a CROSS APPLY (SELECT b.v FROM b WHERE b.id = a.id) x"));
+    }
+
+    [Fact]
+    public void Columns_NoFromAtTopLevel_Unresolved()
+    {
+        Assert.Equal(["A:Column:Unresolved:-"], Columns("SELECT a"));
+    }
+
+    [Fact]
+    public void Columns_ExpressionRoot_ReportedEvenWithoutStatement()
+    {
+        var c = Assert.Single(SqlAnalysis.GetColumns(SqlParser.ParseExpression("e.id + 1")));
+        Assert.Equal(ColumnResolution.Unresolved, c.Resolution);
+        Assert.Equal("ID", c.Name);
+    }
+
+    [Fact]
+    public void Columns_QuotedQualifier_IsCaseSensitive()
+    {
+        Assert.Equal(["Al.Col:Column:Resolved:Al"], Columns("SELECT \"Al\".\"Col\" FROM emp \"Al\""));
+        Assert.Equal(["e.X:Column:Unresolved:-"], Columns("SELECT \"e\".x FROM emp e"));
+    }
+
+    [Fact]
+    public void Columns_WindowSpec_PartitionAndOrderResolve()
+    {
+        Assert.Equal(
+            ["X:Column:Resolved:T", "Y:Column:Resolved:T", "Z:Column:Resolved:T"],
+            Columns("SELECT sum(x) OVER (PARTITION BY y ORDER BY z) FROM t"));
+    }
+
+    // ---- GetColumns: exclusions and special kinds ----
+
+    [Fact]
+    public void Columns_FunctionNamesAndBinds_Excluded()
+    {
+        Assert.Equal(["NAME:Column:Resolved:EMP", "ID:Column:Resolved:EMP"], Columns("SELECT upper(name) FROM emp WHERE id = :b"));
+    }
+
+    [Fact]
+    public void Columns_IntoTargets_AreVariablesNotColumns()
+    {
+        Assert.Equal(
+            ["A:Column:Resolved:T", "K:Column:Resolved:T"],
+            Columns("BEGIN SELECT a INTO v FROM t WHERE k = 1; END;"));
+    }
+
+    [Fact]
+    public void Columns_PlsqlOutsideSql_NotReported()
+    {
+        Assert.Empty(Columns("BEGIN v := 1; IF x > 0 THEN NULL; END IF; END;"));
+    }
+
+    [Fact]
+    public void Columns_SequenceValues_ReportedAsSequence()
+    {
+        Assert.Equal(
+            ["SEQ.NEXTVAL:SequenceValue:NotApplicable:-", "S.SEQ2.CURRVAL:SequenceValue:NotApplicable:-"],
+            Columns("SELECT seq.NEXTVAL, s.seq2.CURRVAL FROM dual"));
+    }
+
+    [Fact]
+    public void Columns_SequenceInPlsqlAssignment_StillReported()
+    {
+        Assert.Equal(["SEQ.NEXTVAL:SequenceValue:NotApplicable:-"], Columns("BEGIN v := seq.NEXTVAL; END;"));
+    }
+
+    [Fact]
+    public void Columns_PseudoColumns_NotColumns()
+    {
+        Assert.Equal(
+            ["ROWNUM:PseudoColumn:NotApplicable:-", "ROWID:PseudoColumn:NotApplicable:-"],
+            Columns("SELECT ROWNUM, rowid FROM t"));
+    }
+
+    [Fact]
+    public void Columns_SelectAliasInOrderBy_ReportedAsAlias()
+    {
+        Assert.Equal(
+            ["A:Column:Resolved:T", "B:Column:Resolved:T", "TOTAL:SelectAlias:NotApplicable:-", "B:Column:Resolved:T"],
+            Columns("SELECT a AS total, b FROM t ORDER BY total, b"));
+    }
+
+    [Fact]
+    public void Columns_SelectAliasInOrderByExpression_ReportedAsAlias()
+    {
+        Assert.Equal(
+            ["A:Column:Resolved:T", "TOTAL:SelectAlias:NotApplicable:-"],
+            Columns("SELECT a AS total FROM t ORDER BY total + 1"));
+    }
+
+    [Fact]
+    public void Columns_OrderByNameThatIsNotAlias_Resolved()
+    {
+        Assert.Equal(["A:Column:Resolved:T", "A:Column:Resolved:T"], Columns("SELECT a FROM t ORDER BY a"));
+    }
+
+    [Fact]
+    public void Columns_CheckConstraint_NotReported()
+    {
+        Assert.Empty(Columns("CREATE TABLE t (a NUMBER CHECK (a > 0))"));
+    }
+
+    [Fact]
+    public void Columns_CreateViewQuery_Resolved()
+    {
+        Assert.Equal(["A:Column:Resolved:T"], Columns("CREATE VIEW v AS SELECT a FROM t"));
+    }
+
+    [Fact]
+    public void Columns_CteBody_ResolvesAndCteReferenceIsASource()
+    {
+        Assert.Equal(
+            ["X:Column:Resolved:T", "C.X:Column:Resolved:C"],
+            Columns("WITH c AS (SELECT x FROM t) SELECT c.x FROM c"));
+    }
+
+    [Fact]
+    public void Columns_RecursiveCteSearchClause_Unresolved()
+    {
+        Assert.Equal(
+            ["N:Column:Resolved:R", "N:Column:Unresolved:-", "N:Column:Resolved:R"],
+            Columns("WITH r (n) AS (SELECT 1 FROM dual UNION ALL SELECT n + 1 FROM r) SEARCH DEPTH FIRST BY n SET ord SELECT n FROM r"));
+    }
+
+    // ---- GetColumns: DML ----
+
+    [Fact]
+    public void Columns_UpdateSetTarget_IsWriteTarget()
+    {
+        Assert.Equal(
+            ["SAL:Column:Resolved:EMP:write", "SAL:Column:Resolved:EMP", "ID:Column:Resolved:EMP"],
+            Columns("UPDATE emp SET sal = sal + 1 WHERE id = 3"));
+    }
+
+    [Fact]
+    public void Columns_InsertColumnList_IsWriteTarget()
+    {
+        Assert.Equal(["A:Column:Resolved:T:write", "B:Column:Resolved:T:write"], Columns("INSERT INTO t (a, b) VALUES (1, 2)"));
+    }
+
+    [Fact]
+    public void Columns_Returning_ResolvesToDmlTarget()
+    {
+        Assert.Equal(
+            ["A:Column:Resolved:T:write", "A:Column:Resolved:T"],
+            Columns("UPDATE t SET a = 1 RETURNING a INTO v"));
+    }
+
+    [Fact]
+    public void Columns_Merge_ClausesResolveToTargetAndSource()
+    {
+        Assert.Equal(
+            [
+                "T.ID:Column:Resolved:T", "S.ID:Column:Resolved:S",
+                "T.V:Column:Resolved:T:write", "S.V:Column:Resolved:S",
+                "ID:Column:Resolved:T:write", "V:Column:Resolved:T:write",
+                "S.ID:Column:Resolved:S", "S.V:Column:Resolved:S",
+            ],
+            Columns("MERGE INTO tgt t USING src s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.v = s.v "
+                + "WHEN NOT MATCHED THEN INSERT (id, v) VALUES (s.id, s.v)"));
+    }
+
+    [Fact]
+    public void Columns_InsertAll_ValuesReadTheSubquery()
+    {
+        Assert.Equal(
+            [
+                "A:Column:Resolved:SRC", "B:Column:Resolved:SRC",
+                "A:Column:Resolved:SRC", "B:Column:Resolved:SRC",
+                "A:Column:Resolved:SRC", "B:Column:Resolved:SRC",
+            ],
+            Columns("INSERT ALL INTO t1 VALUES (a, b) INTO t2 VALUES (a, b) SELECT a, b FROM src"));
+    }
+
+    // ---- GetColumns: table functions and special sources ----
+
+    [Fact]
+    public void Columns_PivotForAndAggregateColumns_ResolveToPivotSource()
+    {
+        Assert.Equal(
+            ["AMT:Column:Resolved:SALES", "REGION:Column:Resolved:SALES"],
+            Columns("SELECT * FROM sales PIVOT (SUM(amt) FOR region IN ('E' AS east))"));
+    }
+
+    [Fact]
+    public void Columns_JsonTable_OutputIsSourceNotTableColumn()
+    {
+        // The COLUMNS names of JSON_TABLE are PATH columns, not references, so only the uses of jt are reported.
+        Assert.Equal(
+            ["JT.NAME:Column:Resolved:JT", "T.DOC:Column:Resolved:T"],
+            Columns("SELECT jt.name FROM t, JSON_TABLE(t.doc, '$[*]' COLUMNS (name VARCHAR2(10) PATH '$.name')) jt"));
+    }
+
+    [Fact]
+    public void Columns_GraphTableVariable_Unresolved()
+    {
+        Assert.Equal(
+            ["V.NAME:Column:Unresolved:-"],
+            Columns("SELECT * FROM GRAPH_TABLE (g MATCH (v IS person) COLUMNS (v.name AS n))"));
+    }
 }
