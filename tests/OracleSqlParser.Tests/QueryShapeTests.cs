@@ -33,6 +33,12 @@ public class QueryShapeTests
     [Theory]
     [InlineData("SELECT * FROM a LEFT OUTER JOIN b ON a.id = b.id",
         "(JoinTable left=(NamedTable name=[A]) kind=Left right=(NamedTable name=[B]) on=(= A.ID B.ID))")]
+    [InlineData("SELECT * FROM a PARTITION BY (a.x) RIGHT OUTER JOIN b ON a.id = b.id",
+        "(JoinTable left=(NamedTable name=[A]) kind=Right right=(NamedTable name=[B]) on=(= A.ID B.ID) leftPartitionBy=[A.X])")]
+    [InlineData("SELECT * FROM a LEFT JOIN b PARTITION BY (b.x) ON a.id = b.id",
+        "(JoinTable left=(NamedTable name=[A]) kind=Left right=(NamedTable name=[B]) on=(= A.ID B.ID) rightPartitionBy=[B.X])")]
+    [InlineData("SELECT * FROM a PARTITION BY (a.x, a.y) LEFT OUTER JOIN b ON a.id = b.id",
+        "(JoinTable left=(NamedTable name=[A]) kind=Left right=(NamedTable name=[B]) on=(= A.ID B.ID) leftPartitionBy=[A.X A.Y])")]
     [InlineData("SELECT * FROM a JOIN b USING (id, x)",
         "(JoinTable left=(NamedTable name=[A]) kind=Inner right=(NamedTable name=[B]) using=[ID X])")]
     [InlineData("SELECT * FROM a NATURAL JOIN b",
@@ -44,6 +50,12 @@ public class QueryShapeTests
     [InlineData("SELECT * FROM a FULL JOIN b ON 1 = 1 RIGHT JOIN c ON 2 = 2",
         "(JoinTable left=(JoinTable left=(NamedTable name=[A]) kind=Full right=(NamedTable name=[B]) on=(= 1 1)) kind=Right right=(NamedTable name=[C]) on=(= 2 2))")]
     public void Joins(string sql, string expected) => Assert.Equal(expected, Shape.Of<JoinTable>(sql));
+
+    [Theory]
+    [InlineData("SELECT * FROM a PARTITION BY (a.x) JOIN b ON a.id = b.id")] // only outer joins take a partition clause
+    [InlineData("SELECT * FROM a PARTITION BY (a.x) FULL OUTER JOIN b ON a.id = b.id")] // FULL outer joins cannot be partitioned
+    [InlineData("SELECT * FROM a PARTITION BY (a.x) LEFT JOIN b PARTITION BY (b.x) ON a.id = b.id")] // one side only
+    public void PartitionedOuterJoin_Rejected(string sql) => Assert.False(SqlParser.Parse(sql).Success);
 
     [Theory]
     [InlineData("SELECT * FROM emp@remote_db e", "(NamedTable name=[EMP] dbLink=[REMOTE_DB] alias=E)")]

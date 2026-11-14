@@ -220,6 +220,7 @@ public sealed partial class SqlScriptGenerator
             {
                 var x = spine[i];
                 ClauseStart(_o.NewLineBeforeJoinClause);
+                if (x.LeftPartitionBy.Count > 0) { Add("PARTITION BY ("); Sep(x.LeftPartitionBy, e => Expr(e)); Add(") "); }
                 if (x.Natural) Add("NATURAL ");
                 Add(x.Kind switch
                 {
@@ -228,6 +229,7 @@ public sealed partial class SqlScriptGenerator
                 });
                 Add(" ");
                 Table(x.Right);
+                if (x.RightPartitionBy.Count > 0) { Add(" PARTITION BY ("); Sep(x.RightPartitionBy, e => Expr(e)); Add(")"); }
                 if (x.On != null) { Add(" ON "); Expr(x.On); }
                 else if (x.Using.Count > 0) { Add(" USING ("); IdList(x.Using); Add(")"); }
             }

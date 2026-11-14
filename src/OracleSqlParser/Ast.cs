@@ -404,6 +404,10 @@ public sealed partial class JoinTable : TableReference
     public TableReference Right { get; set; } = null!;
     public Expression? On { get; set; }
     public List<Identifier> Using { get; set; } = [];
+    /// <summary>Partitioned outer join: PARTITION BY (...) on the left operand (only one side may be partitioned).</summary>
+    public List<Expression> LeftPartitionBy { get; set; } = [];
+    /// <summary>Partitioned outer join: PARTITION BY (...) on the right operand.</summary>
+    public List<Expression> RightPartitionBy { get; set; } = [];
 }
 
 public enum JoinKind { Inner, Left, Right, Full, Cross, CrossApply, OuterApply }

@@ -5107,6 +5107,8 @@ public partial class JoinTable
         if (Right is not null) yield return Right;
         if (On is not null) yield return On;
         if (Using is not null) foreach (var x in Using) yield return x;
+        if (LeftPartitionBy is not null) foreach (var x in LeftPartitionBy) yield return x;
+        if (RightPartitionBy is not null) foreach (var x in RightPartitionBy) yield return x;
         if (Alias is not null) yield return Alias;
     }
 
@@ -5117,6 +5119,8 @@ public partial class JoinTable
         Right?.Accept(visitor);
         On?.Accept(visitor);
         if (Using is not null) foreach (var x in Using) x.Accept(visitor);
+        if (LeftPartitionBy is not null) foreach (var x in LeftPartitionBy) x.Accept(visitor);
+        if (RightPartitionBy is not null) foreach (var x in RightPartitionBy) x.Accept(visitor);
         Alias?.Accept(visitor);
     }
 
@@ -5126,6 +5130,8 @@ public partial class JoinTable
         Right = SqlNodeRewriter.RewriteRequired(rewriter, Right, "JoinTable.Right");
         On = SqlNodeRewriter.RewriteOptional(rewriter, On, "JoinTable.On");
         SqlNodeRewriter.RewriteList(rewriter, Using, "JoinTable.Using");
+        SqlNodeRewriter.RewriteList(rewriter, LeftPartitionBy, "JoinTable.LeftPartitionBy");
+        SqlNodeRewriter.RewriteList(rewriter, RightPartitionBy, "JoinTable.RightPartitionBy");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "JoinTable.Alias");
     }
 
@@ -5144,6 +5150,8 @@ public partial class JoinTable
         c.Right = CloneChild(Right)!;
         c.On = CloneChild(On);
         c.Using = CloneList(Using);
+        c.LeftPartitionBy = CloneList(LeftPartitionBy);
+        c.RightPartitionBy = CloneList(RightPartitionBy);
         c.Alias = CloneChild(Alias);
         return c;
     }
@@ -5157,6 +5165,8 @@ public partial class JoinTable
             && Pair(Right, o.Right, pending)
             && Pair(On, o.On, pending)
             && PairList(Using, o.Using, pending)
+            && PairList(LeftPartitionBy, o.LeftPartitionBy, pending)
+            && PairList(RightPartitionBy, o.RightPartitionBy, pending)
             && Pair(Alias, o.Alias, pending);
     }
 }

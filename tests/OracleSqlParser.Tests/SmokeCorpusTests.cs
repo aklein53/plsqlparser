@@ -21,6 +21,8 @@ public class SmokeCorpusTests
     [InlineData("SELECT a FROM t UNION ALL SELECT b FROM u MINUS (SELECT c FROM v) ORDER BY 1")]
     [InlineData("SELECT * FROM t OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY")]
     [InlineData("SELECT * FROM t FETCH FIRST 10 PERCENT ROWS WITH TIES")]
+    [InlineData("SELECT * FROM t PARTITION BY (t.id) RIGHT OUTER JOIN u ON t.id = u.id")]
+    [InlineData("SELECT * FROM t LEFT JOIN u PARTITION BY (u.id) ON t.id = u.id JOIN v ON v.id = u.id")]
     [InlineData("SELECT * FROM t FOR UPDATE OF t.a NOWAIT")]
     [InlineData("SELECT ROW_NUMBER() OVER (PARTITION BY d ORDER BY s DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) rn FROM t")]
     [InlineData("SELECT LAG(x, 1) IGNORE NULLS OVER w FROM t")]
