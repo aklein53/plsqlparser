@@ -37,9 +37,9 @@ public sealed partial class CommitStatement : Statement
     public Expression? Comment { get; set; }
     /// <summary>The <c>WRITE</c> clause, or null when absent.</summary>
     public CommitWrite? Write { get; set; }
-    /// <summary>COMMIT FORCE 'tx_id' [, scn].</summary>
+    /// <summary>The transaction id after <c>COMMIT FORCE</c> (for example <c>'1.2.3'</c>), or null when absent.</summary>
     public Expression? Force { get; set; }
-    /// <summary>The <c>FORCE</c> expression for a distributed transaction, or null when absent. The expression names a transaction id or <c>CORRUPT_XID</c>.</summary>
+    /// <summary>The SCN after the comma in <c>COMMIT FORCE 'tx_id', scn</c>, or null when absent.</summary>
     public Expression? ForceScn { get; set; }
 }
 
@@ -50,7 +50,7 @@ public sealed partial class RollbackStatement : Statement
     public bool Work { get; set; }
     /// <summary>The savepoint name after <c>TO SAVEPOINT</c>, or null when rolling back the whole transaction.</summary>
     public Identifier? ToSavepoint { get; set; }
-    /// <summary>The <c>FORCE</c> expression for a distributed transaction, or null when absent.</summary>
+    /// <summary>The transaction id after <c>ROLLBACK FORCE</c> for a distributed transaction, or null when absent.</summary>
     public Expression? Force { get; set; }
 }
 
@@ -536,8 +536,7 @@ public enum UserClauseKind
     Other,
 }
 
-/// <summary>Role-list keyword form: an explicit list, ALL [EXCEPT list], or NONE.</summary>
-/// <summary>The role set of a user's <c>DEFAULT ROLE</c> clause.</summary>
+/// <summary>The role set of a user's <c>DEFAULT ROLE</c> clause: an explicit list, <c>ALL</c> or <c>NONE</c>.</summary>
 public enum RoleSetKind
 {
     /// <summary>A list of named roles.</summary>
@@ -562,7 +561,7 @@ public sealed partial class UserClause : SqlNode
     public Identifier? ReplacePassword { get; set; }
     /// <summary>IDENTIFIED EXTERNALLY/GLOBALLY AS 'name'.</summary>
     public Expression? ExternalName { get; set; }
-    /// <summary>LOCAL TEMPORARY TABLESPACE.</summary>
+    /// <summary>True for <c>LOCAL TEMPORARY TABLESPACE</c>.</summary>
     public bool Local { get; set; }
     /// <summary>Tablespace of DEFAULT/TEMPORARY TABLESPACE and QUOTA ... ON.</summary>
     public Identifier? Tablespace { get; set; }
@@ -572,7 +571,7 @@ public sealed partial class UserClause : SqlNode
     public bool Unlimited { get; set; }
     /// <summary>The profile name after <c>PROFILE</c>, or null when absent.</summary>
     public Identifier? Profile { get; set; }
-    /// <summary>Proxy user for GRANT/REVOKE CONNECT THROUGH.</summary>
+    /// <summary>The proxy user after <c>CONNECT THROUGH</c> in <c>GRANT</c> or <c>REVOKE</c>, or null when absent.</summary>
     public Identifier? Proxy { get; set; }
     /// <summary>True for <c>ENTERPRISE USERS</c>.</summary>
     public bool EnterpriseUsers { get; set; }
@@ -668,7 +667,6 @@ public sealed partial class AlterRoleStatement : Statement
 // ---------- CREATE / ALTER PROFILE ----------
 
 /// <summary>The keyword value of a profile limit: UNLIMITED, DEFAULT or NULL.</summary>
-/// <summary>A keyword value of a profile limit.</summary>
 public enum ProfileKeyword
 {
     /// <summary><c>UNLIMITED</c>.</summary>
@@ -755,11 +753,11 @@ public sealed partial class CreateDatabaseLinkStatement : Statement
     public List<Identifier> Name { get; set; } = [];
     /// <summary>CONNECT TO user [IDENTIFIED BY password].</summary>
     public Identifier? ConnectUser { get; set; }
-    /// <summary>Printed as typed (passwords are case-sensitive even when unquoted).</summary>
+    /// <summary>The password after <c>IDENTIFIED BY</c> in <c>CONNECT TO</c>, or null when absent. Printed as typed (passwords are case-sensitive even when unquoted).</summary>
     public Identifier? ConnectPassword { get; set; }
     /// <summary>CONNECT TO CURRENT_USER.</summary>
     public bool CurrentUser { get; set; }
-    /// <summary>AUTHENTICATED BY user IDENTIFIED BY password (shared links).</summary>
+    /// <summary>The user after <c>AUTHENTICATED BY</c> (shared links), or null when absent.</summary>
     public Identifier? AuthenticatedUser { get; set; }
     /// <summary>The password after <c>IDENTIFIED BY</c> in <c>AUTHENTICATED BY</c>, or null when absent.</summary>
     public Identifier? AuthenticatedPassword { get; set; }
@@ -868,13 +866,13 @@ public sealed partial class CreateTablespaceStatement : Statement
     public required Identifier Name { get; set; }
     /// <summary>DATAFILE or TEMPFILE specs (one keyword per clause, comma-separated specs).</summary>
     public List<DatafileSpec> Files { get; set; } = [];
-    /// <summary>LOGGING (true) or NOLOGGING (false).</summary>
+    /// <summary>LOGGING (true) or NOLOGGING (false); null when neither is written.</summary>
     public bool? Logging { get; set; }
-    /// <summary>FORCE LOGGING (with Logging = true).</summary>
+    /// <summary>True for <c>FORCE LOGGING</c>.</summary>
     public bool ForceLogging { get; set; }
-    /// <summary>ONLINE (true) or OFFLINE (false).</summary>
+    /// <summary>ONLINE (true) or OFFLINE (false); null when neither is written.</summary>
     public bool? Online { get; set; }
-    /// <summary>EXTENT MANAGEMENT LOCAL [...].</summary>
+    /// <summary>True when <c>EXTENT MANAGEMENT LOCAL</c> is written; <see cref="ExtentPolicy"/> then holds AUTOALLOCATE or UNIFORM.</summary>
     public bool ExtentManagementLocal { get; set; }
     /// <summary>The extent management policy, or null when absent.</summary>
     public ExtentPolicy? ExtentPolicy { get; set; }
@@ -994,7 +992,7 @@ public sealed partial class AuditStatement : Statement
     public Identifier? Policy { get; set; }
     /// <summary>AUDIT CONTEXT NAMESPACE ns (unified).</summary>
     public Identifier? ContextNamespace { get; set; }
-    /// <summary>The attributes named in <c>BY ... </c>, or empty when absent.</summary>
+    /// <summary>The attributes after <c>CONTEXT NAMESPACE ns ATTRIBUTES</c> (unified), in source order; empty when absent.</summary>
     public List<Identifier> ContextAttributes { get; set; } = [];
     /// <summary>Traditional audit options.</summary>
     public List<AuditOption> Options { get; set; } = [];
@@ -1004,13 +1002,13 @@ public sealed partial class AuditStatement : Statement
     public List<Identifier> ByUsers { get; set; } = [];
     /// <summary>BY USERS WITH ROLES role, ... (unified).</summary>
     public List<Identifier> WithRoles { get; set; } = [];
-    /// <summary>BY USERS WITH GRANTED ROLES rather than WITH ROLES.</summary>
+    /// <summary>True for <c>WITH GRANTED ROLES</c> (rather than <c>WITH ROLES</c>).</summary>
     public bool GrantedRoles { get; set; }
     /// <summary>EXCEPT user, ... (unified policies).</summary>
     public List<Identifier> ExceptUsers { get; set; } = [];
     /// <summary>BY ACCESS or BY SESSION (traditional).</summary>
     public AuditBy? By { get; set; }
-    /// <summary>WHENEVER [NOT] SUCCESSFUL: true = SUCCESSFUL, false = NOT SUCCESSFUL.</summary>
+    /// <summary>WHENEVER [NOT] SUCCESSFUL: true for <c>SUCCESSFUL</c>, false for <c>NOT SUCCESSFUL</c>, null when absent.</summary>
     public bool? Successful { get; set; }
 }
 
@@ -1025,7 +1023,6 @@ public enum AuditPolicyListKind
     Roles,
 }
 
-/// <summary>When an audit policy condition is evaluated.</summary>
 /// <summary>When a unified audit policy condition is evaluated.</summary>
 public enum AuditEvaluation
 {
@@ -1070,7 +1067,7 @@ public sealed partial class CreateAuditPolicyStatement : Statement
     public required Identifier Name { get; set; }
     /// <summary>The privilege, action and role lists, in source order.</summary>
     public List<AuditPolicyList> Lists { get; set; } = [];
-    /// <summary>WHEN 'condition' EVALUATE PER ...</summary>
+    /// <summary>The <c>WHEN</c> condition string, or null when absent.</summary>
     public Expression? Condition { get; set; }
     /// <summary>The evaluation setting, or null when absent.</summary>
     public AuditEvaluation? Evaluate { get; set; }
@@ -1298,7 +1295,7 @@ public sealed partial class DropStatement : Statement
     public bool Validate { get; set; }
     /// <summary>True for <c>INVALIDATE</c>.</summary>
     public bool Invalidate { get; set; }
-    /// <summary>Other trailing clause words, kept structured.</summary>
+    /// <summary>Trailing words of the statement that have no flag of their own, kept as tokens.</summary>
     public List<SyntaxItem> Rest { get; set; } = [];
 }
 
@@ -1517,7 +1514,7 @@ public sealed partial class CreateTableStatement : Statement
     public List<ColumnDefinition> Columns { get; set; } = [];
     /// <summary>The table-level constraints, in source order; empty when absent.</summary>
     public List<TableConstraint> Constraints { get; set; } = [];
-    /// <summary>CREATE TABLE t OF object_type.</summary>
+    /// <summary>The object type name after <c>OF</c> in <c>CREATE TABLE t OF type</c>; empty when absent.</summary>
     public List<Identifier> OfType { get; set; } = [];
     /// <summary>The <c>ON COMMIT</c> behavior of a temporary table, or null when absent.</summary>
     public OnCommitAction? OnCommit { get; set; }
@@ -1536,8 +1533,7 @@ public enum IdentityMode
     ByDefault,
 }
 
-/// <summary>The DML statements a DEFAULT ON NULL value applies to.</summary>
-/// <summary>Which statements an <c>ON NULL</c> default applies to.</summary>
+/// <summary>The DML statements a <c>DEFAULT ON NULL</c> value applies to.</summary>
 public enum OnNullScope
 {
     /// <summary><c>ON NULL</c> applies to inserts only.</summary>
@@ -2173,9 +2169,9 @@ public sealed partial class AlterTableAction : SqlNode
     public bool? AddValues { get; set; }
     /// <summary>SET INTERVAL (expr); null for the SET INTERVAL () form.</summary>
     public Expression? Interval { get; set; }
-    /// <summary>UPDATE [GLOBAL] INDEXES clause on partition maintenance.</summary>
+    /// <summary>True when an <c>UPDATE [GLOBAL] INDEXES</c> clause is written on partition maintenance.</summary>
     public bool UpdateIndexes { get; set; }
-    /// <summary>True for <c>UPDATE GLOBAL INDEXES</c>.</summary>
+    /// <summary>True for the <c>GLOBAL</c> form, <c>UPDATE GLOBAL INDEXES</c>; meaningful only with <see cref="UpdateIndexes"/>.</summary>
     public bool GlobalIndexes { get; set; }
     /// <summary>EXCHANGE PARTITION ... INCLUDING (true) or EXCLUDING (false) INDEXES.</summary>
     public bool? IncludingIndexes { get; set; }
