@@ -77,28 +77,25 @@ Error recovery resyncs at `;`, or for PL/SQL units at a `/` alone on its line (e
 
 | Release | Constructs |
 |---|---|
-| 21c | JSON data type (`CREATE`, `ALTER`, `CAST`, `RETURNING`); IMMUTABLE and BLOCKCHAIN tables; SQL_MACRO / SQL_TABLE_MACRO; FOR loop iteration controls `BY`, several controls, `REPEAT`, `WHILE`/`WHEN`, `VALUES OF`/`INDICES OF`/`PAIRS OF`, parenthesised `EXECUTE IMMEDIATE`; typed and `MUTABLE`/`IMMUTABLE` iterands |
-| 23ai | `IS [NOT] TRUE/FALSE`; BOOLEAN type and TRUE/FALSE literals in SQL (PL/SQL is not gated); VECTOR type; `SELECT` without `FROM`; `IF [NOT] EXISTS`; `RETURNING OLD/NEW`; `UPDATE ... FROM` and `DELETE ... FROM`; `VALUES` table constructor (FROM, CTE, bare query); multi-row `INSERT ... VALUES`; `GRAPH_TABLE`; column `DOMAIN`; CREATE/ALTER/DROP of DOMAIN, PROPERTY GRAPH, JSON RELATIONAL DUALITY VIEW, MLE MODULE, MLE ENV; `LANGUAGE MLE` call specs |
+| 21c | JSON data type (`CREATE`, `ALTER`, `CAST`, `RETURNING`); IMMUTABLE and BLOCKCHAIN tables; SQL_MACRO / SQL_TABLE_MACRO; FOR loop iteration controls `BY`, several controls, `REPEAT`, `WHILE`/`WHEN`, `VALUES OF`/`INDICES OF`/`PAIRS OF`, parenthesised `EXECUTE IMMEDIATE`; typed and `MUTABLE`/`IMMUTABLE` iterands; qualified-expression FOR iterator `t(FOR i IN 1..3 => i)` |
+| 23ai | `IS [NOT] TRUE/FALSE`; BOOLEAN type and TRUE/FALSE literals in SQL (PL/SQL is not gated); VECTOR type; `SELECT` without `FROM`; `IF [NOT] EXISTS`; `RETURNING OLD/NEW`; `UPDATE ... FROM` and `DELETE ... FROM`; `VALUES` table constructor (FROM, CTE, bare query); multi-row `INSERT ... VALUES`; `GRAPH_TABLE`; column `DOMAIN`; CREATE/ALTER/DROP of DOMAIN, PROPERTY GRAPH, JSON RELATIONAL DUALITY VIEW, MLE MODULE, MLE ENV; `LANGUAGE MLE` call specs; `JSON {...}` and `JSON [...]` constructors; `ANNOTATIONS` (in the shared clause, so every use site); `FETCH APPROX`/`APPROXIMATE` and `WITH TARGET ACCURACY`; `DEFAULT ON NULL FOR INSERT ...` (plain `DEFAULT ON NULL` is 12c and not gated); `CREATE`/`ALTER USER ... READ ONLY`/`READ WRITE`; `GRANT`/`REVOKE ... ON SCHEMA` |
 
 Caveats:
 
+- SQL_MACRO was backported to 19c release updates (19.7 and later RUs), but it is gated at 21 regardless. Users on a patched 19c should target `Oracle21` or ignore that diagnostic.
 - The MLE objects and `LANGUAGE MLE` call specs are gated at 23 as the conservative choice. Their 21c release could not be confirmed, so a 21c target may see a false error.
-- SQL_MACRO was backported to 19c release updates. It is gated at 21 regardless, so a backported 19c release gets an error for it.
 - `TREAT(expr AS JSON)` is not gated, because its release is not confirmed. `CAST(expr AS JSON)` is gated with the JSON data type.
 
 Not gated:
 
 - `GROUP BY` by alias or position. `GROUP BY 1` is valid in 19c, and an alias is an ordinary identifier at parse time, so 19c rejects it semantically, not in the parser.
-- `FETCH APPROX`, `ALTER USER ... READ ONLY`, and the column-level `DEFAULT ON NULL FOR ...` qualifier. Their releases could not be confirmed.
-- `ANNOTATIONS`. Inside a gated DOMAIN statement it is covered by the DOMAIN gate. On tables and columns, where it also exists in 23ai, it is not gated.
+- Plain `DEFAULT ON NULL` (12c), plain `name => value` and `OTHERS =>` qualified-expression choices (18c), and index choices `1 => x` (18c).
 - `FOR` loops over a bare cursor or collection name, and `(SELECT ...)` controls, are classic forms.
-- The qualified-expression and MODEL `FOR` iteration forms (`FOR d FROM 1 TO 10 INCREMENT 1`, `FOR d IN (...)`) date from 10g.
+- The MODEL `FOR` iteration forms (`FOR d FROM 1 TO 10 INCREMENT 1`, `FOR d IN (...)`) date from 10g.
 - `RESERVABLE` (lock-free reservations) and the `VECTOR_*` functions. They have no typed parse, so there is nothing to gate.
 
 ## Known gaps (each is a parse error today, not a silent mis-parse)
 
-- `GRANT ... ON SCHEMA s` (23ai schema-level privileges) is a syntax error today: the grant parser has no `ON SCHEMA` form.
-- The `JSON {}` / `JSON []` constructor shorthand is not in this tree yet.
 - `JSON_TRANSFORM` `NESTED PATH` and `CASE` operations.
 - `IN (subquery, expr)` mixed lists, `CREATE ... SHARDED/DUPLICATED` modifiers beyond those listed.
 - Every node can be generated back to SQL by `SqlScriptGenerator` (comments excepted; token-tree bodies print as space-separated tokens). The `AstPrinter` text is for assertions, not SQL.

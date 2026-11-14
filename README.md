@@ -51,6 +51,8 @@ var r = SqlParser.Parse("SELECT 1 FROM dual WHERE (1 = 1) IS TRUE", new ParseOpt
 // r.Errors: one error, "'IS TRUE/FALSE' requires Oracle 23 or later (targeting Oracle 19)"
 ```
 
+SQL_MACRO is gated at 21, although table macros were backported to 19.7 and later release updates. Users on a patched 19c should target `Oracle21` or ignore that diagnostic.
+
 The gated constructs and their versions are listed in [COVERAGE.md](https://github.com/aklein53/plsqlparser/blob/main/COVERAGE.md#version-gates).
 
 ## CLI
