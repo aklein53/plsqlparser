@@ -328,4 +328,122 @@ public class SqlAnalysisTests
     {
         Assert.Equal(["Ddl T", "Ddl P"], Tables("CREATE TABLE t (pid NUMBER REFERENCES p (id))"));
     }
+
+    // ---- GetBinds ----
+
+    [Fact]
+    public void Binds_InSourceOrder_NotTreeOrder()
+    {
+        // RETURNING is last in the text but is a child of the DML node that the walk visits first.
+        Assert.Equal(["b", "a", "c"], Binds("UPDATE t SET x = :b WHERE id = :a RETURNING id INTO :c"));
+    }
+
+    [Fact]
+    public void Binds_Positions_CoverColonAndName()
+    {
+        const string sql = "SELECT :x FROM t";
+        var b = Assert.Single(SqlAnalysis.GetBinds(Parse(sql)));
+        Assert.Equal(7, b.Start);
+        Assert.Equal(9, b.End);
+        Assert.Equal(":x", sql.Substring(b.Start, b.End - b.Start));
+    }
+
+    [Fact]
+    public void Binds_Distinct_CaseInsensitiveUnquotedQuotedExact()
+    {
+        const string sql = "SELECT :a, :A, :\"a\", :1, :1 FROM dual";
+        Assert.Equal(["a", "A", "\"a\"", "1", "1"], Binds(sql));
+        Assert.Equal(["a", "\"a\"", "1"], Binds(sql, distinct: true));
+    }
+
+    [Fact]
+    public void Binds_NumericAndQuoted_NameWithoutColonOrQuotes()
+    {
+        var all = SqlAnalysis.GetBinds(Parse("SELECT :1, :\"Mixed\" FROM dual"));
+        Assert.Equal("1", all[0].Name);
+        Assert.False(all[0].Quoted);
+        Assert.Equal("Mixed", all[1].Name);
+        Assert.True(all[1].Quoted);
+    }
+
+    [Fact]
+    public void Binds_NewColonField_ReportedAsWritten()
+    {
+        // Documented: the parser reads :new.col (trigger correlation) as a bind named "new.col".
+        Assert.Equal(["new.col"], Binds("SELECT :new.col FROM dual"));
+    }
+
+    [Fact]
+    public void Binds_NotPresent_EmptyList()
+    {
+        Assert.Empty(SqlAnalysis.GetBinds(Parse("SELECT 1 FROM dual")));
+    }
+
+    // ---- GetFunctions ----
+
+    [Fact]
+    public void Functions_PlainAndQualifiedNames()
+    {
+        Assert.Equal(
+            ["Function UPPER", "Function PKG.FN", "Function SCH.PKG.FN2"],
+            Functions("SELECT upper(a), pkg.fn(1), sch.pkg.fn2(2) FROM dual"));
+    }
+
+    [Fact]
+    public void Functions_NameParts_KeepEachPart()
+    {
+        var f = SqlAnalysis.GetFunctions(Parse("SELECT sch.pkg.fn2(2) FROM dual")).Single();
+        Assert.Equal(["SCH", "PKG", "FN2"], f.NameParts.Select(p => p.Value));
+        Assert.Equal("SCH.PKG", f.Qualifier);
+        Assert.Equal("FN2", f.Name);
+        Assert.Equal("sch.pkg.fn2", "SELECT sch.pkg.fn2(2) FROM dual".Substring(f.Start, f.End - f.Start));
+    }
+
+    [Fact]
+    public void Functions_Analytic_HasOver()
+    {
+        Assert.Equal(
+            ["Function SUM analytic", "Function MAX"],
+            Functions("SELECT sum(x) OVER (PARTITION BY y), max(x) FROM t"));
+    }
+
+    [Fact]
+    public void Functions_NestedCalls_BothReported()
+    {
+        Assert.Equal(["Function F", "Function G"], Functions("SELECT f(g(1)) FROM dual"));
+    }
+
+    [Fact]
+    public void Functions_Constructor_IsConstructorKind()
+    {
+        Assert.Equal(["Constructor T_OBJ"], Functions("SELECT NEW t_obj(1) FROM dual"));
+    }
+
+    [Fact]
+    public void Functions_MethodCall_IsMethodKind()
+    {
+        Assert.Equal(["Function UTL.OBJ", "Method FOO"], Functions("BEGIN v := utl.obj(1).foo(); END;"));
+    }
+
+    [Fact]
+    public void Functions_ProcedureStatements_IncludingBareName()
+    {
+        Assert.Equal(
+            ["Procedure PKG.DO_IT", "Procedure CLEANUP"],
+            Functions("BEGIN pkg.do_it(1); cleanup; END;"));
+    }
+
+    [Fact]
+    public void Functions_CastAndTrim_AreNotCalls()
+    {
+        // CAST and TRIM are dedicated syntax nodes, not FunctionCall.
+        Assert.Equal(["Function UPPER"], Functions("SELECT CAST(a AS NUMBER), upper(b), TRIM(c) FROM t"));
+    }
+
+    [Fact]
+    public void Functions_BulkRowcountAttribute_IsNotACall()
+    {
+        var functions = Functions("BEGIN FORALL i IN 1..n DELETE FROM t WHERE k = x(i); v := SQL%BULK_ROWCOUNT(1); END;");
+        Assert.Equal(["Function X"], functions);
+    }
 }

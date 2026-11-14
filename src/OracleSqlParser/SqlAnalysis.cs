@@ -278,6 +278,7 @@ public static class SqlAnalysis
         private CteScope? _ctes;
         private int _sqlDepth = sqlDepth;
         private int _opaqueDepth;
+        private int _variableDepth;
         private HashSet<string>? _selectAliases;
         private SqlNode? _procedureCall;
 
@@ -353,8 +354,7 @@ public static class SqlAnalysis
 
         public override void ExplicitVisit(QuerySpecification node)
         {
-            // The FROM items of this block form the scope for everything else in it. INTO targets are PL/SQL
-            // variables and are not visited.
+            // The FROM items of this block form the scope for everything else in it.
             var scope = new Scope(FlattenAll(node.From), _scope);
             InScope(scope, () =>
             {
@@ -367,6 +367,7 @@ public static class SqlAnalysis
                 node.Having?.Accept(this);
                 node.Model?.Accept(this);
             });
+            WalkVariables(node.Into);
         }
 
         public override void ExplicitVisit(GraphTable node)
@@ -522,11 +523,26 @@ public static class SqlAnalysis
 
         private void WalkReturning(DmlStatement node, Scope target)
         {
-            // RETURNING expressions read the row of the DML target. The INTO variables are not visited.
+            // RETURNING expressions read the row of the DML target.
             InScope(target, () =>
             {
                 foreach (var item in node.Returning) item.Accept(this);
             });
+            WalkVariables(node.ReturningInto);
+        }
+
+        /// <summary>
+        /// Visits PL/SQL variable targets (SELECT INTO, RETURNING INTO) for their binds only: the names are variables, so
+        /// they are not reported as columns.
+        /// </summary>
+        private void WalkVariables(IEnumerable<Expression> targets)
+        {
+            _variableDepth++;
+            try
+            {
+                foreach (var target in targets) target.Accept(this);
+            }
+            finally { _variableDepth--; }
         }
 
         private void WriteTarget(TableReference target, TableAccess access)
@@ -730,6 +746,8 @@ public static class SqlAnalysis
         private void AddColumn(SqlNode node, IReadOnlyList<Identifier> parts, bool write, Scope? scope)
         {
             if (parts.Count == 0) return;
+            // INTO targets are variables, not columns.
+            if (!write && _variableDepth > 0) return;
             var name = parts[^1];
             var qualifier = parts.Count > 1 ? Dotted(parts.Take(parts.Count - 1).ToList()) : null;
             var (start, end) = SpanOf(parts, node);
