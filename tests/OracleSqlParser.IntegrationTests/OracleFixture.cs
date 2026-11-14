@@ -64,7 +64,15 @@ public sealed class OracleFixture : IAsyncLifetime
 
     public async Task DisposeAsync() { if (_container != null) await _container.DisposeAsync(); }
 
-    public void SkipIfUnavailable() => Skip.If(SkipReason != null, SkipReason);
+    /// <summary>Set to <c>true</c> (CI does) to fail instead of skip when Oracle is unavailable, so a broken container cannot pass as green.</summary>
+    public const string RequiredEnvVar = "ORACLE_TESTS_REQUIRED";
+
+    public void SkipIfUnavailable()
+    {
+        if (SkipReason != null && string.Equals(Environment.GetEnvironmentVariable(RequiredEnvVar), "true", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"{RequiredEnvVar}=true but Oracle is unavailable: {SkipReason}");
+        Skip.If(SkipReason != null, SkipReason);
+    }
 
     private string ConnectionString(string user, string pw) => $"User Id={user};Password={pw};Data Source={_hostPort}/FREEPDB1;Connection Timeout=60;Pooling=false";
 

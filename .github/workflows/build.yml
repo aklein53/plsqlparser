@@ -22,7 +22,7 @@ jobs:
         run: dotnet restore
       - name: Build
         run: dotnet build --configuration Release --no-restore
-      # Unit tests only. Integration tests (if any) need Docker and are run separately.
+      # Unit tests; the Oracle integration tests run in the 'integration' job.
       - name: Test
         run: |
           dotnet test tests/OracleSqlParser.Tests --configuration Release --no-build
@@ -39,8 +39,30 @@ jobs:
             artifacts/*.nupkg
             artifacts/*.snupkg
 
+  # Parser and generator output executed against a real Oracle 23 Free container (gvenzl/oracle-free via Testcontainers).
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ORACLE_TESTS_REQUIRED: 'true'
+      ORACLE_TEST_STARTUP_TIMEOUT_SECONDS: '900'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Pull Oracle image
+        run: docker pull gvenzl/oracle-free:23-slim-faststart
+      - name: Integration tests
+        run: dotnet test tests/OracleSqlParser.IntegrationTests --configuration Release --logger "trx;LogFileName=integration.trx" --logger "console;verbosity=minimal"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-results
+          path: tests/OracleSqlParser.IntegrationTests/TestResults/*.trx
+
   publish:
-    needs: build
+    needs: [build, integration]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
