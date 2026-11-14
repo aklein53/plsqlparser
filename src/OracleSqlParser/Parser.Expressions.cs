@@ -244,6 +244,7 @@ public sealed partial class SqlParser
         while (Progress(ref prog7))
         {
             if (IsOp("[")) e = ParseSubscripts(e, start);
+            else if (e is CellReference && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier) e = ParseMemberChain(e, start);
             else if (IsKw("AT") && (IsKwAt(1, "TIME") || IsKwAt(1, "LOCAL")))
             {
                 Next();
@@ -423,9 +424,17 @@ public sealed partial class SqlParser
         }
         else result = Fin(new ColumnReference { Parts = parts, Attribute = attribute }, start);
 
-        // member access on call/collection results: f(x).field, coll(i).field(j)
+        return ParseMemberChain(result, start);
+    }
+
+    /// <summary>
+    /// Continues a postfix chain of '.field' and '.method(args)' steps on a call, collection element or member access:
+    /// f(x).field, coll(i).field(j), t.c.a[0].b (JSON dot-notation after an array step).
+    /// </summary>
+    private Expression ParseMemberChain(Expression result, Token start)
+    {
         int prog114 = -1;
-        while (result is FunctionCall or MethodCall or MemberAccess && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog114))
+        while (result is FunctionCall or MethodCall or MemberAccess or CellReference && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog114))
         {
             Next();
             var m = ParseIdentifier();

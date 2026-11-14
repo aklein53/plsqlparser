@@ -211,11 +211,21 @@ public sealed partial class ModelRule : SqlNode
     public Expression Value { get; set; } = null!;
 }
 
-/// <summary>Measure[subscripts], e.g. sales['x', 2000]; subscripts may be ForIterationSubscript.</summary>
+/// <summary>
+/// Base[subscripts]: a MODEL measure, e.g. sales['x', 2000] (subscripts may be ForIterationSubscript), a PL/SQL
+/// collection element, or a JSON dot-notation array step, e.g. t.c.a[0 to 2] or t.c.a[*].
+/// </summary>
 public sealed partial class CellReference : Expression
 {
     public Expression Base { get; set; } = null!;
     public List<Expression> Subscripts { get; set; } = [];
+}
+
+/// <summary>Inclusive range subscript <c>from TO to</c> in a JSON dot-notation array step, e.g. t.c.a[0 to 2].</summary>
+public sealed partial class SubscriptRange : Expression
+{
+    public Expression From { get; set; } = null!;
+    public Expression To { get; set; } = null!;
 }
 
 /// <summary>(VALUES (..), (..)) table value constructor, optionally followed by an alias column list.</summary>

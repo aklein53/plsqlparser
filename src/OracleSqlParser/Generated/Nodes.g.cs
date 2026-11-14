@@ -9595,6 +9595,50 @@ public partial class SubqueryTable
     }
 }
 
+public partial class SubscriptRange
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (From is not null) yield return From;
+        if (To is not null) yield return To;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        From?.Accept(visitor);
+        To?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        From = SqlNodeRewriter.RewriteRequired(rewriter, From, "SubscriptRange.From");
+        To = SqlNodeRewriter.RewriteRequired(rewriter, To, "SubscriptRange.To");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new SubscriptRange();
+        CopySpan(this, c);
+        c.From = CloneChild(From)!;
+        c.To = CloneChild(To)!;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (SubscriptRange)other;
+        return Pair(From, o.From, pending)
+            && Pair(To, o.To, pending);
+    }
+}
+
 public partial class SubstitutionVariable
 {
     /// <inheritdoc/>

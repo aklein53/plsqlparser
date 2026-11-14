@@ -152,6 +152,7 @@ public sealed partial class SqlScriptGenerator
                     Add("]");
                     break;
                 case ForIterationSubscript fi: ForIteration(fi); break;
+                case SubscriptRange sr: Expr(sr.From); Add(" TO "); Expr(sr.To); break;
                 case CurrentOfExpression co2: Add("CURRENT OF "); Id(co2.Cursor); break;
                 default: throw Unsupported(e);
             }

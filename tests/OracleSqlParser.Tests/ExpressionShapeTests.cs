@@ -134,6 +134,13 @@ public class ExpressionShapeTests
     [InlineData("s[ANY, 2000]", "(CellReference base=S subscripts=[ANY 2000])")]
     [InlineData("s[FOR p IN ('a', 'b'), 2000]", "(CellReference base=S subscripts=[(ForIterationSubscript dimensions=[P] inList=['a' 'b']) 2000])")]
     [InlineData("s[FOR y FROM 2000 TO 2010 INCREMENT 2]", "(CellReference base=S subscripts=[(ForIterationSubscript dimensions=[Y] from=2000 to=2010 step=2)])")]
+    // JSON simple dot-notation continues after an array step: the step is a CellReference, the member a MemberAccess.
+    [InlineData("t.c.a[0].b", "(MemberAccess target=(CellReference base=T.C.A subscripts=[0]) member=B)")]
+    [InlineData("t.c.a[*].b", "(MemberAccess target=(CellReference base=T.C.A subscripts=[*]) member=B)")]
+    [InlineData("t.c.a[0 to 2].b", "(MemberAccess target=(CellReference base=T.C.A subscripts=[(SubscriptRange from=0 to=2)]) member=B)")]
+    [InlineData("t.c.a[1,3].b", "(MemberAccess target=(CellReference base=T.C.A subscripts=[1 3]) member=B)")]
+    [InlineData("t.c.a[0].b[1].c", "(MemberAccess target=(CellReference base=(MemberAccess target=(CellReference base=T.C.A subscripts=[0]) member=B) subscripts=[1]) member=C)")]
+    [InlineData("t.c.a[0].b.c", "(MemberAccess target=(MemberAccess target=(CellReference base=T.C.A subscripts=[0]) member=B) member=C)")]
     [InlineData("PRIOR x", "(PRIOR X)")]
     [InlineData("CONNECT_BY_ROOT x", "(CONNECT_BY_ROOT X)")]
     [InlineData("CURSOR(SELECT 1 FROM dual)", "(CursorExpression query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[DUAL])])))")]

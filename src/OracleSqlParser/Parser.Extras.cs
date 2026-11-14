@@ -519,7 +519,13 @@ public sealed partial class SqlParser
         do
         {
             if (IsKw("FOR")) cr.Subscripts.Add(ParseForIteration());
-            else cr.Subscripts.Add(ParseExpr());
+            else
+            {
+                // JSON dot-notation array range: [0 to 2]
+                var s = Cur;
+                var sub = ParseExpr();
+                cr.Subscripts.Add(AcceptKw("TO") ? Fin(new SubscriptRange { From = sub, To = ParseExpr() }, s) : sub);
+            }
         } while (AcceptOp(","));
         ExpectOp("]");
         return Fin(cr, start);
