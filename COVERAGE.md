@@ -36,7 +36,8 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 Typed: anonymous/nested blocks, labels, all declarations (variable, constant, exception, pragma, cursor, record,
 collection, ref cursor, subtype, nested subprograms), IF/CASE/LOOP/WHILE/FOR/FORALL/EXIT/CONTINUE/GOTO/RETURN/RAISE/
 NULL, OPEN/FETCH/CLOSE, EXECUTE IMMEDIATE, PIPE ROW, assignments, calls, exception handlers, SQL inside PL/SQL
-(`SELECT INTO`, DML with `RETURNING BULK COLLECT`), program options (AUTHID, DETERMINISTIC, PIPELINED, PARALLEL_ENABLE,
+(`SELECT INTO`, DML with `RETURNING BULK COLLECT`), qualified expressions (`arr(1 => v, OTHERS => v, FOR i IN 1..3 => v)`;
+`rec(a => v)` stays a `FunctionCall` named argument), chained calls (`f(x)(y)`, `arr(1)(2)`), program options (AUTHID, DETERMINISTIC, PIPELINED, PARALLEL_ENABLE,
 RESULT_CACHE, AGGREGATE, SQL_MACRO, ACCESSIBLE BY, DEPRECATE, DEFAULT COLLATION, SHARING), external call specs
 (Java/C/MLE), triggers (DML, DDL, database, INSTEAD OF, nested table, compound, cross-edition, ordering).
 
@@ -51,9 +52,11 @@ Error recovery resyncs at `;`, or for PL/SQL units at a `/` alone on its line (e
 - `RETURNING OLD/NEW` (23ai) — syntax not verified against the docs, not implemented.
 - `JSON_TRANSFORM` `NESTED PATH` and `CASE` operations.
 - PL/SQL conditional compilation (`$IF ... $THEN ... $END`, `$$inquiry_directives`).
-- PL/SQL Oracle 21+ iterator forms (`FOR i IN 1..3, REVERSE 5..7`, `FOR x IN VALUES OF c`), qualified expressions
-  (`t_rec(a => 1)` parses as a function call), `DELETE ... FROM` join form.
+- PL/SQL Oracle 21+ iterator forms (`FOR i IN 1..3, REVERSE 5..7`, `FOR x IN VALUES OF c`), `DELETE ... FROM` join form.
 - `IN (subquery, expr)` mixed lists, `CREATE ... SHARDED/DUPLICATED` modifiers beyond those listed.
 - Every node can be generated back to SQL by `SqlScriptGenerator` (comments excepted; token-tree bodies print as space-separated tokens). The `AstPrinter` text is for assertions, not SQL.
 - Collection indexing vs. function call: `arr(i)` is syntactically identical to a call and is represented as
-  `FunctionCall`.
+  `FunctionCall`; only a call or subscript applied to another call's result (`arr(i)(j)`, `f(x)(y)`) is a `ChainedCall`.
+  `arr[i]`-style subscripts are `CellReference` (MODEL measures, JSON dot-notation array steps such as `t.c.a[0 to 2].b`).
+- Expressions: `IS [NOT] TRUE/FALSE` (`IsExpression`), interval suffixes `(a - b) DAY(p) TO SECOND(fs)` and
+  `(a - b) YEAR TO MONTH` (`IntervalExpression`). `**` is accepted only in PL/SQL procedural code; SQL rejects it.
