@@ -345,22 +345,89 @@ public sealed partial class CaseStatementWhen : SqlNode
     public List<Statement> Statements { get; set; } = [];
 }
 
-public enum LoopKind { Basic, While, ForNumeric, ForCursor }
+public enum LoopKind { Basic, While, For }
 
 public sealed partial class LoopStatement : Statement
 {
     public LoopKind Kind { get; set; }
+    /// <summary>WHILE condition (WHILE loops only).</summary>
     public Expression? Condition { get; set; }
-    public Identifier? Variable { get; set; }
-    public bool Reverse { get; set; }
-    public Expression? Lower { get; set; }
-    public Expression? Upper { get; set; }
-    /// <summary>FOR r IN cursor_name(args) / collection expression.</summary>
-    public Expression? CursorCall { get; set; }
-    /// <summary>FOR r IN (SELECT ...).</summary>
-    public SelectStatement? Query { get; set; }
+    /// <summary>FOR loops: one name, or two for FOR key, value IN PAIRS OF ...</summary>
+    public List<ForIterand> Iterands { get; set; } = [];
+    /// <summary>FOR loops: the comma-separated iteration controls after IN.</summary>
+    public List<IterationControl> Controls { get; set; } = [];
     public List<Statement> Body { get; set; } = [];
     public Identifier? EndLabel { get; set; }
+}
+
+/// <summary>A FOR loop variable: name, optional type (FOR i NUMBER(5,1) IN ...), and MUTABLE.</summary>
+public sealed partial class ForIterand : SqlNode
+{
+    public Identifier Name { get; set; } = null!;
+    public DataType? Type { get; set; }
+    public bool Mutable { get; set; }
+}
+
+/// <summary>
+/// One comma-separated item of a FOR loop's iteration controls (Oracle 21c+). WHILE and WHEN are optional
+/// predicates that end the loop or skip the current value.
+/// </summary>
+public abstract partial class IterationControl : SqlNode
+{
+    public Expression? While { get; set; }
+    public Expression? When { get; set; }
+}
+
+/// <summary>[REVERSE] lower .. upper [BY step].</summary>
+public sealed partial class RangeControl : IterationControl
+{
+    public bool Reverse { get; set; }
+    public Expression Lower { get; set; } = null!;
+    public Expression Upper { get; set; } = null!;
+    public Expression? By { get; set; }
+}
+
+/// <summary>A single value, or a bare cursor or collection name (FOR r IN c1 LOOP).</summary>
+public sealed partial class ExpressionControl : IterationControl
+{
+    public Expression Value { get; set; } = null!;
+}
+
+/// <summary>REPEAT expr: repeatedly evaluates expr, using the previous value of the loop variable.</summary>
+public sealed partial class RepeatControl : IterationControl
+{
+    public Expression Value { get; set; } = null!;
+}
+
+/// <summary>VALUES OF collection: iterates over the collection's values.</summary>
+public sealed partial class ValuesOfControl : IterationControl
+{
+    public Expression Collection { get; set; } = null!;
+}
+
+/// <summary>INDICES OF collection: iterates over the collection's index values.</summary>
+public sealed partial class IndicesOfControl : IterationControl
+{
+    public Expression Collection { get; set; } = null!;
+}
+
+/// <summary>PAIRS OF collection: iterates over index and value together (two iterands).</summary>
+public sealed partial class PairsOfControl : IterationControl
+{
+    public Expression Collection { get; set; } = null!;
+}
+
+/// <summary>FOR r IN (SELECT ...): cursor FOR loop over a query.</summary>
+public sealed partial class CursorControl : IterationControl
+{
+    public SelectStatement Query { get; set; } = null!;
+}
+
+/// <summary>EXECUTE IMMEDIATE sql [USING ...]: iterates over the rows of a dynamic query.</summary>
+public sealed partial class DynamicSqlControl : IterationControl
+{
+    public Expression Sql { get; set; } = null!;
+    public List<UsingArgument> Using { get; set; } = [];
 }
 
 public sealed partial class ExitStatement : Statement

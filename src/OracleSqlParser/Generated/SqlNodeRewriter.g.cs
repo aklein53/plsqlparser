@@ -337,6 +337,13 @@ public abstract partial class SqlNodeRewriter
         return node;
     }
 
+    /// <summary>Rewrites a <see cref="CursorControl"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(CursorControl node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
     /// <summary>Rewrites a <see cref="CursorDeclaration"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(CursorDeclaration node)
     {
@@ -374,6 +381,13 @@ public abstract partial class SqlNodeRewriter
 
     /// <summary>Rewrites a <see cref="DropStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(DropStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="DynamicSqlControl"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(DynamicSqlControl node)
     {
         node.RewriteChildren(this);
         return node;
@@ -437,6 +451,13 @@ public abstract partial class SqlNodeRewriter
 
     /// <summary>Rewrites a <see cref="ExplainPlanStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(ExplainPlanStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="ExpressionControl"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(ExpressionControl node)
     {
         node.RewriteChildren(this);
         return node;
@@ -507,6 +528,13 @@ public abstract partial class SqlNodeRewriter
 
     /// <summary>Rewrites a <see cref="FlashbackTableStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(FlashbackTableStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="ForIterand"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(ForIterand node)
     {
         node.RewriteChildren(this);
         return node;
@@ -647,6 +675,13 @@ public abstract partial class SqlNodeRewriter
 
     /// <summary>Rewrites a <see cref="IndexColumn"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(IndexColumn node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="IndicesOfControl"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(IndicesOfControl node)
     {
         node.RewriteChildren(this);
         return node;
@@ -890,6 +925,13 @@ public abstract partial class SqlNodeRewriter
         return node;
     }
 
+    /// <summary>Rewrites a <see cref="PairsOfControl"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(PairsOfControl node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
     /// <summary>Rewrites a <see cref="ParallelAttribute"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(ParallelAttribute node)
     {
@@ -1121,6 +1163,13 @@ public abstract partial class SqlNodeRewriter
         return node;
     }
 
+    /// <summary>Rewrites a <see cref="RangeControl"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(RangeControl node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
     /// <summary>Rewrites a <see cref="RecordTypeDeclaration"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(RecordTypeDeclaration node)
     {
@@ -1158,6 +1207,13 @@ public abstract partial class SqlNodeRewriter
 
     /// <summary>Rewrites a <see cref="RenameStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(RenameStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="RepeatControl"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(RepeatControl node)
     {
         node.RewriteChildren(this);
         return node;
@@ -1466,6 +1522,13 @@ public abstract partial class SqlNodeRewriter
 
     /// <summary>Rewrites a <see cref="ValueClause"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(ValueClause node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="ValuesOfControl"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(ValuesOfControl node)
     {
         node.RewriteChildren(this);
         return node;

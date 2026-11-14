@@ -2602,6 +2602,55 @@ public partial class CurrentOfExpression
     }
 }
 
+public partial class CursorControl
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Query is not null) yield return Query;
+        if (While is not null) yield return While;
+        if (When is not null) yield return When;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Query?.Accept(visitor);
+        While?.Accept(visitor);
+        When?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Query = SqlNodeRewriter.RewriteRequired(rewriter, Query, "CursorControl.Query");
+        While = SqlNodeRewriter.RewriteOptional(rewriter, While, "CursorControl.While");
+        When = SqlNodeRewriter.RewriteOptional(rewriter, When, "CursorControl.When");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CursorControl();
+        CopySpan(this, c);
+        c.Query = CloneChild(Query)!;
+        c.While = CloneChild(While);
+        c.When = CloneChild(When);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CursorControl)other;
+        return Pair(Query, o.Query, pending)
+            && Pair(While, o.While, pending)
+            && Pair(When, o.When, pending);
+    }
+}
+
 public partial class CursorDeclaration
 {
     /// <inheritdoc/>
@@ -2932,6 +2981,60 @@ public partial class DropStatement
             && Invalidate == o.Invalidate
             && PairList(Rest, o.Rest, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class DynamicSqlControl
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Sql is not null) yield return Sql;
+        if (Using is not null) foreach (var x in Using) yield return x;
+        if (While is not null) yield return While;
+        if (When is not null) yield return When;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Sql?.Accept(visitor);
+        if (Using is not null) foreach (var x in Using) x.Accept(visitor);
+        While?.Accept(visitor);
+        When?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Sql = SqlNodeRewriter.RewriteRequired(rewriter, Sql, "DynamicSqlControl.Sql");
+        SqlNodeRewriter.RewriteList(rewriter, Using, "DynamicSqlControl.Using");
+        While = SqlNodeRewriter.RewriteOptional(rewriter, While, "DynamicSqlControl.While");
+        When = SqlNodeRewriter.RewriteOptional(rewriter, When, "DynamicSqlControl.When");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new DynamicSqlControl();
+        CopySpan(this, c);
+        c.Sql = CloneChild(Sql)!;
+        c.Using = CloneList(Using);
+        c.While = CloneChild(While);
+        c.When = CloneChild(When);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (DynamicSqlControl)other;
+        return Pair(Sql, o.Sql, pending)
+            && PairList(Using, o.Using, pending)
+            && Pair(While, o.While, pending)
+            && Pair(When, o.When, pending);
     }
 }
 
@@ -3353,6 +3456,55 @@ public partial class ExplainPlanStatement
             && PairList(IntoTable, o.IntoTable, pending)
             && Pair(Statement, o.Statement, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class ExpressionControl
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Value is not null) yield return Value;
+        if (While is not null) yield return While;
+        if (When is not null) yield return When;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Value?.Accept(visitor);
+        While?.Accept(visitor);
+        When?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "ExpressionControl.Value");
+        While = SqlNodeRewriter.RewriteOptional(rewriter, While, "ExpressionControl.While");
+        When = SqlNodeRewriter.RewriteOptional(rewriter, When, "ExpressionControl.When");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ExpressionControl();
+        CopySpan(this, c);
+        c.Value = CloneChild(Value)!;
+        c.While = CloneChild(While);
+        c.When = CloneChild(When);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ExpressionControl)other;
+        return Pair(Value, o.Value, pending)
+            && Pair(While, o.While, pending)
+            && Pair(When, o.When, pending);
     }
 }
 
@@ -3832,6 +3984,52 @@ public partial class FlashbackTableStatement
             && Before == o.Before
             && EnableTriggers == o.EnableTriggers
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class ForIterand
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Type is not null) yield return Type;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        Type?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "ForIterand.Name");
+        Type = SqlNodeRewriter.RewriteOptional(rewriter, Type, "ForIterand.Type");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ForIterand();
+        CopySpan(this, c);
+        c.Name = CloneChild(Name)!;
+        c.Type = CloneChild(Type);
+        c.Mutable = Mutable;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ForIterand)other;
+        return Pair(Name, o.Name, pending)
+            && Pair(Type, o.Type, pending)
+            && Mutable == o.Mutable;
     }
 }
 
@@ -4820,6 +5018,55 @@ public partial class IndexColumn
     }
 }
 
+public partial class IndicesOfControl
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Collection is not null) yield return Collection;
+        if (While is not null) yield return While;
+        if (When is not null) yield return When;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Collection?.Accept(visitor);
+        While?.Accept(visitor);
+        When?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Collection = SqlNodeRewriter.RewriteRequired(rewriter, Collection, "IndicesOfControl.Collection");
+        While = SqlNodeRewriter.RewriteOptional(rewriter, While, "IndicesOfControl.While");
+        When = SqlNodeRewriter.RewriteOptional(rewriter, When, "IndicesOfControl.When");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new IndicesOfControl();
+        CopySpan(this, c);
+        c.Collection = CloneChild(Collection)!;
+        c.While = CloneChild(While);
+        c.When = CloneChild(When);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (IndicesOfControl)other;
+        return Pair(Collection, o.Collection, pending)
+            && Pair(While, o.While, pending)
+            && Pair(When, o.When, pending);
+    }
+}
+
 public partial class InsertIntoClause
 {
     /// <inheritdoc/>
@@ -5501,11 +5748,8 @@ public partial class LoopStatement
     public override IEnumerable<SqlNode> GetChildren()
     {
         if (Condition is not null) yield return Condition;
-        if (Variable is not null) yield return Variable;
-        if (Lower is not null) yield return Lower;
-        if (Upper is not null) yield return Upper;
-        if (CursorCall is not null) yield return CursorCall;
-        if (Query is not null) yield return Query;
+        if (Iterands is not null) foreach (var x in Iterands) yield return x;
+        if (Controls is not null) foreach (var x in Controls) yield return x;
         if (Body is not null) foreach (var x in Body) yield return x;
         if (EndLabel is not null) yield return EndLabel;
     }
@@ -5514,11 +5758,8 @@ public partial class LoopStatement
     public override void AcceptChildren(SqlNodeVisitor visitor)
     {
         Condition?.Accept(visitor);
-        Variable?.Accept(visitor);
-        Lower?.Accept(visitor);
-        Upper?.Accept(visitor);
-        CursorCall?.Accept(visitor);
-        Query?.Accept(visitor);
+        if (Iterands is not null) foreach (var x in Iterands) x.Accept(visitor);
+        if (Controls is not null) foreach (var x in Controls) x.Accept(visitor);
         if (Body is not null) foreach (var x in Body) x.Accept(visitor);
         EndLabel?.Accept(visitor);
     }
@@ -5526,11 +5767,8 @@ public partial class LoopStatement
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
     {
         Condition = SqlNodeRewriter.RewriteOptional(rewriter, Condition, "LoopStatement.Condition");
-        Variable = SqlNodeRewriter.RewriteOptional(rewriter, Variable, "LoopStatement.Variable");
-        Lower = SqlNodeRewriter.RewriteOptional(rewriter, Lower, "LoopStatement.Lower");
-        Upper = SqlNodeRewriter.RewriteOptional(rewriter, Upper, "LoopStatement.Upper");
-        CursorCall = SqlNodeRewriter.RewriteOptional(rewriter, CursorCall, "LoopStatement.CursorCall");
-        Query = SqlNodeRewriter.RewriteOptional(rewriter, Query, "LoopStatement.Query");
+        SqlNodeRewriter.RewriteList(rewriter, Iterands, "LoopStatement.Iterands");
+        SqlNodeRewriter.RewriteList(rewriter, Controls, "LoopStatement.Controls");
         SqlNodeRewriter.RewriteList(rewriter, Body, "LoopStatement.Body");
         EndLabel = SqlNodeRewriter.RewriteOptional(rewriter, EndLabel, "LoopStatement.EndLabel");
     }
@@ -5546,12 +5784,8 @@ public partial class LoopStatement
         CopySpan(this, c);
         c.Kind = Kind;
         c.Condition = CloneChild(Condition);
-        c.Variable = CloneChild(Variable);
-        c.Reverse = Reverse;
-        c.Lower = CloneChild(Lower);
-        c.Upper = CloneChild(Upper);
-        c.CursorCall = CloneChild(CursorCall);
-        c.Query = CloneChild(Query);
+        c.Iterands = CloneList(Iterands);
+        c.Controls = CloneList(Controls);
         c.Body = CloneList(Body);
         c.EndLabel = CloneChild(EndLabel);
         c.Labels = CloneStrings(Labels);
@@ -5563,12 +5797,8 @@ public partial class LoopStatement
         var o = (LoopStatement)other;
         return Kind == o.Kind
             && Pair(Condition, o.Condition, pending)
-            && Pair(Variable, o.Variable, pending)
-            && Reverse == o.Reverse
-            && Pair(Lower, o.Lower, pending)
-            && Pair(Upper, o.Upper, pending)
-            && Pair(CursorCall, o.CursorCall, pending)
-            && Pair(Query, o.Query, pending)
+            && PairList(Iterands, o.Iterands, pending)
+            && PairList(Controls, o.Controls, pending)
             && PairList(Body, o.Body, pending)
             && Pair(EndLabel, o.EndLabel, pending)
             && SameStrings(Labels, o.Labels);
@@ -6575,6 +6805,55 @@ public partial class OverflowClause
         return Truncate == o.Truncate
             && Pair(Indicator, o.Indicator, pending)
             && WithCount == o.WithCount;
+    }
+}
+
+public partial class PairsOfControl
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Collection is not null) yield return Collection;
+        if (While is not null) yield return While;
+        if (When is not null) yield return When;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Collection?.Accept(visitor);
+        While?.Accept(visitor);
+        When?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Collection = SqlNodeRewriter.RewriteRequired(rewriter, Collection, "PairsOfControl.Collection");
+        While = SqlNodeRewriter.RewriteOptional(rewriter, While, "PairsOfControl.While");
+        When = SqlNodeRewriter.RewriteOptional(rewriter, When, "PairsOfControl.When");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new PairsOfControl();
+        CopySpan(this, c);
+        c.Collection = CloneChild(Collection)!;
+        c.While = CloneChild(While);
+        c.When = CloneChild(When);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (PairsOfControl)other;
+        return Pair(Collection, o.Collection, pending)
+            && Pair(While, o.While, pending)
+            && Pair(When, o.When, pending);
     }
 }
 
@@ -8142,6 +8421,67 @@ public partial class RaiseStatement
     }
 }
 
+public partial class RangeControl
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Lower is not null) yield return Lower;
+        if (Upper is not null) yield return Upper;
+        if (By is not null) yield return By;
+        if (While is not null) yield return While;
+        if (When is not null) yield return When;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Lower?.Accept(visitor);
+        Upper?.Accept(visitor);
+        By?.Accept(visitor);
+        While?.Accept(visitor);
+        When?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Lower = SqlNodeRewriter.RewriteRequired(rewriter, Lower, "RangeControl.Lower");
+        Upper = SqlNodeRewriter.RewriteRequired(rewriter, Upper, "RangeControl.Upper");
+        By = SqlNodeRewriter.RewriteOptional(rewriter, By, "RangeControl.By");
+        While = SqlNodeRewriter.RewriteOptional(rewriter, While, "RangeControl.While");
+        When = SqlNodeRewriter.RewriteOptional(rewriter, When, "RangeControl.When");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new RangeControl();
+        CopySpan(this, c);
+        c.Reverse = Reverse;
+        c.Lower = CloneChild(Lower)!;
+        c.Upper = CloneChild(Upper)!;
+        c.By = CloneChild(By);
+        c.While = CloneChild(While);
+        c.When = CloneChild(When);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (RangeControl)other;
+        return Reverse == o.Reverse
+            && Pair(Lower, o.Lower, pending)
+            && Pair(Upper, o.Upper, pending)
+            && Pair(By, o.By, pending)
+            && Pair(While, o.While, pending)
+            && Pair(When, o.When, pending);
+    }
+}
+
 public partial class RecordTypeDeclaration
 {
     /// <inheritdoc/>
@@ -8424,6 +8764,55 @@ public partial class RenameStatement
         return PairList(From, o.From, pending)
             && PairList(To, o.To, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class RepeatControl
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Value is not null) yield return Value;
+        if (While is not null) yield return While;
+        if (When is not null) yield return When;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Value?.Accept(visitor);
+        While?.Accept(visitor);
+        When?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Value = SqlNodeRewriter.RewriteRequired(rewriter, Value, "RepeatControl.Value");
+        While = SqlNodeRewriter.RewriteOptional(rewriter, While, "RepeatControl.While");
+        When = SqlNodeRewriter.RewriteOptional(rewriter, When, "RepeatControl.When");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new RepeatControl();
+        CopySpan(this, c);
+        c.Value = CloneChild(Value)!;
+        c.While = CloneChild(While);
+        c.When = CloneChild(When);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (RepeatControl)other;
+        return Pair(Value, o.Value, pending)
+            && Pair(While, o.While, pending)
+            && Pair(When, o.When, pending);
     }
 }
 
@@ -10418,6 +10807,55 @@ public partial class ValueClause
         var o = (ValueClause)other;
         return Kind == o.Kind
             && Pair(Value, o.Value, pending);
+    }
+}
+
+public partial class ValuesOfControl
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Collection is not null) yield return Collection;
+        if (While is not null) yield return While;
+        if (When is not null) yield return When;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Collection?.Accept(visitor);
+        While?.Accept(visitor);
+        When?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Collection = SqlNodeRewriter.RewriteRequired(rewriter, Collection, "ValuesOfControl.Collection");
+        While = SqlNodeRewriter.RewriteOptional(rewriter, While, "ValuesOfControl.While");
+        When = SqlNodeRewriter.RewriteOptional(rewriter, When, "ValuesOfControl.When");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ValuesOfControl();
+        CopySpan(this, c);
+        c.Collection = CloneChild(Collection)!;
+        c.While = CloneChild(While);
+        c.When = CloneChild(When);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ValuesOfControl)other;
+        return Pair(Collection, o.Collection, pending)
+            && Pair(While, o.While, pending)
+            && Pair(When, o.When, pending);
     }
 }
 

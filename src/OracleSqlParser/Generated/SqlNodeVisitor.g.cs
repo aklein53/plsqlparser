@@ -478,6 +478,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="CursorControl"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(CursorControl node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="CursorControl"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(CursorControl node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="CursorDeclaration"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(CursorDeclaration node) => Visit((SqlNode)node);
 
@@ -533,6 +543,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="DropStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(DropStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="DynamicSqlControl"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(DynamicSqlControl node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="DynamicSqlControl"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(DynamicSqlControl node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -623,6 +643,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="ExplainPlanStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(ExplainPlanStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="ExpressionControl"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(ExpressionControl node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="ExpressionControl"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(ExpressionControl node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -723,6 +753,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="FlashbackTableStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(FlashbackTableStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="ForIterand"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(ForIterand node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="ForIterand"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(ForIterand node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -923,6 +963,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="IndexColumn"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(IndexColumn node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="IndicesOfControl"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(IndicesOfControl node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="IndicesOfControl"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(IndicesOfControl node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -1268,6 +1318,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="PairsOfControl"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(PairsOfControl node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="PairsOfControl"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(PairsOfControl node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="ParallelAttribute"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(ParallelAttribute node) => Visit((SqlNode)node);
 
@@ -1598,6 +1658,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="RangeControl"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(RangeControl node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="RangeControl"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(RangeControl node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="RecordTypeDeclaration"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(RecordTypeDeclaration node) => Visit((SqlNode)node);
 
@@ -1653,6 +1723,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="RenameStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(RenameStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="RepeatControl"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(RepeatControl node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="RepeatControl"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(RepeatControl node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -2093,6 +2173,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="ValueClause"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(ValueClause node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="ValuesOfControl"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(ValuesOfControl node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="ValuesOfControl"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(ValuesOfControl node)
     {
         Visit(node);
         node.AcceptChildren(this);

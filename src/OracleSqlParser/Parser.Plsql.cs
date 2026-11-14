@@ -834,28 +834,74 @@ public sealed partial class SqlParser
         if (AcceptKw("WHILE")) { lp.Kind = LoopKind.While; lp.Condition = ParseExpr(); }
         else if (AcceptKw("FOR"))
         {
-            lp.Variable = ParseIdentifier();
+            lp.Kind = LoopKind.For;
+            do lp.Iterands.Add(ParseForIterand()); while (AcceptOp(","));
             ExpectKw("IN");
-            lp.Reverse = AcceptKw("REVERSE");
-            if (IsOp("(") && LooksLikeQuery())
-            {
-                Next();
-                lp.Query = ParseSelectStatement();
-                ExpectOp(")");
-                lp.Kind = LoopKind.ForCursor;
-            }
-            else
-            {
-                var e = ParseExpr();
-                if (AcceptOp("..")) { lp.Kind = LoopKind.ForNumeric; lp.Lower = e; lp.Upper = ParseExpr(); }
-                else { lp.Kind = LoopKind.ForCursor; lp.CursorCall = e; }
-            }
+            do lp.Controls.Add(ParseIterationControl()); while (AcceptOp(","));
         }
         ExpectKw("LOOP");
         lp.Body = ParseStatements(AtBlockEnd);
         ExpectKw("END"); ExpectKw("LOOP");
         if (Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) lp.EndLabel = ParseIdentifier();
         return Fin(lp, start);
+    }
+
+    /// <summary>FOR name [, name] [type] [MUTABLE|IMMUTABLE] IN ...: one iterand (two for PAIRS OF).</summary>
+    private ForIterand ParseForIterand()
+    {
+        var start = Cur;
+        var fi = new ForIterand { Name = ParseIdentifier() };
+        if (!IsKw("IN") && !IsOp(",") && !IsKw("MUTABLE") && !IsKw("IMMUTABLE")) fi.Type = ParseDataType();
+        if (AcceptKw("MUTABLE")) fi.Mutable = true;
+        else AcceptKw("IMMUTABLE");
+        return Fin(fi, start);
+    }
+
+    /// <summary>
+    /// One FOR loop iteration control. A bare expression is always an ExpressionControl (a single value, or a
+    /// cursor or collection name); only a parenthesised SELECT is a CursorControl. REVERSE applies to ranges only.
+    /// </summary>
+    private IterationControl ParseIterationControl()
+    {
+        var start = Cur;
+        IterationControl c;
+        if (IsKw("REPEAT")) { Next(); c = new RepeatControl { Value = ParseExpr() }; }
+        else if (IsKw("VALUES") && IsKwAt(1, "OF")) { Next(); Next(); c = new ValuesOfControl { Collection = ParseExpr() }; }
+        else if (IsKw("INDICES") && IsKwAt(1, "OF")) { Next(); Next(); c = new IndicesOfControl { Collection = ParseExpr() }; }
+        else if (IsKw("PAIRS") && IsKwAt(1, "OF")) { Next(); Next(); c = new PairsOfControl { Collection = ParseExpr() }; }
+        else if (IsKw("EXECUTE") && IsKwAt(1, "IMMEDIATE"))
+        {
+            Next(); Next();
+            var dc = new DynamicSqlControl { Sql = ParseExpr() };
+            if (AcceptKw("USING")) dc.Using = ParseUsingList();
+            c = dc;
+        }
+        else if (IsOp("(") && LooksLikeQuery())
+        {
+            Next();
+            var cc = new CursorControl { Query = ParseSelectStatement() };
+            ExpectOp(")");
+            c = cc;
+        }
+        else
+        {
+            bool reverse = AcceptKw("REVERSE");
+            var e = ParseExpr();
+            if (AcceptOp(".."))
+            {
+                var rc = new RangeControl { Reverse = reverse, Lower = e, Upper = ParseExpr() };
+                if (AcceptKw("BY")) rc.By = ParseExpr();
+                c = rc;
+            }
+            else
+            {
+                if (reverse) throw Fail("REVERSE must be followed by a range (lower..upper)");
+                c = new ExpressionControl { Value = e };
+            }
+        }
+        if (AcceptKw("WHILE")) c.While = ParseExpr();
+        if (AcceptKw("WHEN")) c.When = ParseExpr();
+        return Fin(c, start);
     }
 
     private Statement ParseExitContinue()

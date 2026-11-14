@@ -39,6 +39,10 @@ NULL, OPEN/FETCH/CLOSE, EXECUTE IMMEDIATE, PIPE ROW, assignments, calls, excepti
 (`SELECT INTO`, DML with `RETURNING BULK COLLECT`), program options (AUTHID, DETERMINISTIC, PIPELINED, PARALLEL_ENABLE,
 RESULT_CACHE, AGGREGATE, SQL_MACRO, ACCESSIBLE BY, DEPRECATE, DEFAULT COLLATION, SHARING), external call specs
 (Java/C/MLE), triggers (DML, DDL, database, INSTEAD OF, nested table, compound, cross-edition, ordering).
+FOR loops with Oracle 21c+ iteration controls: `ForIterand` (name, type, MUTABLE) plus a list of typed
+`IterationControl`s (`RangeControl` with REVERSE/BY, `ExpressionControl`, `RepeatControl`, `ValuesOfControl`,
+`IndicesOfControl`, `PairsOfControl`, `CursorControl` for `(SELECT ...)`, `DynamicSqlControl`), each with optional
+WHILE/WHEN. A bare cursor or collection name is an `ExpressionControl`. IMMUTABLE is accepted and not recorded.
 
 ## Script level
 
@@ -51,8 +55,7 @@ Error recovery resyncs at `;`, or for PL/SQL units at a `/` alone on its line (e
 - `RETURNING OLD/NEW` (23ai) — syntax not verified against the docs, not implemented.
 - `JSON_TRANSFORM` `NESTED PATH` and `CASE` operations.
 - PL/SQL conditional compilation (`$IF ... $THEN ... $END`, `$$inquiry_directives`).
-- PL/SQL Oracle 21+ iterator forms (`FOR i IN 1..3, REVERSE 5..7`, `FOR x IN VALUES OF c`), qualified expressions
-  (`t_rec(a => 1)` parses as a function call), `DELETE ... FROM` join form.
+- Qualified expressions (`t_rec(a => 1)` parses as a function call), `DELETE ... FROM` join form.
 - `IN (subquery, expr)` mixed lists, `CREATE ... SHARDED/DUPLICATED` modifiers beyond those listed.
 - Every node can be generated back to SQL by `SqlScriptGenerator` (comments excepted; token-tree bodies print as space-separated tokens). The `AstPrinter` text is for assertions, not SQL.
 - Collection indexing vs. function call: `arr(i)` is syntactically identical to a call and is represented as

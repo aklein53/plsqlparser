@@ -78,10 +78,28 @@ BEGIN NULL; END;");
         "[(LoopStatement kind=Basic body=[(ExitStatement when=(> X 5)) (AssignmentStatement target=X value=(+ X 1))])]")]
     [InlineData("<<outer>> WHILE x < 5 LOOP CONTINUE outer WHEN x = 2; EXIT outer; END LOOP outer;",
         "[(LoopStatement kind=While condition=(< X 5) body=[(ContinueStatement label=OUTER when=(= X 2)) (ExitStatement label=OUTER)] endLabel=OUTER labels=[OUTER])]")]
-    [InlineData("FOR i IN REVERSE 1..n LOOP NULL; END LOOP;", "[(LoopStatement kind=ForNumeric variable=I reverse lower=1 upper=N body=[(NullStatement)])]")]
+    [InlineData("FOR i IN REVERSE 1..n LOOP NULL; END LOOP;", "[(LoopStatement kind=For iterands=[(ForIterand name=I)] controls=[(RangeControl reverse lower=1 upper=N)] body=[(NullStatement)])]")]
     [InlineData("FOR r IN (SELECT 1 FROM dual) LOOP NULL; END LOOP;",
-        "[(LoopStatement kind=ForCursor variable=R query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[DUAL])])) body=[(NullStatement)])]")]
-    [InlineData("FOR r IN c1(5) LOOP NULL; END LOOP;", "[(LoopStatement kind=ForCursor variable=R cursorCall=(FunctionCall name=[C1] arguments=[(Argument value=5)]) body=[(NullStatement)])]")]
+        "[(LoopStatement kind=For iterands=[(ForIterand name=R)] controls=[(CursorControl query=(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=1)] from=[(NamedTable name=[DUAL])])))] body=[(NullStatement)])]")]
+    [InlineData("FOR r IN c1(5) LOOP NULL; END LOOP;", "[(LoopStatement kind=For iterands=[(ForIterand name=R)] controls=[(ExpressionControl value=(FunctionCall name=[C1] arguments=[(Argument value=5)]))] body=[(NullStatement)])]")]
+    [InlineData("FOR i IN 1..10 BY 2 LOOP NULL; END LOOP;", "[(LoopStatement kind=For iterands=[(ForIterand name=I)] controls=[(RangeControl lower=1 upper=10 by=2)] body=[(NullStatement)])]")]
+    [InlineData("FOR i IN REVERSE 1..10 BY 2 LOOP NULL; END LOOP;", "[(LoopStatement kind=For iterands=[(ForIterand name=I)] controls=[(RangeControl reverse lower=1 upper=10 by=2)] body=[(NullStatement)])]")]
+    [InlineData("FOR i IN 1..3, 10..12, 20 LOOP NULL; END LOOP;",
+        "[(LoopStatement kind=For iterands=[(ForIterand name=I)] controls=[(RangeControl lower=1 upper=3) (RangeControl lower=10 upper=12) (ExpressionControl value=20)] body=[(NullStatement)])]")]
+    [InlineData("FOR i IN REPEAT i*2 WHILE i < 100 LOOP NULL; END LOOP;",
+        "[(LoopStatement kind=For iterands=[(ForIterand name=I)] controls=[(RepeatControl value=(* I 2) while=(< I 100))] body=[(NullStatement)])]")]
+    [InlineData("FOR i IN VALUES OF coll LOOP NULL; END LOOP;", "[(LoopStatement kind=For iterands=[(ForIterand name=I)] controls=[(ValuesOfControl collection=COLL)] body=[(NullStatement)])]")]
+    [InlineData("FOR i IN INDICES OF coll LOOP NULL; END LOOP;", "[(LoopStatement kind=For iterands=[(ForIterand name=I)] controls=[(IndicesOfControl collection=COLL)] body=[(NullStatement)])]")]
+    [InlineData("FOR i, v IN PAIRS OF coll LOOP NULL; END LOOP;",
+        "[(LoopStatement kind=For iterands=[(ForIterand name=I) (ForIterand name=V)] controls=[(PairsOfControl collection=COLL)] body=[(NullStatement)])]")]
+    [InlineData("FOR i IN 1..10 WHEN MOD(i,2)=0 LOOP NULL; END LOOP;",
+        "[(LoopStatement kind=For iterands=[(ForIterand name=I)] controls=[(RangeControl lower=1 upper=10 when=(= (FunctionCall name=[MOD] arguments=[(Argument value=I) (Argument value=2)]) 0))] body=[(NullStatement)])]")]
+    [InlineData("FOR i NUMBER(5,1) IN 1..2 BY 0.5 LOOP NULL; END LOOP;",
+        "[(LoopStatement kind=For iterands=[(ForIterand name=I type=(DataType name=NUMBER arguments=[5 1]))] controls=[(RangeControl lower=1 upper=2 by=0.5)] body=[(NullStatement)])]")]
+    [InlineData("FOR i MUTABLE IN 1..2 LOOP NULL; END LOOP;",
+        "[(LoopStatement kind=For iterands=[(ForIterand name=I mutable)] controls=[(RangeControl lower=1 upper=2)] body=[(NullStatement)])]")]
+    [InlineData("FOR r IN EXECUTE IMMEDIATE 'select 1 from dual' LOOP NULL; END LOOP;",
+        "[(LoopStatement kind=For iterands=[(ForIterand name=R)] controls=[(DynamicSqlControl sql='select 1 from dual')] body=[(NullStatement)])]")]
     [InlineData("OPEN c1; OPEN c2(1, 2); CLOSE c1;",
         "[(OpenStatement cursor=C1) (OpenStatement cursor=(FunctionCall name=[C2] arguments=[(Argument value=1) (Argument value=2)])) (CloseStatement cursor=C1)]")]
     [InlineData("OPEN rc FOR SELECT a FROM t WHERE b = :x USING y;",

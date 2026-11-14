@@ -504,18 +504,48 @@ public sealed partial class SqlScriptGenerator
             }
         }
 
+        private void Iterand(ForIterand fi)
+        {
+            Id(fi.Name);
+            if (fi.Type != null) { Add(" "); Type(fi.Type); }
+            if (fi.Mutable) Add(" MUTABLE");
+        }
+
+        private void Control(IterationControl c)
+        {
+            switch (c)
+            {
+                case RangeControl r:
+                    if (r.Reverse) Add("REVERSE ");
+                    Expr(r.Lower); Add(" .. "); Expr(r.Upper);
+                    if (r.By != null) { Add(" BY "); Expr(r.By); }
+                    break;
+                case ExpressionControl e: Expr(e.Value); break;
+                case RepeatControl rp: Add("REPEAT "); Expr(rp.Value); break;
+                case ValuesOfControl v: Add("VALUES OF "); Expr(v.Collection); break;
+                case IndicesOfControl ix: Add("INDICES OF "); Expr(ix.Collection); break;
+                case PairsOfControl p: Add("PAIRS OF "); Expr(p.Collection); break;
+                case CursorControl cc: ParenQuery(cc.Query); break;
+                case DynamicSqlControl d:
+                    Add("EXECUTE IMMEDIATE "); Expr(d.Sql);
+                    if (d.Using.Count > 0) UsingList(d.Using);
+                    break;
+                default: throw Unsupported(c);
+            }
+            if (c.While != null) { Add(" WHILE "); Expr(c.While); }
+            if (c.When != null) { Add(" WHEN "); Expr(c.When); }
+        }
+
         private void Loop(LoopStatement l)
         {
             switch (l.Kind)
             {
                 case LoopKind.While: Add("WHILE "); Expr(l.Condition!); Add(" "); break;
-                case LoopKind.ForNumeric:
-                    Add("FOR "); Id(l.Variable!); Add(l.Reverse ? " IN REVERSE " : " IN ");
-                    Expr(l.Lower!); Add(" .. "); Expr(l.Upper!); Add(" ");
-                    break;
-                case LoopKind.ForCursor:
-                    Add("FOR "); Id(l.Variable!); Add(l.Reverse ? " IN REVERSE " : " IN ");
-                    if (l.Query != null) ParenQuery(l.Query); else Expr(l.CursorCall!);
+                case LoopKind.For:
+                    Add("FOR ");
+                    Sep(l.Iterands, Iterand);
+                    Add(" IN ");
+                    Sep(l.Controls, Control);
                     Add(" ");
                     break;
             }
