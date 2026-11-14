@@ -35,6 +35,8 @@ public class CorpusAcceptanceTests(OracleFixture db, ITestOutputHelper output)
     {
         ["SELECT ROW_NUMBER() OVER (PARTITION BY d ORDER BY s DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) rn FROM t"] =
             "ORA-03097: Oracle does not allow a windowing clause on ROW_NUMBER (rank/numbering functions take no frame)",
+        ["EXEC :x := 1"] = "SQL*Plus client command, not a server statement (ORA-00900); EXEC is only valid in SQL*Plus",
+        ["EXECUTE :x := f(1)"] = "SQL*Plus client command, not a server statement (ORA-00900); EXECUTE is only valid in SQL*Plus",
         ["SELECT seq.NEXTVAL, a || b || 'c', -a ** 2, a - -1, SYSDATE - 1 FROM dual"] =
             "Oracle SQL has no ** operator (ORA-00936); exponentiation is POWER() in SQL, ** exists only in PL/SQL",
     };

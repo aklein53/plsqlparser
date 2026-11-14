@@ -141,7 +141,12 @@ public sealed partial class SqlScriptGenerator
                     }
                     if (fb.EnableTriggers) Add(" ENABLE TRIGGERS");
                     break;
-                case ExecStatement ec: Add("EXEC "); Expr(ec.Call); break;
+                case ExecStatement ec:
+                    Add("EXEC ");
+                    if (ec.Body is AssignmentStatement asg) { Expr(asg.Target); Add(" := "); Expr(asg.Value); }
+                    else if (ec.Body is ProcedureCallStatement pcs) Expr(pcs.Call);
+                    else throw Unsupported(ec.Body);
+                    break;
                 case SqlPlusCommand sp2:
                     Add(sp2.Command);
                     if (sp2.Arguments.Count > 0)

@@ -195,10 +195,13 @@ public sealed partial class FlashbackTableStatement : Statement
 
 // ---------- SQL*Plus & script-level ----------
 
-/// <summary>EXEC[UTE] procedure(args) (SQL*Plus shorthand for an anonymous block).</summary>
+/// <summary>
+/// EXEC[UTE] call or EXEC[UTE] target := value. SQL*Plus runs the body as if it were BEGIN body; END;
+/// (so EXEC x == BEGIN x; END;). The body is an AssignmentStatement or a ProcedureCallStatement.
+/// </summary>
 public sealed partial class ExecStatement : Statement
 {
-    public Expression Call { get; set; } = null!;
+    public Statement Body { get; set; } = null!;
 }
 
 /// <summary>A SQL*Plus client command (SET, SPOOL, DEFINE, @script, PROMPT, REM, VARIABLE, WHENEVER, ...). Never sent to the server.</summary>

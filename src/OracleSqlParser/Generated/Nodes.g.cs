@@ -3505,18 +3505,18 @@ public partial class ExecStatement
     /// <inheritdoc/>
     public override IEnumerable<SqlNode> GetChildren()
     {
-        if (Call is not null) yield return Call;
+        if (Body is not null) yield return Body;
     }
 
     /// <inheritdoc/>
     public override void AcceptChildren(SqlNodeVisitor visitor)
     {
-        Call?.Accept(visitor);
+        Body?.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
     {
-        Call = SqlNodeRewriter.RewriteRequired(rewriter, Call, "ExecStatement.Call");
+        Body = SqlNodeRewriter.RewriteRequired(rewriter, Body, "ExecStatement.Body");
     }
 
     /// <inheritdoc/>
@@ -3528,7 +3528,7 @@ public partial class ExecStatement
     {
         var c = new ExecStatement();
         CopySpan(this, c);
-        c.Call = CloneChild(Call)!;
+        c.Body = CloneChild(Body)!;
         c.Labels = CloneStrings(Labels);
         return c;
     }
@@ -3536,7 +3536,7 @@ public partial class ExecStatement
     internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
     {
         var o = (ExecStatement)other;
-        return Pair(Call, o.Call, pending)
+        return Pair(Body, o.Body, pending)
             && SameStrings(Labels, o.Labels);
     }
 }

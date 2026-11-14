@@ -136,8 +136,15 @@ public class DmlAndSessionShapeTests
             "(SqlPlusCommand command=DEFINE arguments=[(WordItem value=X) (SymbolItem symbol==) (LiteralItem kind=Number value=5)])",
             "(SqlPlusCommand command=@ arguments=[(WordItem value=CHILD) (SymbolItem symbol=.) (WordItem value=SQL)])",
             "(SqlPlusCommand command=WHENEVER arguments=[(WordItem value=SQLERROR) (WordItem value=EXIT) (WordItem value=FAILURE) (WordItem value=ROLLBACK)])",
-            "(ExecStatement call=(FunctionCall name=[DBMS_OUTPUT PUT_LINE] arguments=[(Argument value='x')]))",
+            "(ExecStatement body=(ProcedureCallStatement call=(FunctionCall name=[DBMS_OUTPUT PUT_LINE] arguments=[(Argument value='x')])))",
             "(SelectStatement body=(QuerySpecification selectList=[(ExpressionSelectItem expression=(SubstitutionVariable name=x))] from=[(NamedTable name=[DUAL])]))",
         ], printed);
     }
+
+    [Theory]
+    [InlineData("EXEC :x := 1;", "(ExecStatement body=(AssignmentStatement target=:x value=1))")]
+    [InlineData("EXECUTE :x := f(1);", "(ExecStatement body=(AssignmentStatement target=:x value=(FunctionCall name=[F] arguments=[(Argument value=1)])))")]
+    [InlineData("EXEC pkg.p(1);", "(ExecStatement body=(ProcedureCallStatement call=(FunctionCall name=[PKG P] arguments=[(Argument value=1)])))")]
+    [InlineData("EXEC :x := 1\nEXEC :y := 2", "(ExecStatement body=(AssignmentStatement target=:x value=1)) ; (ExecStatement body=(AssignmentStatement target=:y value=2))")]
+    public void Exec_CallOrAssignment(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 }

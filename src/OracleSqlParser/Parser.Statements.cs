@@ -48,7 +48,12 @@ public sealed partial class SqlParser
             case "EXEC" or "EXECUTE" when !IsKwAt(1, "IMMEDIATE"):
             {
                 Next();
-                return Fin(new ExecStatement { Call = ParsePostfix() }, start);
+                var bodyStart = Cur;
+                var target = ParsePostfix();
+                Statement body = AcceptOp(":=")
+                    ? Fin(new AssignmentStatement { Target = target, Value = ParseExpr() }, bodyStart)
+                    : Fin(new ProcedureCallStatement { Call = target }, bodyStart);
+                return Fin(new ExecStatement { Body = body }, start);
             }
         }
         if (SqlPlusCommands.Contains(Cur.Value)) return ParseSqlPlusCommand(start, Next().Value);

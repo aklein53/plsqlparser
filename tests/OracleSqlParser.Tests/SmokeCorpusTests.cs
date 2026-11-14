@@ -145,6 +145,8 @@ public class SmokeCorpusTests
     [InlineData("CREATE OR REPLACE PROCEDURE cc_demo AS $IF DBMS_DB_VERSION.VER_LE_11 $THEN $ERROR 'old' $END $ELSE v NUMBER := 1; $END BEGIN NULL; END;")]
     [InlineData("BEGIN $IF DBMS_DB_VERSION.VER_LE_11 $THEN dbms_output.put_line('old'); $ELSIF $$my_flag = 1 $THEN NULL; $ELSE dbms_output.put_line($$PLSQL_UNIT); $END END;")]
     [InlineData("DECLARE $IF $$my_flag = 1 $THEN v NUMBER := 1; $ELSIF $$my_flag = 2 $THEN v NUMBER := 2; $END BEGIN $IF DBMS_DB_VERSION.VER_LE_11 $THEN $ERROR 'old' $END $END NULL; END;")]
+    [InlineData("EXEC :x := 1")]
+    [InlineData("EXECUTE :x := f(1)")]
     [InlineData("BEGIN FOR r IN EXECUTE IMMEDIATE 'select 1 from dual' LOOP NULL; END LOOP; END;")]
     [InlineData("BEGIN OPEN c1; FETCH c1 INTO r; CLOSE c1; END;")]
     [InlineData("BEGIN OPEN c1(1); FETCH c1 BULK COLLECT INTO tab LIMIT 100; CLOSE c1; END;")]

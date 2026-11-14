@@ -51,7 +51,7 @@ Conditional blocks are not accepted in parameter lists.
 ## Script level
 
 SQL*Plus commands (`SET`, `SPOOL`, `DEFINE`, `@script`, `PROMPT`, `REM`, `WHENEVER`, ...) → `SqlPlusCommand`
-(arguments are a token tree); `EXEC` → `ExecStatement`; `&var`/`&&var` → `SubstitutionVariable`; `/` terminators.
+(arguments are a token tree); `EXEC`/`EXECUTE` call or `target := value` → `ExecStatement` whose body is a `ProcedureCallStatement` or `AssignmentStatement` (SQL*Plus runs it as `BEGIN body; END;`); `&var`/`&&var` → `SubstitutionVariable`; `/` terminators.
 Error recovery resyncs at `;`, or for PL/SQL units at a `/` alone on its line (else the `;` after `END`).
 
 ## Known gaps (each is a parse error today, not a silent mis-parse)
