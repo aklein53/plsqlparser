@@ -223,7 +223,7 @@ public sealed partial class SqlParser
         else if (AcceptKw("HASH")) m = PartitionMethod.Hash;
         else if (AcceptKw("SYSTEM")) return PartitionMethod.System;
         else if (AcceptKw("REFERENCE")) { ExpectOp("("); refConstraint = ParseIdentifier(); ExpectOp(")"); return PartitionMethod.Reference; }
-        else throw Fail($"Expected RANGE, LIST, HASH, REFERENCE or SYSTEM but found {Describe(Cur)}");
+        else throw FailExpected($"Expected RANGE, LIST, HASH, REFERENCE or SYSTEM but found {Describe(Cur)}", "RANGE", "LIST", "HASH", "REFERENCE", "SYSTEM");
         ExpectOp("(");
         cols.AddRange(ParseIdentifierList());
         ExpectOp(")");
@@ -233,7 +233,7 @@ public sealed partial class SqlParser
     private PartitionDefinition ParsePartitionDefinition(Func<bool>? attributeStop = null)
     {
         var s = Cur;
-        if (!(IsKw("PARTITION") || IsKw("SUBPARTITION"))) throw Fail($"Expected PARTITION but found {Describe(Cur)}");
+        if (!(IsKw("PARTITION") || IsKw("SUBPARTITION"))) throw FailExpected($"Expected PARTITION but found {Describe(Cur)}", "PARTITION");
         Next();
         var pd = new PartitionDefinition();
         if (Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier && !IsKw("VALUES")) pd.Name = ParseIdentifier();

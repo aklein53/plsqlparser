@@ -9,5 +9,7 @@ public static class SqlWriter
 {
     private static readonly SqlScriptGenerator Generator = new(new SqlScriptGeneratorOptions { IdentifierCasing = IdentifierCasing.Uppercase });
 
+    /// <summary>Prints <paramref name="node"/> as normalized single-line Oracle SQL (see the type summary for the casing).</summary>
+    /// <exception cref="NotSupportedException">The generator does not know a node type inside <paramref name="node"/>.</exception>
     public static string ToSql(SqlNode node) => Generator.Generate(node);
 }

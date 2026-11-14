@@ -1,0 +1,9 @@
+# Missing XML documentation (CS1591) is suppressed across this project, except in the public API files below,
+# which must document every public member. A later section overrides an earlier one, so the second section wins.
+# A pragma cannot do this: '#pragma warning restore' falls back to the project's NoWarn setting.
+
+[*.cs]
+dotnet_diagnostic.CS1591.severity = none
+
+[{ParseError,ParseOptions,Parser,Lexer}.cs]
+dotnet_diagnostic.CS1591.severity = warning

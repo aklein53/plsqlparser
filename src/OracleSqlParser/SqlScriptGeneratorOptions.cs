@@ -1,7 +1,13 @@
 namespace OracleSqlParser;
 
 /// <summary>How keywords are cased in generated SQL.</summary>
-public enum KeywordCasing { Uppercase, Lowercase }
+public enum KeywordCasing
+{
+    /// <summary>Keywords are printed upper case (the default).</summary>
+    Uppercase,
+    /// <summary>Keywords are printed lower case.</summary>
+    Lowercase,
+}
 
 /// <summary>How identifiers are cased in generated SQL. Quoted identifiers are always printed verbatim.</summary>
 public enum IdentifierCasing

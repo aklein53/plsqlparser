@@ -1,30 +1,38 @@
 # OracleSqlParser
 
 A hand-written lexer and recursive-descent parser for Oracle SQL that builds an abstract syntax tree
-(similar in spirit to Microsoft's `TSqlParser`/ScriptDom). Targets net8.0 and net10.0, no runtime dependencies.
+(similar in spirit to Microsoft's `TSqlParser`/ScriptDom). Targets net8.0 and net10.0 and has no NuGet package dependencies (SourceLink is build-time only).
 
 ## Installing
 
 ```
-dotnet add package PlsqlParser --prerelease
+dotnet add package OracleSqlParser --prerelease
 ```
 
-The NuGet package is `PlsqlParser`, while the C# namespace (and assembly) is `OracleSqlParser`.
+The NuGet package, the C# namespace and the assembly are all named `OracleSqlParser`.
 
-Targets `net8.0` and `net10.0`. Versions are published as pre-releases (`0.1.0-preview.N`) until the API stabilises.
+### Migrating from PlsqlParser
+
+The packages were renamed to match the namespace: `PlsqlParser` is now `OracleSqlParser`, and `PlsqlParser.Guard` is now
+`OracleSqlParser.Guard`. To migrate, replace the package reference (`dotnet remove package PlsqlParser`, then
+`dotnet add package OracleSqlParser --prerelease`). Namespaces are unchanged, so no `using` directives change.
+
+Versions are published as pre-releases (`0.1.0-preview.N`) until the API stabilises.
 
 ## Releasing
 
 Publishing uses nuget.org Trusted Publishing (GitHub OIDC) bound to `.github/workflows/build.yml`; no API key
 secret is required.
 
-1. Bump `<Version>` in `src/OracleSqlParser/OracleSqlParser.csproj` (e.g. `0.1.0-preview.2`) and commit.
+1. Bump `<Version>` (e.g. `0.1.0-preview.2`) in all three csproj files: `src/OracleSqlParser/OracleSqlParser.csproj`,
+   `src/OracleSqlParser.Guard/OracleSqlParser.Guard.csproj` and `src/OracleSqlParser.Cli/OracleSqlParser.Cli.csproj`. Commit.
 2. Tag the commit with the matching `v`-prefixed version: `git tag vX.Y.Z-preview.N` (e.g. `v0.1.0-preview.2`).
 3. Push the tag: `git push origin vX.Y.Z-preview.N`.
 
-The `Build` workflow runs on every push and pull request; its `publish` job runs only on `v*` tags. It checks that
-the tag matches the csproj `<Version>`, then exchanges the GitHub OIDC token for a short-lived key and pushes the
-package built by the `build` job to nuget.org.
+The `Build` workflow runs on every push and pull request. It packs `OracleSqlParser`, `OracleSqlParser.Guard` and
+`OracleSqlParser.Cli` (the dotnet tool). Its `publish` job runs only on `v*` tags. It checks that the tag matches the
+`<Version>` of all three csproj files, then exchanges the GitHub OIDC token for a short-lived key and pushes the packages
+built by the `build` job to nuget.org.
 
 ## Library
 
@@ -36,11 +44,58 @@ string json = AstJson.Serialize(result.Script, includePositions: true);
 ```
 
 - `SqlParser.Parse` handles multi-statement scripts (`;` or `/`), collects errors and resyncs at the next `;`.
-- `SqlParser.ParseStatement` / `ParseExpression` throw `ParseException` instead.
+- `SqlParser.ParseStatement`, `ParseExpression` and `ParseSelect` throw `ParseException` instead; the others in the table below never throw.
 - Every `SqlNode` has `Start`/`End`/`Line`/`Column`, `Children()` and `Descendants()`; subclass `SqlNodeVisitor` to walk (see below; `SqlVisitor` is the legacy untyped visitor). Spans are set by the parser; nodes you build in code have zero spans.
 - Unquoted identifiers are upper-cased in `Identifier.Value`; quoted ones keep case (`Quoted = true`).
 
 SQL*Plus scripts: `&name` and `&&name` are substitution variables by default. A `SET DEFINE OFF` line (or `SET DEF OFF`) turns substitution off for the rest of the input, so `&` is then ordinary text, as it already is inside string literals; `SET DEFINE ON` turns it back on, and `SET DEFINE <char>` (for example `SET DEFINE ^`) makes that character the prefix instead. Only a `SET` that starts a line and is followed by nothing but the value counts, so `UPDATE t SET define = 1` is unaffected. For plain SQL that is not a script, `new ParseOptions { SubstitutionEnabled = false }` turns substitution off from the start.
+
+## Entry points and errors
+
+| Method | Throws `ParseException`? | Returns |
+|---|---|---|
+| `Parse(sql[, options])` | never | `ParseResult`: `Script`, `Errors`, `Tokens`, `Success` |
+| `TryParse(sql, out script, out errors[, options])` | never | `bool`, true when there are no errors |
+| `TryParseSelect(sql, out select, out errors[, options])` | never | `bool`; `select` is the single `SelectStatement` |
+| `ParseSelect(sql[, options])` | yes, when the input is not exactly one SELECT or has any error | the `SelectStatement` |
+| `ParseStatement(sql[, options])` | yes, on the first error | the `Statement` |
+| `ParseExpression(sql[, options])` | yes, on the first error | the `Expression` |
+
+`ParseSelect` and `TryParseSelect` accept one SELECT with an optional trailing `;` or `/`. Anything else (no statement, two statements, or an INSERT, UPDATE, DELETE or MERGE) is reported with code `PSP0008`. `ParseException.Errors` holds every diagnostic, and `ParseException.Error` the first.
+
+```csharp
+if (SqlParser.TryParseSelect(sql, out var select, out var errors))
+    Console.WriteLine(select.Descendants().OfType<NamedTable>().Count());
+else
+    foreach (var e in errors) Console.WriteLine(e.FormatWithCaret(sql));
+```
+
+Each `ParseError` has a stable `Code`, a `Message` whose wording may change, the `Offset`, `Line` and `Column` of the problem, its `Length` (the offending token's span, zero at end of input), and `Expected`, the keywords or tokens the parser was looking for (for example `[")"]` or `["DML", "DDL", "QUERY"]`). Match on `Code`, not on `Message`. `ToString()` gives `(line:col) message`.
+
+| Code | Meaning |
+|---|---|
+| `PSP0001` | Unexpected token |
+| `PSP0002` | Expected a particular token or keyword; see `Expected` |
+| `PSP0003` | Unterminated string literal, quoted identifier, q-quote literal or comment |
+| `PSP0004` | Nesting is deeper than `ParseOptions.MaxNestingDepth` |
+| `PSP0005` | Valid Oracle that needs a newer release than `ParseOptions.OracleVersion` |
+| `PSP0006` | Construct breaks a rule of its context, for example `**` in SQL or `PUBLIC` on `CREATE ROLE` |
+| `PSP0007` | Form that Oracle accepts but the parser does not implement yet |
+| `PSP0008` | Input is not exactly one SELECT statement (`ParseSelect`, `TryParseSelect`) |
+| `PSP0099` | Internal parser defect, contained so that parsing continues; please report it |
+
+`FormatWithCaret(source)` returns the source line and a caret under the span. Tabs are copied into the caret line, so it lines up in any tab width:
+
+```csharp
+var r = SqlParser.Parse("SELECT (1 FROM dual");
+Console.WriteLine(r.Errors[0]);                        // (1:11) Expected ')' but found 'FROM'
+Console.WriteLine(r.Errors[0].FormatWithCaret(r.Source));
+```
+
+```
+SELECT (1 FROM dual
+          ^~~~
+```
 
 ## Targeting older Oracle versions
 
@@ -57,16 +112,19 @@ The gated constructs and their versions are listed in [COVERAGE.md](https://gith
 
 ## CLI
 
+The command-line tool is packaged as the .NET tool `OracleSqlParser.Cli` (command `oraclesqlparser`):
+
 ```
-dotnet run --project src/OracleSqlParser.Cli -- [--positions] [--compact] [-f file | -e "sql"]   # or stdin
+dotnet tool install -g OracleSqlParser.Cli --prerelease
+oraclesqlparser [--shape] [--positions] [--compact] [-f file | -e "sql"]   # or stdin
 ```
-Prints the AST as JSON; syntax errors go to stderr with exit code 1.
+Prints the AST as JSON (or the compact tree with `--shape`); syntax errors go to stderr with exit code 1. See the
+[tool README](https://github.com/aklein53/plsqlparser/blob/main/src/OracleSqlParser.Cli/README.md) for every flag.
 
 ## Coverage
 
 See [COVERAGE.md](https://github.com/aklein53/plsqlparser/blob/main/COVERAGE.md): every statement in Oracle's statement index, the node that represents it, whether
-it is fully typed or a typed header with a token-tree body, and the known gaps. `dotnet run --project src/OracleSqlParser.Cli -- --shape -e "..."`
-prints the compact tree used by the shape tests.
+it is fully typed or a typed header with a token-tree body, and the known gaps. `oraclesqlparser --shape -e "..."` prints the compact tree used by the shape tests.
 
 ## Tests
 
@@ -75,7 +133,7 @@ corpus (`SmokeCorpusTests.cs`) that only checks inputs parse.
 
 ## Query guard (experimental, separate package)
 
-An experimental package, `PlsqlParser.Guard`, validates and rewrites user-supplied SELECT queries. It is **not a
+An experimental package, `OracleSqlParser.Guard`, validates and rewrites user-supplied SELECT queries. It is **not a
 security boundary**; read its [README](https://github.com/aklein53/plsqlparser/blob/main/src/OracleSqlParser.Guard/README.md) before using it.
 
 

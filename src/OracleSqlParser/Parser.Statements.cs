@@ -194,7 +194,7 @@ public sealed partial class SqlParser
         var st = new LockTableStatement();
         do st.Tables.Add(ParseTablePrimary()); while (AcceptOp(","));
         ExpectKw("IN");
-        if (AcceptKw("ROW")) st.Mode = AcceptKw("SHARE") ? LockMode.RowShare : (AcceptKw("EXCLUSIVE") ? LockMode.RowExclusive : throw Fail("Expected SHARE or EXCLUSIVE"));
+        if (AcceptKw("ROW")) st.Mode = AcceptKw("SHARE") ? LockMode.RowShare : (AcceptKw("EXCLUSIVE") ? LockMode.RowExclusive : throw FailExpected("Expected SHARE or EXCLUSIVE", "SHARE", "EXCLUSIVE"));
         else if (AcceptKw("SHARE"))
         {
             if (AcceptKw("UPDATE")) st.Mode = LockMode.ShareUpdate;
@@ -243,10 +243,10 @@ public sealed partial class SqlParser
         else if (AcceptKw("INDEXTYPE")) st.Target = CommentTarget.Indextype;
         else if (IsKw("MINING")) { Next(); ExpectKw("MODEL"); st.Target = CommentTarget.MiningModel; }
         else if (AcceptKw("EDITION")) st.Target = CommentTarget.Edition;
-        else throw Fail($"Unsupported COMMENT ON target {Describe(Cur)}");
+        else throw Fail($"Unsupported COMMENT ON target {Describe(Cur)}", ParseErrorCodes.UnsupportedForm);
         st.Name = ParseDottedName();
         ExpectKw("IS");
-        if (Cur.Type != TokenType.String) throw Fail($"Expected string literal but found {Describe(Cur)}");
+        if (Cur.Type != TokenType.String) throw FailExpected($"Expected string literal but found {Describe(Cur)}", "string literal");
         st.Text = Next().Value;
         return Fin(st, start);
     }
@@ -299,7 +299,7 @@ public sealed partial class SqlParser
         if (AcceptKw("SCN")) st.Target = FlashbackTarget.Scn;
         else if (AcceptKw("TIMESTAMP")) st.Target = FlashbackTarget.Timestamp;
         else if (IsKw("RESTORE")) { Next(); ExpectKw("POINT"); st.Target = FlashbackTarget.RestorePoint; }
-        else throw Fail($"Expected SCN, TIMESTAMP or RESTORE POINT but found {Describe(Cur)}");
+        else throw FailExpected($"Expected SCN, TIMESTAMP or RESTORE POINT but found {Describe(Cur)}", "SCN", "TIMESTAMP", "RESTORE POINT");
         st.Point = ParseAdditive();
     }
 
@@ -355,7 +355,7 @@ public sealed partial class SqlParser
             else if (IsKw("WITH") && IsKwAt(1, "HIERARCHY")) { Next(); Next(); ExpectKw("OPTION"); st.WithHierarchyOption = true; }
             else if (IsKw("CASCADE")) { Next(); ExpectKw("CONSTRAINTS"); st.CascadeConstraints = true; }
             else if (AcceptKw("FORCE")) st.Force = true;
-            else if (IsKw("CONTAINER")) { Next(); ExpectOp("="); st.Container = AcceptKw("ALL") ? GrantContainer.All : (AcceptKw("CURRENT") ? GrantContainer.Current : throw Fail("Expected ALL or CURRENT")); }
+            else if (IsKw("CONTAINER")) { Next(); ExpectOp("="); st.Container = AcceptKw("ALL") ? GrantContainer.All : (AcceptKw("CURRENT") ? GrantContainer.Current : throw FailExpected("Expected ALL or CURRENT", "ALL", "CURRENT")); }
             else throw Fail($"Unexpected {Describe(Cur)} in GRANT/REVOKE");
         }
         return Fin(st, start);
@@ -432,7 +432,7 @@ public sealed partial class SqlParser
 
     private Statement ParseCreateUser(Token start, bool orReplace, bool pub)
     {
-        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE USER");
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE USER", ParseErrorCodes.InvalidCombination);
         var st = new CreateUserStatement { IfNotExists = TryIfNotExists() };
         st.Name = ParseIdentifier();
         if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
@@ -442,7 +442,7 @@ public sealed partial class SqlParser
 
     private Statement ParseAlterUser(Token start, bool pub)
     {
-        if (pub) throw Fail("PUBLIC does not apply to ALTER USER");
+        if (pub) throw Fail("PUBLIC does not apply to ALTER USER", ParseErrorCodes.InvalidCombination);
         var st = new AlterUserStatement { IfExists = TryIfExists() };
         st.Name = ParseIdentifier();
         st.Clauses = ParseUserClauses();
@@ -552,7 +552,7 @@ public sealed partial class SqlParser
 
     private Statement ParseCreateRole(Token start, bool orReplace, bool pub)
     {
-        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE ROLE");
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE ROLE", ParseErrorCodes.InvalidCombination);
         var st = new CreateRoleStatement { IfNotExists = TryIfNotExists() };
         st.Name = ParseIdentifier();
         if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
@@ -565,7 +565,7 @@ public sealed partial class SqlParser
 
     private Statement ParseAlterRole(Token start, bool pub)
     {
-        if (pub) throw Fail("PUBLIC does not apply to ALTER ROLE");
+        if (pub) throw Fail("PUBLIC does not apply to ALTER ROLE", ParseErrorCodes.InvalidCombination);
         var st = new AlterRoleStatement { IfExists = TryIfExists() };
         st.Name = ParseIdentifier();
         st.Authentication = ParseRoleIdentification(out var password, out var package);
@@ -603,7 +603,7 @@ public sealed partial class SqlParser
 
     private Statement ParseCreateProfile(Token start, bool orReplace, bool pub)
     {
-        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE PROFILE");
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE PROFILE", ParseErrorCodes.InvalidCombination);
         var st = new CreateProfileStatement { IfNotExists = TryIfNotExists() };
         st.Name = ParseIdentifier();
         if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
@@ -614,7 +614,7 @@ public sealed partial class SqlParser
 
     private Statement ParseAlterProfile(Token start, bool pub)
     {
-        if (pub) throw Fail("PUBLIC does not apply to ALTER PROFILE");
+        if (pub) throw Fail("PUBLIC does not apply to ALTER PROFILE", ParseErrorCodes.InvalidCombination);
         var st = new AlterProfileStatement { IfExists = TryIfExists() };
         st.Name = ParseIdentifier();
         ParseProfileBody(st.Limits, out var container, out var cascade, allowCascade: true);
@@ -654,7 +654,7 @@ public sealed partial class SqlParser
 
     private Statement ParseCreateDirectory(Token start, bool orReplace, bool pub)
     {
-        if (pub) throw Fail("PUBLIC does not apply to CREATE DIRECTORY");
+        if (pub) throw Fail("PUBLIC does not apply to CREATE DIRECTORY", ParseErrorCodes.InvalidCombination);
         var st = new CreateDirectoryStatement { OrReplace = orReplace, IfNotExists = TryIfNotExists() };
         st.Name = ParseIdentifier();
         if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
@@ -695,7 +695,7 @@ public sealed partial class SqlParser
 
     private Statement ParseCreateContext(Token start, bool orReplace, bool pub)
     {
-        if (pub) throw Fail("PUBLIC does not apply to CREATE CONTEXT");
+        if (pub) throw Fail("PUBLIC does not apply to CREATE CONTEXT", ParseErrorCodes.InvalidCombination);
         var st = new CreateContextStatement { OrReplace = orReplace, IfNotExists = TryIfNotExists() };
         st.Name = ParseIdentifier();
         if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
@@ -714,7 +714,7 @@ public sealed partial class SqlParser
 
     private Statement ParseCreateTablespace(Token start, bool orReplace, bool pub, bool? bigfile, TablespaceType? kind)
     {
-        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE TABLESPACE");
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE TABLESPACE", ParseErrorCodes.InvalidCombination);
         var st = new CreateTablespaceStatement { Bigfile = bigfile, Kind = kind, IfNotExists = TryIfNotExists() };
         st.Name = ParseIdentifier();
         if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
@@ -796,7 +796,7 @@ public sealed partial class SqlParser
 
     private Statement ParseAlterTablespace(Token start, bool pub)
     {
-        if (pub) throw Fail("PUBLIC does not apply to ALTER TABLESPACE");
+        if (pub) throw Fail("PUBLIC does not apply to ALTER TABLESPACE", ParseErrorCodes.InvalidCombination);
         var st = new AlterTablespaceStatement { IfExists = TryIfExists() };
         st.Name = ParseIdentifier();
         int prog = -1;
@@ -883,7 +883,7 @@ public sealed partial class SqlParser
         int prog = -1;
         while (!AtStatementEnd() && !IsOp(",") && !IsKw("ON") && !IsKw("BY") && !IsKw("WHENEVER") && Progress(ref prog))
             words.Add(Next().Value);
-        if (words.Count == 0) throw Fail($"Expected an audit option but found {Describe(Cur)}");
+        if (words.Count == 0) throw FailExpected($"Expected an audit option but found {Describe(Cur)}", "an audit option");
         return Fin(new AuditOption { Name = string.Join(" ", words) }, s);
     }
 
@@ -926,7 +926,7 @@ public sealed partial class SqlParser
 
     private Statement ParseCreateAuditPolicy(Token start, bool orReplace, bool pub)
     {
-        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE AUDIT POLICY");
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE AUDIT POLICY", ParseErrorCodes.InvalidCombination);
         var st = new CreateAuditPolicyStatement { IfNotExists = TryIfNotExists() };
         st.Name = ParseIdentifier();
         if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
@@ -949,7 +949,7 @@ public sealed partial class SqlParser
 
     private Statement ParseAlterAuditPolicy(Token start, bool pub)
     {
-        if (pub) throw Fail("PUBLIC does not apply to ALTER AUDIT POLICY");
+        if (pub) throw Fail("PUBLIC does not apply to ALTER AUDIT POLICY", ParseErrorCodes.InvalidCombination);
         var st = new AlterAuditPolicyStatement { IfExists = TryIfExists() };
         st.Name = ParseIdentifier();
         bool lastDrop = false;
@@ -1001,7 +1001,7 @@ public sealed partial class SqlParser
         var words = new List<string>();
         int prog = -1;
         while (!AtAuditPolicyItemEnd() && Progress(ref prog)) words.Add(Next().Value);
-        if (words.Count == 0 && it.Component == null) throw Fail($"Expected a privilege or action but found {Describe(Cur)}");
+        if (words.Count == 0 && it.Component == null) throw FailExpected($"Expected a privilege or action but found {Describe(Cur)}", "a privilege", "action");
         it.Name = string.Join(" ", words);
         if (AcceptKw("ON")) it.On = ParseAuditObject();
         return Fin(it, s);
@@ -1019,7 +1019,7 @@ public sealed partial class SqlParser
         var ev = AcceptKw("STATEMENT") ? AuditEvaluation.Statement
             : AcceptKw("SESSION") ? AuditEvaluation.Session
             : AcceptKw("INSTANCE") ? AuditEvaluation.Instance
-            : throw Fail($"Expected STATEMENT, SESSION or INSTANCE but found {Describe(Cur)}");
+            : throw FailExpected($"Expected STATEMENT, SESSION or INSTANCE but found {Describe(Cur)}", "STATEMENT", "SESSION", "INSTANCE");
         return (cond, ev);
     }
 
@@ -1029,7 +1029,7 @@ public sealed partial class SqlParser
     {
         var start = Next();
         var st = new DropStatement { Public = AcceptKw("PUBLIC") };
-        if (!TryParseObjectKind(out var kind)) throw Fail($"Unsupported DROP target {Describe(Cur)}");
+        if (!TryParseObjectKind(out var kind)) throw Fail($"Unsupported DROP target {Describe(Cur)}", ParseErrorCodes.UnsupportedForm);
         st.Kind = kind;
         RequireKindVersion("DROP", kind, start);
         st.IfExists = TryIfExists();
@@ -1099,7 +1099,7 @@ public sealed partial class SqlParser
             else if (AcceptKw("GUARD")) st.Feature = SessionFeature.Guard;
             else if (AcceptKw("PARALLEL"))
             {
-                st.Feature = AcceptKw("DML") ? SessionFeature.ParallelDml : AcceptKw("DDL") ? SessionFeature.ParallelDdl : AcceptKw("QUERY") ? SessionFeature.ParallelQuery : throw Fail("Expected DML, DDL or QUERY");
+                st.Feature = AcceptKw("DML") ? SessionFeature.ParallelDml : AcceptKw("DDL") ? SessionFeature.ParallelDdl : AcceptKw("QUERY") ? SessionFeature.ParallelQuery : throw FailExpected("Expected DML, DDL or QUERY", "DML", "DDL", "QUERY");
                 if (AcceptKw("PARALLEL")) st.Parallel = ParseAdditive();
             }
             else if (AcceptKw("RESUMABLE"))
@@ -1119,7 +1119,7 @@ public sealed partial class SqlParser
         else if (AcceptKw("ADVISE"))
         {
             st.Kind = AlterSessionKind.Advise;
-            st.Advise = AcceptKw("COMMIT") ? AdviseMode.Commit : AcceptKw("ROLLBACK") ? AdviseMode.Rollback : (AcceptKw("NOTHING") ? AdviseMode.Nothing : throw Fail("Expected COMMIT, ROLLBACK or NOTHING"));
+            st.Advise = AcceptKw("COMMIT") ? AdviseMode.Commit : AcceptKw("ROLLBACK") ? AdviseMode.Rollback : (AcceptKw("NOTHING") ? AdviseMode.Nothing : throw FailExpected("Expected COMMIT, ROLLBACK or NOTHING", "COMMIT", "ROLLBACK", "NOTHING"));
         }
         else if (IsKw("SYNC")) { Next(); ExpectKw("WITH"); ExpectKw("PRIMARY"); st.Kind = AlterSessionKind.SyncWithPrimary; }
         else throw Fail($"Unexpected {Describe(Cur)} in ALTER SESSION");
@@ -1261,7 +1261,7 @@ public sealed partial class SqlParser
         if (AcceptKw("PRESERVE")) st.OnCommit = AcceptKw("DEFINITION") ? OnCommitAction.PreserveDefinition : OnCommitAction.PreserveRows;
         else if (AcceptKw("DELETE")) st.OnCommit = OnCommitAction.DeleteRows;
         else if (AcceptKw("DROP")) st.OnCommit = OnCommitAction.DropDefinition;
-        else throw Fail($"Expected PRESERVE, DELETE or DROP but found {Describe(Cur)}");
+        else throw FailExpected($"Expected PRESERVE, DELETE or DROP but found {Describe(Cur)}", "PRESERVE", "DELETE", "DROP");
         if (st.OnCommit is OnCommitAction.PreserveRows or OnCommitAction.DeleteRows) ExpectKw("ROWS");
         else if (st.OnCommit == OnCommitAction.DropDefinition) ExpectKw("DEFINITION");
     }
@@ -1290,7 +1290,7 @@ public sealed partial class SqlParser
         int prog130 = -1;
         while (!IsOp(",") && !IsOp(")") && !AtStatementEnd() && !(stop?.Invoke() ?? false) && Progress(ref prog130))
         {
-            if (cd.Annotations != null) throw Fail("A column ANNOTATIONS clause must be the last column property (ORA-03099)");
+            if (cd.Annotations != null) throw Fail("A column ANNOTATIONS clause must be the last column property (ORA-03099)", ParseErrorCodes.InvalidCombination);
             if (AcceptKw("ANNOTATIONS")) { cd.Annotations = ParseAnnotations(allowDrop: alter); continue; }
             if (IsKw("DEFAULT"))
             {
@@ -1388,7 +1388,7 @@ public sealed partial class SqlParser
             tc.Check = ParseExpr();
             ExpectOp(")");
         }
-        else throw Fail($"Expected constraint definition but found {Describe(Cur)}");
+        else throw FailExpected($"Expected constraint definition but found {Describe(Cur)}", "constraint definition");
         tc.State = ParseConstraintState();
         return Fin(tc, s);
     }
@@ -1403,7 +1403,7 @@ public sealed partial class SqlParser
         {
             if (IsKw("NOT") && IsKwAt(1, "DEFERRABLE")) { Next(); Next(); cs.Deferrable = false; }
             else if (AcceptKw("DEFERRABLE")) cs.Deferrable = true;
-            else if (IsKw("INITIALLY")) { Next(); cs.InitiallyDeferred = AcceptKw("DEFERRED") ? true : (AcceptKw("IMMEDIATE") ? false : throw Fail("Expected DEFERRED or IMMEDIATE")); }
+            else if (IsKw("INITIALLY")) { Next(); cs.InitiallyDeferred = AcceptKw("DEFERRED") ? true : (AcceptKw("IMMEDIATE") ? false : throw FailExpected("Expected DEFERRED or IMMEDIATE", "DEFERRED", "IMMEDIATE")); }
             else if (AcceptKw("ENABLE")) cs.Enable = true;
             else if (AcceptKw("DISABLE")) cs.Enable = false;
             else if (AcceptKw("VALIDATE")) cs.Validate = true;
@@ -1506,12 +1506,12 @@ public sealed partial class SqlParser
             do st.Columns.Add(ParseViewColumn(allowDrop: false)); while (AcceptOp(","));
             ExpectOp(")");
         }
-        if (IsKw("BEQUEATH")) { Next(); st.Bequeath = AcceptKw("CURRENT_USER") ? ViewBequeath.CurrentUser : (AcceptKw("DEFINER") ? ViewBequeath.Definer : throw Fail("Expected CURRENT_USER or DEFINER")); }
+        if (IsKw("BEQUEATH")) { Next(); st.Bequeath = AcceptKw("CURRENT_USER") ? ViewBequeath.CurrentUser : (AcceptKw("DEFINER") ? ViewBequeath.Definer : throw FailExpected("Expected CURRENT_USER or DEFINER", "CURRENT_USER", "DEFINER")); }
         int prog26 = -1;
         while (!AtAsQuery() && Progress(ref prog26))
         {
-            if (AtStatementEnd()) throw Fail($"Expected AS but found {Describe(Cur)}");
-            if (IsKw("BUILD")) { Next(); st.BuildImmediate = AcceptKw("IMMEDIATE") ? true : (AcceptKw("DEFERRED") ? false : throw Fail("Expected IMMEDIATE or DEFERRED")); }
+            if (AtStatementEnd()) throw FailExpected($"Expected AS but found {Describe(Cur)}", "AS");
+            if (IsKw("BUILD")) { Next(); st.BuildImmediate = AcceptKw("IMMEDIATE") ? true : (AcceptKw("DEFERRED") ? false : throw FailExpected("Expected IMMEDIATE or DEFERRED", "IMMEDIATE", "DEFERRED")); }
             else if (IsKw("REFRESH") || (IsKw("NEVER") && IsKwAt(1, "REFRESH"))) st.Refresh = ParseRefresh();
             else if ((IsKw("ENABLE") || IsKw("DISABLE")) && IsKwAt(1, "QUERY")) { st.QueryRewrite = Next().Value == "ENABLE"; Next(); ExpectKw("REWRITE"); }
             else st.Attributes.Add(ParsePhysicalAttribute(() => AtAsQuery() || IsKw("BUILD") || IsKw("REFRESH") || IsKw("NEVER") || ((IsKw("ENABLE") || IsKw("DISABLE")) && IsKwAt(1, "QUERY"))));
@@ -1572,7 +1572,7 @@ public sealed partial class SqlParser
     private Statement ParseCreateDomain(Token start, bool orReplace, bool useCase)
     {
         // Oracle rejects OR REPLACE on domains (ORA-00922).
-        if (orReplace) throw Fail("CREATE OR REPLACE is not supported for DOMAIN");
+        if (orReplace) throw Fail("CREATE OR REPLACE is not supported for DOMAIN", ParseErrorCodes.InvalidCombination);
         var st = new CreateDomainStatement { UseCase = useCase, IfNotExists = TryIfNotExists() };
         st.Name = ParseDottedName();
         ExpectKw("AS");
@@ -1581,7 +1581,7 @@ public sealed partial class SqlParser
         while (!AtStatementEnd() && Progress(ref prog))
         {
             if (AcceptKw("DEFAULT")) st.Default = ParseExpr();
-            else if (IsKw("CONSTRAINT") && IsKwAt(2, "NOT")) throw Fail("A NOT NULL constraint on a domain cannot be named (ORA-02253)");
+            else if (IsKw("CONSTRAINT") && IsKwAt(2, "NOT")) throw Fail("A NOT NULL constraint on a domain cannot be named (ORA-02253)", ParseErrorCodes.InvalidCombination);
             else if (IsKw("CONSTRAINT") || IsKw("NOT") || IsKw("NULL") || IsKw("CHECK")) st.Constraints.Add(ParseConstraint(true));
             else if (AcceptKw("COLLATE")) st.Collation = ParseIdentifier();
             else if (AcceptKw("DISPLAY")) st.Display = ParseExpr();
@@ -1604,7 +1604,7 @@ public sealed partial class SqlParser
         {
             var item = ParseAnnotationItem(allowDrop);
             // Oracle rejects the same annotation name twice in one clause (ORA-11562).
-            if (!names.Add(item.Name.Value)) throw Fail($"Duplicate annotation {item.Name.Value} in the ANNOTATIONS clause");
+            if (!names.Add(item.Name.Value)) throw Fail($"Duplicate annotation {item.Name.Value} in the ANNOTATIONS clause", ParseErrorCodes.InvalidCombination);
             c.Items.Add(item);
         } while (AcceptOp(","));
         ExpectOp(")");
@@ -1622,7 +1622,7 @@ public sealed partial class SqlParser
         }
         else if (IsKw("DROP"))
         {
-            if (!allowDrop) throw Fail("DROP is not allowed in an annotation list of a CREATE statement (ORA-11555)");
+            if (!allowDrop) throw Fail("DROP is not allowed in an annotation list of a CREATE statement (ORA-11555)", ParseErrorCodes.InvalidCombination);
             Next();
             it.Action = AnnotationAction.Drop;
             if (IsKw("IF") && IsKwAt(1, "EXISTS")) { Next(); Next(); it.IfExists = true; }
@@ -1860,7 +1860,7 @@ public sealed partial class SqlParser
             Next();
             if (Cur.Type == TokenType.Identifier && ConstraintStarts.Contains(Cur.Value)) { a.Kind = AlterTableActionKind.AddConstraint; a.Constraints.Add(ParseConstraint(false)); }
             else if (IsOp("(")) { a.Kind = AlterTableActionKind.AddColumns; ParseColumnOrConstraintList(a); if (a.Columns.Count == 0) a.Kind = AlterTableActionKind.AddConstraint; }
-            else { if (IsKw("ANNOTATIONS")) throw Fail("ADD ANNOTATIONS is not an ALTER TABLE form; use ANNOTATIONS (ADD ...)"); a.Kind = AlterTableActionKind.AddColumns; a.Columns.Add(ParseColumnDefinition(AtAlterActionStart, alter: true)); }
+            else { if (IsKw("ANNOTATIONS")) throw Fail("ADD ANNOTATIONS is not an ALTER TABLE form; use ANNOTATIONS (ADD ...)", ParseErrorCodes.InvalidCombination); a.Kind = AlterTableActionKind.AddColumns; a.Columns.Add(ParseColumnDefinition(AtAlterActionStart, alter: true)); }
         }
         else if (IsKw("MODIFY") && (IsOpAt(1, "(") || (PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier &&
                  !IsKwAt(1, "CONSTRAINT") && !IsKwAt(1, "PRIMARY") && !IsKwAt(1, "UNIQUE") && !IsKwAt(1, "PARTITION") && !IsKwAt(1, "SUBPARTITION") &&
@@ -1985,12 +1985,12 @@ public sealed partial class SqlParser
             if (AcceptKw("SOURCE")) st.Kind = JavaObjectKind.Source;
             else if (AcceptKw("CLASS")) st.Kind = JavaObjectKind.Class;
             else if (AcceptKw("RESOURCE")) st.Kind = JavaObjectKind.Resource;
-            else throw Fail($"Expected SOURCE, CLASS or RESOURCE but found {Describe(Cur)}");
+            else throw FailExpected($"Expected SOURCE, CLASS or RESOURCE but found {Describe(Cur)}", "SOURCE", "CLASS", "RESOURCE");
         }
         ExpectKw("NAMED");
         st.Name = ParseDottedName();
         st.Sharing = TryParseSharing();
-        if (IsKw("AUTHID")) { Next(); st.Authid = AcceptKw("CURRENT_USER") ? AuthidKind.CurrentUser : (AcceptKw("DEFINER") ? AuthidKind.Definer : throw Fail("Expected CURRENT_USER or DEFINER")); }
+        if (IsKw("AUTHID")) { Next(); st.Authid = AcceptKw("CURRENT_USER") ? AuthidKind.CurrentUser : (AcceptKw("DEFINER") ? AuthidKind.Definer : throw FailExpected("Expected CURRENT_USER or DEFINER", "CURRENT_USER", "DEFINER")); }
         if (AcceptKw("RESOLVER")) st.Resolver = ParseSyntaxItems(() => IsKw("USING") || IsKw("AS") || IsKw("IS"));
         if (AcceptKw("USING"))
         {
@@ -2015,7 +2015,7 @@ public sealed partial class SqlParser
         else
         {
             if (!AcceptKw("AS")) ExpectKw("IS");
-            if (Cur.Type != TokenType.String) throw Fail("Expected Java source text");
+            if (Cur.Type != TokenType.String) throw FailExpected("Expected Java source text", "Java source text");
             st.SourceText = Next().Value;
         }
         return Fin(st, start);

@@ -1,5 +1,9 @@
 namespace OracleSqlParser;
 
+/// <summary>
+/// The outcome of <see cref="SqlParser.Parse(string)"/>: the script tree, every diagnostic, and the token stream.
+/// Parsing never throws; check <see cref="Success"/> or <see cref="Errors"/>.
+/// </summary>
 public sealed class ParseResult
 {
     /// <summary>
@@ -8,7 +12,13 @@ public sealed class ParseResult
     /// </summary>
     public string Source { get; init; } = string.Empty;
 
+    /// <summary>The statements that parsed. Statements that failed are omitted, so the script can be partial when <see cref="Errors"/> is not empty.</summary>
     public SqlScript Script { get; init; } = new();
+
+    /// <summary>
+    /// Every lexical, syntax and version diagnostic, in the order found. Lexical errors come first, then syntax
+    /// errors, then version errors. Each carries a stable <see cref="ParseError.Code"/>.
+    /// </summary>
     public IReadOnlyList<ParseError> Errors { get; init; } = [];
 
     /// <summary>
@@ -18,6 +28,7 @@ public sealed class ParseResult
     /// </summary>
     public IReadOnlyList<Token> Tokens { get; init; } = [];
 
+    /// <summary>True when there are no diagnostics at all, including version diagnostics.</summary>
     public bool Success => Errors.Count == 0;
 }
 
@@ -61,10 +72,13 @@ public sealed partial class SqlParser
         return e;
     }
 
-    /// <summary>Parses a single statement; throws ParseException on error.</summary>
+    /// <summary>
+    /// Parses a single statement; throws <see cref="ParseException"/> on error. Stops at the first error, so
+    /// <see cref="ParseException.Errors"/> holds one diagnostic.
+    /// </summary>
     public static Statement ParseStatement(string sql) => ParseStatement(sql, null);
 
-    /// <summary>Parses a single statement with explicit options; throws ParseException on error.</summary>
+    /// <summary>Parses a single statement with explicit options; throws <see cref="ParseException"/> on error (see <see cref="ParseStatement(string)"/>).</summary>
     public static Statement ParseStatement(string sql, ParseOptions? options)
     {
         var p = new SqlParser(Lexer.Tokenize(sql, options?.SubstitutionEnabled ?? true), sql, options);
@@ -73,6 +87,85 @@ public sealed partial class SqlParser
         if (p.Cur.Type != TokenType.EOF) throw p.Fail($"Unexpected '{p.Cur.Text}' after statement");
         if (p._versionErrors.Count > 0) throw new ParseException(p._versionErrors[0]);
         return s;
+    }
+
+    /// <summary>
+    /// Parses a script and reports diagnostics without throwing. Returns true when <paramref name="errors"/> is empty.
+    /// <paramref name="script"/> is never null; when parsing failed it holds the statements that were recovered.
+    /// This is <see cref="Parse(string, ParseOptions?)"/> in try-form.
+    /// </summary>
+    /// <param name="sql">The script to parse.</param>
+    /// <param name="script">The parsed script (possibly partial when the method returns false).</param>
+    /// <param name="errors">Every diagnostic, in the same order as <see cref="ParseResult.Errors"/>.</param>
+    /// <param name="options">Parse options, or null for the defaults.</param>
+    public static bool TryParse(string sql, out SqlScript script, out IReadOnlyList<ParseError> errors, ParseOptions? options = null)
+    {
+        var result = Parse(sql, options);
+        script = result.Script;
+        errors = result.Errors;
+        return result.Success;
+    }
+
+    /// <summary>
+    /// Parses input that must be exactly one SELECT statement and returns it. Throws <see cref="ParseException"/>
+    /// when the script has any diagnostic, when it has no statement, when it has more than one, or when its single
+    /// statement is not a SELECT (for example an INSERT). Trailing ';' and '/' are allowed. A non-SELECT statement
+    /// yields a <see cref="ParseErrorCodes.NotSingleSelect"/> diagnostic.
+    /// </summary>
+    public static SelectStatement ParseSelect(string sql) => ParseSelect(sql, null);
+
+    /// <summary>Parses exactly one SELECT statement with explicit options; throws <see cref="ParseException"/> (see <see cref="ParseSelect(string)"/>).</summary>
+    public static SelectStatement ParseSelect(string sql, ParseOptions? options)
+    {
+        var result = Parse(sql, options);
+        if (!result.Success) throw new ParseException(result.Errors);
+        var select = FindSingleSelect(result.Script, out var error);
+        return select ?? throw new ParseException(error!);
+    }
+
+    /// <summary>
+    /// Non-throwing form of <see cref="ParseSelect(string)"/>. Returns true and sets <paramref name="select"/> when the
+    /// input is exactly one SELECT statement; otherwise returns false, sets <paramref name="select"/> to null and
+    /// reports the diagnostics in <paramref name="errors"/> (never empty when false).
+    /// </summary>
+    public static bool TryParseSelect(string sql, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out SelectStatement? select,
+        out IReadOnlyList<ParseError> errors, ParseOptions? options = null)
+    {
+        var result = Parse(sql, options);
+        if (!result.Success)
+        {
+            select = null;
+            errors = result.Errors;
+            return false;
+        }
+        select = FindSingleSelect(result.Script, out var error);
+        errors = error is null ? [] : [error];
+        return select is not null;
+    }
+
+    /// <summary>Returns the script's only statement when it is a SELECT; otherwise null and a NotSingleSelect error.</summary>
+    private static SelectStatement? FindSingleSelect(SqlScript script, out ParseError? error)
+    {
+        var statements = script.Statements;
+        error = null;
+        if (statements.Count == 1 && statements[0] is SelectStatement select) return select;
+        if (statements.Count == 0)
+        {
+            error = new ParseError("Expected a SELECT statement but the input has no statement", 0, 1, 1, 0, ParseErrorCodes.NotSingleSelect);
+        }
+        else if (statements.Count > 1)
+        {
+            var at = statements[1];
+            error = new ParseError($"Expected a single SELECT statement but found {statements.Count} statements",
+                at.Start, at.Line, at.Column, at.End - at.Start, ParseErrorCodes.NotSingleSelect);
+        }
+        else
+        {
+            var only = statements[0];
+            error = new ParseError($"Expected a SELECT statement but found {only.GetType().Name}",
+                only.Start, only.Line, only.Column, only.End - only.Start, ParseErrorCodes.NotSingleSelect);
+        }
+        return null;
     }
 
     private static List<Token> TokenizeLenient(string sql, List<ParseError> errors, bool substitutionEnabled)
@@ -128,9 +221,9 @@ public sealed partial class SqlParser
     /// <summary>Enters one nesting level; throws when the configured maximum depth is exceeded. Pair with <see cref="Leave"/>.</summary>
     private void Enter()
     {
-        if (++_depth > _maxDepth) throw Fail($"nesting depth exceeds {_maxDepth}");
+        if (++_depth > _maxDepth) throw Fail($"nesting depth exceeds {_maxDepth}", ParseErrorCodes.NestingTooDeep);
         if (!System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
-            throw Fail($"nesting depth exceeds {_depth - 1} (insufficient stack space)");
+            throw Fail($"nesting depth exceeds {_depth - 1} (insufficient stack space)", ParseErrorCodes.NestingTooDeep);
     }
 
     private void Leave() => _depth--;
@@ -179,7 +272,7 @@ public sealed partial class SqlParser
     /// </summary>
     private bool Progress(ref int mark)
     {
-        if (_p == mark) throw Fail($"parser made no progress at {Describe(Cur)}");
+        if (_p == mark) throw Fail($"parser made no progress at {Describe(Cur)}", ParseErrorCodes.InternalError);
         mark = _p;
         return true;
     }
@@ -191,7 +284,7 @@ public sealed partial class SqlParser
     {
         // Every recursion consumes tokens, so this is a universal last line of defence against stack exhaustion.
         if (!System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
-            throw Fail($"nesting depth exceeds {_depth} (insufficient stack space)");
+            throw Fail($"nesting depth exceeds {_depth} (insufficient stack space)", ParseErrorCodes.NestingTooDeep);
         var t = Cur;
         if (_p < _t.Count - 1) _p++;
         return t;
@@ -204,12 +297,18 @@ public sealed partial class SqlParser
     private bool AcceptKw(string kw) { if (IsKw(kw)) { Next(); return true; } return false; }
     private bool AcceptOp(string op) { if (IsOp(op)) { Next(); return true; } return false; }
 
-    private void ExpectKw(string kw) { if (!AcceptKw(kw)) throw Fail($"Expected {kw} but found {Describe(Cur)}"); }
-    private void ExpectOp(string op) { if (!AcceptOp(op)) throw Fail($"Expected '{op}' but found {Describe(Cur)}"); }
+    private void ExpectKw(string kw) { if (!AcceptKw(kw)) throw FailExpected($"Expected {kw} but found {Describe(Cur)}", kw); }
+    private void ExpectOp(string op) { if (!AcceptOp(op)) throw FailExpected($"Expected '{op}' but found {Describe(Cur)}", op); }
 
     private static string Describe(Token t) => t.Type == TokenType.EOF ? "end of input" : $"'{t.Text}'";
 
-    private ParseException Fail(string msg) => new(new ParseError(msg, Cur.Start, Cur.Line, Cur.Column));
+    /// <summary>Builds a fatal diagnostic at the current token. The span is the token's length (zero at end of input).</summary>
+    private ParseException Fail(string msg, string code = ParseErrorCodes.UnexpectedToken) =>
+        new(new ParseError(msg, Cur.Start, Cur.Line, Cur.Column, Cur.End - Cur.Start, code));
+
+    /// <summary>Builds a fatal ParseErrorCodes.ExpectedToken diagnostic at the current token, listing what was expected.</summary>
+    private ParseException FailExpected(string msg, params string[] expected) =>
+        new(new ParseError(msg, Cur.Start, Cur.Line, Cur.Column, Cur.End - Cur.Start, ParseErrorCodes.ExpectedToken, expected));
 
     /// <summary>
     /// Records a version diagnostic when <paramref name="feature"/> needs a release newer than the target. It never
@@ -221,7 +320,7 @@ public sealed partial class SqlParser
         if (_version >= min) return;
         var message = $"'{feature}' requires Oracle {(int)min} or later (targeting Oracle {(int)_version})";
         if (_versionErrors.Any(e => e.Offset == at.Start && e.Message == message)) return;
-        _versionErrors.Add(new ParseError(message, at.Start, at.Line, at.Column));
+        _versionErrors.Add(new ParseError(message, at.Start, at.Line, at.Column, at.End - at.Start, ParseErrorCodes.VersionGated));
     }
 
     /// <summary>Accepts the keyword, recording a version diagnostic when the target predates <paramref name="min"/>.</summary>
@@ -312,7 +411,7 @@ public sealed partial class SqlParser
             }
             else if (failure != null)
             {
-                errors.Add(new ParseError($"internal parser error: {failure.GetType().Name}", Cur.Start, Cur.Line, Cur.Column));
+                errors.Add(new ParseError($"internal parser error: {failure.GetType().Name}", Cur.Start, Cur.Line, Cur.Column, Cur.End - Cur.Start, ParseErrorCodes.InternalError));
                 Resync(startIdx);
             }
             if (_p == startIdx && Cur.Type != TokenType.EOF) Next();
@@ -452,7 +551,7 @@ public sealed partial class SqlParser
                 f.Accuracy = FetchAccuracy.Approximate;
             }
             f.Next = IsKw("NEXT");
-            if (!AcceptKw("FIRST") && !AcceptKw("NEXT")) throw Fail("Expected FIRST or NEXT after FETCH");
+            if (!AcceptKw("FIRST") && !AcceptKw("NEXT")) throw FailExpected("Expected FIRST or NEXT after FETCH", "FIRST", "NEXT");
             if (!IsKw("ROW") && !IsKw("ROWS"))
             {
                 f.Count = ParseAdditive();
@@ -680,8 +779,8 @@ public sealed partial class SqlParser
                 Next(); AcceptKw("OUTER"); ExpectKw("JOIN");
             }
             else if (IsKw("JOIN")) { Next(); kind = JoinKind.Inner; }
-            else if (natural) throw Fail("Expected JOIN after NATURAL");
-            else if (leftPartition.Count > 0) throw Fail("Expected an outer join after PARTITION BY");
+            else if (natural) throw FailExpected("Expected JOIN after NATURAL", "JOIN");
+            else if (leftPartition.Count > 0) throw FailExpected("Expected an outer join after PARTITION BY", "an outer join");
             else break;
 
             var join = new JoinTable { Left = left, Kind = kind, Natural = natural, LeftPartitionBy = leftPartition };
@@ -690,8 +789,8 @@ public sealed partial class SqlParser
             // Oracle: a partitioned outer join is a LEFT or RIGHT join (never FULL), natural or not, on one side only.
             if (join.LeftPartitionBy.Count > 0 || join.RightPartitionBy.Count > 0)
             {
-                if (natural || kind is not (JoinKind.Left or JoinKind.Right)) throw Fail("PARTITION BY needs a LEFT or RIGHT outer join");
-                if (join.LeftPartitionBy.Count > 0 && join.RightPartitionBy.Count > 0) throw Fail("PARTITION BY may name one side of an outer join only");
+                if (natural || kind is not (JoinKind.Left or JoinKind.Right)) throw Fail("PARTITION BY needs a LEFT or RIGHT outer join", ParseErrorCodes.InvalidCombination);
+                if (join.LeftPartitionBy.Count > 0 && join.RightPartitionBy.Count > 0) throw Fail("PARTITION BY may name one side of an outer join only", ParseErrorCodes.InvalidCombination);
             }
             if (kind is JoinKind.Inner or JoinKind.Left or JoinKind.Right or JoinKind.Full && !natural)
             {
@@ -700,7 +799,7 @@ public sealed partial class SqlParser
                 {
                     ExpectOp("("); join.Using = ParseIdentifierList(); ExpectOp(")");
                 }
-                else throw Fail($"Expected ON or USING but found {Describe(Cur)}");
+                else throw FailExpected($"Expected ON or USING but found {Describe(Cur)}", "ON", "USING");
             }
             left = Fin(join, start);
         }
@@ -821,7 +920,7 @@ public sealed partial class SqlParser
             }
         }
         else if (IsKw("SELECT") || IsKw("WITH") || IsOp("(")) st.Query = ParseSelectStatement();
-        else throw Fail($"Expected VALUES or SELECT but found {Describe(Cur)}");
+        else throw FailExpected($"Expected VALUES or SELECT but found {Describe(Cur)}", "VALUES", "SELECT");
         ParseDmlTail(st);
         return Fin(st, start);
     }
@@ -985,10 +1084,10 @@ public sealed partial class SqlParser
                 ExpectOp(")");
                 if (AcceptKw("WHERE")) mc.InsertWhere = ParseExpr();
             }
-            else throw Fail($"Expected UPDATE, DELETE or INSERT but found {Describe(Cur)}");
+            else throw FailExpected($"Expected UPDATE, DELETE or INSERT but found {Describe(Cur)}", "UPDATE", "DELETE", "INSERT");
             st.Clauses.Add(Fin(mc, cs));
         }
-        if (st.Clauses.Count == 0) throw Fail("Expected WHEN clause in MERGE");
+        if (st.Clauses.Count == 0) throw FailExpected("Expected WHEN clause in MERGE", "WHEN");
         ParseErrorLogging(st);
         return Fin(st, start);
     }
@@ -999,7 +1098,7 @@ public sealed partial class SqlParser
     {
         var t = Cur;
         if (t.Type is not (TokenType.Identifier or TokenType.QuotedIdentifier))
-            throw Fail($"Expected identifier but found {Describe(t)}");
+            throw FailExpected($"Expected identifier but found {Describe(t)}", "identifier");
         Next();
         return Fin(new Identifier { Value = t.Value, Quoted = t.Type == TokenType.QuotedIdentifier, Text = t.Type == TokenType.QuotedIdentifier ? t.Value : t.Text }, t);
     }
