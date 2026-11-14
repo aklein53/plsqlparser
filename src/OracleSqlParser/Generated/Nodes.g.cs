@@ -96,20 +96,17 @@ public partial class AlterDomainAction
     public override IEnumerable<SqlNode> GetChildren()
     {
         if (Value is not null) yield return Value;
-        if (Annotations is not null) foreach (var x in Annotations) yield return x;
     }
 
     /// <inheritdoc/>
     public override void AcceptChildren(SqlNodeVisitor visitor)
     {
         Value?.Accept(visitor);
-        if (Annotations is not null) foreach (var x in Annotations) x.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
     {
         Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "AlterDomainAction.Value");
-        SqlNodeRewriter.RewriteList(rewriter, Annotations, "AlterDomainAction.Annotations");
     }
 
     /// <inheritdoc/>
@@ -123,7 +120,6 @@ public partial class AlterDomainAction
         CopySpan(this, c);
         c.Kind = Kind;
         c.Value = CloneChild(Value);
-        c.Annotations = CloneList(Annotations);
         return c;
     }
 
@@ -131,8 +127,7 @@ public partial class AlterDomainAction
     {
         var o = (AlterDomainAction)other;
         return Kind == o.Kind
-            && Pair(Value, o.Value, pending)
-            && PairList(Annotations, o.Annotations, pending);
+            && Pair(Value, o.Value, pending);
     }
 }
 
@@ -143,6 +138,7 @@ public partial class AlterDomainStatement
     {
         if (Name is not null) foreach (var x in Name) yield return x;
         if (Action is not null) yield return Action;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
     }
 
     /// <inheritdoc/>
@@ -150,12 +146,14 @@ public partial class AlterDomainStatement
     {
         if (Name is not null) foreach (var x in Name) x.Accept(visitor);
         Action?.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
     {
         SqlNodeRewriter.RewriteList(rewriter, Name, "AlterDomainStatement.Name");
-        Action = SqlNodeRewriter.RewriteRequired(rewriter, Action, "AlterDomainStatement.Action");
+        Action = SqlNodeRewriter.RewriteOptional(rewriter, Action, "AlterDomainStatement.Action");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "AlterDomainStatement.OtherClauses");
     }
 
     /// <inheritdoc/>
@@ -168,7 +166,8 @@ public partial class AlterDomainStatement
         var c = new AlterDomainStatement();
         CopySpan(this, c);
         c.Name = CloneList(Name);
-        c.Action = CloneChild(Action)!;
+        c.Action = CloneChild(Action);
+        c.OtherClauses = CloneList(OtherClauses);
         c.Labels = CloneStrings(Labels);
         return c;
     }
@@ -178,6 +177,7 @@ public partial class AlterDomainStatement
         var o = (AlterDomainStatement)other;
         return PairList(Name, o.Name, pending)
             && Pair(Action, o.Action, pending)
+            && PairList(OtherClauses, o.OtherClauses, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -2100,7 +2100,7 @@ public partial class CreateDomainStatement
         if (Collation is not null) yield return Collation;
         if (Display is not null) yield return Display;
         if (Order is not null) yield return Order;
-        if (Annotations is not null) foreach (var x in Annotations) yield return x;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
     }
 
     /// <inheritdoc/>
@@ -2113,7 +2113,7 @@ public partial class CreateDomainStatement
         Collation?.Accept(visitor);
         Display?.Accept(visitor);
         Order?.Accept(visitor);
-        if (Annotations is not null) foreach (var x in Annotations) x.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
@@ -2125,7 +2125,7 @@ public partial class CreateDomainStatement
         Collation = SqlNodeRewriter.RewriteOptional(rewriter, Collation, "CreateDomainStatement.Collation");
         Display = SqlNodeRewriter.RewriteOptional(rewriter, Display, "CreateDomainStatement.Display");
         Order = SqlNodeRewriter.RewriteOptional(rewriter, Order, "CreateDomainStatement.Order");
-        SqlNodeRewriter.RewriteList(rewriter, Annotations, "CreateDomainStatement.Annotations");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreateDomainStatement.OtherClauses");
     }
 
     /// <inheritdoc/>
@@ -2147,7 +2147,7 @@ public partial class CreateDomainStatement
         c.Collation = CloneChild(Collation);
         c.Display = CloneChild(Display);
         c.Order = CloneChild(Order);
-        c.Annotations = CloneList(Annotations);
+        c.OtherClauses = CloneList(OtherClauses);
         c.Labels = CloneStrings(Labels);
         return c;
     }
@@ -2165,7 +2165,7 @@ public partial class CreateDomainStatement
             && Pair(Collation, o.Collation, pending)
             && Pair(Display, o.Display, pending)
             && Pair(Order, o.Order, pending)
-            && PairList(Annotations, o.Annotations, pending)
+            && PairList(OtherClauses, o.OtherClauses, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -2640,6 +2640,7 @@ public partial class CreatePropertyGraphStatement
         if (Name is not null) foreach (var x in Name) yield return x;
         if (VertexTables is not null) foreach (var x in VertexTables) yield return x;
         if (EdgeTables is not null) foreach (var x in EdgeTables) yield return x;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
     }
 
     /// <inheritdoc/>
@@ -2648,6 +2649,7 @@ public partial class CreatePropertyGraphStatement
         if (Name is not null) foreach (var x in Name) x.Accept(visitor);
         if (VertexTables is not null) foreach (var x in VertexTables) x.Accept(visitor);
         if (EdgeTables is not null) foreach (var x in EdgeTables) x.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
@@ -2655,6 +2657,7 @@ public partial class CreatePropertyGraphStatement
         SqlNodeRewriter.RewriteList(rewriter, Name, "CreatePropertyGraphStatement.Name");
         SqlNodeRewriter.RewriteList(rewriter, VertexTables, "CreatePropertyGraphStatement.VertexTables");
         SqlNodeRewriter.RewriteList(rewriter, EdgeTables, "CreatePropertyGraphStatement.EdgeTables");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreatePropertyGraphStatement.OtherClauses");
     }
 
     /// <inheritdoc/>
@@ -2670,6 +2673,7 @@ public partial class CreatePropertyGraphStatement
         c.Name = CloneList(Name);
         c.VertexTables = CloneList(VertexTables);
         c.EdgeTables = CloneList(EdgeTables);
+        c.OtherClauses = CloneList(OtherClauses);
         c.Labels = CloneStrings(Labels);
         return c;
     }
@@ -2681,6 +2685,7 @@ public partial class CreatePropertyGraphStatement
             && PairList(Name, o.Name, pending)
             && PairList(VertexTables, o.VertexTables, pending)
             && PairList(EdgeTables, o.EdgeTables, pending)
+            && PairList(OtherClauses, o.OtherClauses, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -3567,50 +3572,6 @@ public partial class DeleteStatement
             && PairList(ReturningInto, o.ReturningInto, pending)
             && Pair(ErrorLogging, o.ErrorLogging, pending)
             && SameStrings(Labels, o.Labels);
-    }
-}
-
-public partial class DomainAnnotation
-{
-    /// <inheritdoc/>
-    public override IEnumerable<SqlNode> GetChildren()
-    {
-        if (Name is not null) yield return Name;
-        if (Value is not null) yield return Value;
-    }
-
-    /// <inheritdoc/>
-    public override void AcceptChildren(SqlNodeVisitor visitor)
-    {
-        Name?.Accept(visitor);
-        Value?.Accept(visitor);
-    }
-
-    internal override void RewriteChildren(SqlNodeRewriter rewriter)
-    {
-        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "DomainAnnotation.Name");
-        Value = SqlNodeRewriter.RewriteOptional(rewriter, Value, "DomainAnnotation.Value");
-    }
-
-    /// <inheritdoc/>
-    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
-
-    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
-
-    internal override SqlNode CloneCore()
-    {
-        var c = new DomainAnnotation();
-        CopySpan(this, c);
-        c.Name = CloneChild(Name)!;
-        c.Value = CloneChild(Value);
-        return c;
-    }
-
-    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
-    {
-        var o = (DomainAnnotation)other;
-        return Pair(Name, o.Name, pending)
-            && Pair(Value, o.Value, pending);
     }
 }
 
@@ -5460,6 +5421,7 @@ public partial class GraphEdgeTable
         if (Alias is not null) yield return Alias;
         if (Key is not null) foreach (var x in Key) yield return x;
         if (Labels is not null) foreach (var x in Labels) yield return x;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
     }
 
     /// <inheritdoc/>
@@ -5471,6 +5433,7 @@ public partial class GraphEdgeTable
         Alias?.Accept(visitor);
         if (Key is not null) foreach (var x in Key) x.Accept(visitor);
         if (Labels is not null) foreach (var x in Labels) x.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
@@ -5481,6 +5444,7 @@ public partial class GraphEdgeTable
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphEdgeTable.Alias");
         SqlNodeRewriter.RewriteList(rewriter, Key, "GraphEdgeTable.Key");
         SqlNodeRewriter.RewriteList(rewriter, Labels, "GraphEdgeTable.Labels");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "GraphEdgeTable.OtherClauses");
     }
 
     /// <inheritdoc/>
@@ -5498,6 +5462,7 @@ public partial class GraphEdgeTable
         c.Alias = CloneChild(Alias);
         c.Key = CloneList(Key);
         c.Labels = CloneList(Labels);
+        c.OtherClauses = CloneList(OtherClauses);
         return c;
     }
 
@@ -5509,7 +5474,8 @@ public partial class GraphEdgeTable
             && PairList(Table, o.Table, pending)
             && Pair(Alias, o.Alias, pending)
             && PairList(Key, o.Key, pending)
-            && PairList(Labels, o.Labels, pending);
+            && PairList(Labels, o.Labels, pending)
+            && PairList(OtherClauses, o.OtherClauses, pending);
     }
 }
 
@@ -5737,6 +5703,7 @@ public partial class GraphTable
         if (Where is not null) yield return Where;
         if (RowsPerVariables is not null) foreach (var x in RowsPerVariables) yield return x;
         if (Columns is not null) foreach (var x in Columns) yield return x;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
         if (Alias is not null) yield return Alias;
     }
 
@@ -5748,6 +5715,7 @@ public partial class GraphTable
         Where?.Accept(visitor);
         if (RowsPerVariables is not null) foreach (var x in RowsPerVariables) x.Accept(visitor);
         if (Columns is not null) foreach (var x in Columns) x.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
         Alias?.Accept(visitor);
     }
 
@@ -5758,6 +5726,7 @@ public partial class GraphTable
         Where = SqlNodeRewriter.RewriteOptional(rewriter, Where, "GraphTable.Where");
         SqlNodeRewriter.RewriteList(rewriter, RowsPerVariables, "GraphTable.RowsPerVariables");
         SqlNodeRewriter.RewriteList(rewriter, Columns, "GraphTable.Columns");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "GraphTable.OtherClauses");
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphTable.Alias");
     }
 
@@ -5776,6 +5745,7 @@ public partial class GraphTable
         c.RowsPer = RowsPer;
         c.RowsPerVariables = CloneList(RowsPerVariables);
         c.Columns = CloneList(Columns);
+        c.OtherClauses = CloneList(OtherClauses);
         c.Alias = CloneChild(Alias);
         return c;
     }
@@ -5789,6 +5759,7 @@ public partial class GraphTable
             && RowsPer == o.RowsPer
             && PairList(RowsPerVariables, o.RowsPerVariables, pending)
             && PairList(Columns, o.Columns, pending)
+            && PairList(OtherClauses, o.OtherClauses, pending)
             && Pair(Alias, o.Alias, pending);
     }
 }
@@ -5851,6 +5822,7 @@ public partial class GraphVertexTable
         if (Alias is not null) yield return Alias;
         if (Key is not null) foreach (var x in Key) yield return x;
         if (Labels is not null) foreach (var x in Labels) yield return x;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
     }
 
     /// <inheritdoc/>
@@ -5860,6 +5832,7 @@ public partial class GraphVertexTable
         Alias?.Accept(visitor);
         if (Key is not null) foreach (var x in Key) x.Accept(visitor);
         if (Labels is not null) foreach (var x in Labels) x.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
     }
 
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
@@ -5868,6 +5841,7 @@ public partial class GraphVertexTable
         Alias = SqlNodeRewriter.RewriteOptional(rewriter, Alias, "GraphVertexTable.Alias");
         SqlNodeRewriter.RewriteList(rewriter, Key, "GraphVertexTable.Key");
         SqlNodeRewriter.RewriteList(rewriter, Labels, "GraphVertexTable.Labels");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "GraphVertexTable.OtherClauses");
     }
 
     /// <inheritdoc/>
@@ -5883,6 +5857,7 @@ public partial class GraphVertexTable
         c.Alias = CloneChild(Alias);
         c.Key = CloneList(Key);
         c.Labels = CloneList(Labels);
+        c.OtherClauses = CloneList(OtherClauses);
         return c;
     }
 
@@ -5892,7 +5867,8 @@ public partial class GraphVertexTable
         return PairList(Table, o.Table, pending)
             && Pair(Alias, o.Alias, pending)
             && PairList(Key, o.Key, pending)
-            && PairList(Labels, o.Labels, pending);
+            && PairList(Labels, o.Labels, pending)
+            && PairList(OtherClauses, o.OtherClauses, pending);
     }
 }
 

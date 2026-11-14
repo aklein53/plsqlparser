@@ -218,7 +218,9 @@ public sealed partial class SqlScriptGenerator
 
         private void GraphTableRef(GraphTable gt)
         {
-            Add("GRAPH_TABLE("); Name(gt.Graph); Add(" MATCH "); Sep(gt.Match, GraphPath);
+            Add("GRAPH_TABLE("); Name(gt.Graph);
+            if (gt.Match.Count == 0) { Sp(); SyntaxList(gt.OtherClauses); Add(")"); Alias(gt); return; }
+            Add(" MATCH "); Sep(gt.Match, GraphPath);
             if (gt.Where != null) { Add(" WHERE "); Expr(gt.Where); }
             if (gt.RowsPer is { } rp)
             {

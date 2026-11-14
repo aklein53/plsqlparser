@@ -169,6 +169,8 @@ public sealed partial class GraphTable : TableReference
     /// <summary>The variables named in ONE ROW PER VERTEX(v) or STEP(v1, e, v2); empty for MATCH.</summary>
     public List<Identifier> RowsPerVariables { get; set; } = [];
     public List<GraphColumn> Columns { get; set; } = [];
+    /// <summary>The whole body as a token tree, when the body uses syntax outside the typed grammar (empty otherwise).</summary>
+    public List<SyntaxItem> OtherClauses { get; set; } = [];
 }
 
 public enum GraphRowsPer { Match, Vertex, Step }

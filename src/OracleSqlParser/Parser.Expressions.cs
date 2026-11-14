@@ -469,6 +469,7 @@ public sealed partial class SqlParser
 
     private FunctionCall ParseFunctionCall(List<Identifier> name, Token start)
     {
+        using var _ = SetJsonObjectArgs(name is [{ Value: "JSON_OBJECT" or "JSON_OBJECTAGG" }]);
         var fc = new FunctionCall { Name = name };
         ExpectOp("(");
         string simple = name.Count == 1 && !name[0].Quoted ? name[0].Value : "";
@@ -589,7 +590,7 @@ public sealed partial class SqlParser
         }
         if (AcceptKw("VALUE")) arg.MappedValue = ParseExpr();
         else if (Cur.Text == ":" && Cur.Type is TokenType.Operator or TokenType.Bind) { Next(); arg.MappedValue = ParseExpr(); } // 'key' : value
-        else if (Cur.Type == TokenType.Bind && Cur.Text.Length > 1 && char.IsDigit(Cur.Text[1]))
+        else if (_jsonObjectArgs && Cur.Type == TokenType.Bind && Cur.Text.Length > 1 && char.IsDigit(Cur.Text[1]))
         {
             // 'key':1 with no space lexes ':1' as a bind; in this position it is a colon and a number
             var bt = Next();

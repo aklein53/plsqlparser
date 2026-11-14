@@ -214,28 +214,24 @@ public sealed partial class SqlScriptGenerator
             if (d.Collation != null) { Add(" COLLATE "); Id(d.Collation); }
             if (d.Display != null) { Add(" DISPLAY "); Expr(d.Display); }
             if (d.Order != null) { Add(" ORDER "); Expr(d.Order); }
-            if (d.Annotations.Count > 0) { Add(" ANNOTATIONS ("); Sep(d.Annotations, DomainAnnotationDef); Add(")"); }
+            if (d.OtherClauses.Count > 0) { if (d.Type != null) Sp(); SyntaxList(d.OtherClauses); }
         }
 
         private void AlterDomain(AlterDomainStatement d)
         {
-            Add("ALTER DOMAIN "); Name(d.Name); Add(" ");
-            var a = d.Action;
-            switch (a.Kind)
+            Add("ALTER DOMAIN "); Name(d.Name);
+            if (d.Action is { } a)
             {
-                case AlterDomainActionKind.AddDisplay: Add("ADD DISPLAY "); Expr(a.Value!); break;
-                case AlterDomainActionKind.DropDisplay: Add("DROP DISPLAY"); break;
-                case AlterDomainActionKind.AddOrder: Add("ADD ORDER "); Expr(a.Value!); break;
-                case AlterDomainActionKind.DropOrder: Add("DROP ORDER"); break;
-                case AlterDomainActionKind.AddAnnotations: Add("ADD ANNOTATIONS ("); Sep(a.Annotations, DomainAnnotationDef); Add(")"); break;
-                default: Add("DROP ANNOTATIONS ("); Sep(a.Annotations, DomainAnnotationDef); Add(")"); break;
+                Sp();
+                switch (a.Kind)
+                {
+                    case AlterDomainActionKind.AddDisplay: Add("ADD DISPLAY "); Expr(a.Value!); break;
+                    case AlterDomainActionKind.DropDisplay: Add("DROP DISPLAY"); break;
+                    case AlterDomainActionKind.AddOrder: Add("ADD ORDER "); Expr(a.Value!); break;
+                    default: Add("DROP ORDER"); break;
+                }
             }
-        }
-
-        private void DomainAnnotationDef(DomainAnnotation a)
-        {
-            Id(a.Name);
-            if (a.Value != null) { Add(" "); Expr(a.Value); }
+            if (d.OtherClauses.Count > 0) { Sp(); SyntaxList(d.OtherClauses); }
         }
 
         private void PropertyGraph(CreatePropertyGraphStatement g)
@@ -243,6 +239,7 @@ public sealed partial class SqlScriptGenerator
             Add("CREATE "); if (g.OrReplace) Add("OR REPLACE "); Add("PROPERTY GRAPH "); Name(g.Name);
             Add(" VERTEX TABLES ("); Sep(g.VertexTables, GraphElementDef); Add(")");
             if (g.EdgeTables.Count > 0) { Add(" EDGE TABLES ("); Sep(g.EdgeTables, GraphElementDef); Add(")"); }
+            if (g.OtherClauses.Count > 0) { Sp(); SyntaxList(g.OtherClauses); }
         }
 
         private void GraphElementDef(GraphElementTable t)
@@ -272,6 +269,7 @@ public sealed partial class SqlScriptGenerator
                     }
                 }
             }
+            if (t.OtherClauses.Count > 0) { Sp(); SyntaxList(t.OtherClauses); }
         }
 
         private void GraphEndpoint(GraphEdgeEndpoint ep)

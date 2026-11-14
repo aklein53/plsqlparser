@@ -138,6 +138,22 @@ public sealed partial class SqlParser
         return saved;
     }
 
+    /// <summary>True while parsing the arguments of JSON_OBJECT / JSON_OBJECTAGG, where 'key':1 may lex as key and value.</summary>
+    private bool _jsonObjectArgs;
+
+    /// <summary>Sets <see cref="_jsonObjectArgs"/> until disposed; every function call sets it for its own arguments.</summary>
+    private JsonArgsContext SetJsonObjectArgs(bool on)
+    {
+        var saved = new JsonArgsContext(this, _jsonObjectArgs);
+        _jsonObjectArgs = on;
+        return saved;
+    }
+
+    private readonly struct JsonArgsContext(SqlParser parser, bool saved) : IDisposable
+    {
+        public void Dispose() => parser._jsonObjectArgs = saved;
+    }
+
     private readonly struct PlsqlContext(SqlParser parser, bool saved) : IDisposable
     {
         public void Dispose() => parser._plsql = saved;

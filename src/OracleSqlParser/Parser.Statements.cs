@@ -911,7 +911,7 @@ public sealed partial class SqlParser
         var st = new CreateDomainStatement { OrReplace = orReplace, UseCase = useCase, IfNotExists = TryIfNotExists() };
         st.Name = ParseDottedName();
         ExpectKw("AS");
-        st.Type = ParseDataType();
+        if (!IsOp("(")) st.Type = ParseDataType();
         int prog = -1;
         while (!AtStatementEnd() && Progress(ref prog))
         {
@@ -920,48 +920,26 @@ public sealed partial class SqlParser
             else if (AcceptKw("COLLATE")) st.Collation = ParseIdentifier();
             else if (AcceptKw("DISPLAY")) st.Display = ParseExpr();
             else if (AcceptKw("ORDER")) st.Order = ParseExpr();
-            else if (AcceptKw("ANNOTATIONS")) st.Annotations = ParseDomainAnnotations();
             else break;
         }
+        if (!AtStatementEnd()) st.OtherClauses = ParseSyntaxItems(AtStatementEnd);
         return Fin(st, start);
-    }
-
-    /// <summary>ANNOTATIONS ( name [value], ... ) as used by CREATE/ALTER DOMAIN.</summary>
-    private List<DomainAnnotation> ParseDomainAnnotations()
-    {
-        var list = new List<DomainAnnotation>();
-        ExpectOp("(");
-        do
-        {
-            var s = Cur;
-            var an = new DomainAnnotation { Name = ParseIdentifier() };
-            if (!IsOp(",") && !IsOp(")")) an.Value = ParseExpr();
-            list.Add(Fin(an, s));
-        } while (AcceptOp(","));
-        ExpectOp(")");
-        return list;
     }
 
     private Statement ParseAlterDomain(Token start)
     {
         var st = new AlterDomainStatement { Name = ParseDottedName() };
-        var a = new AlterDomainAction();
-        if (AcceptKw("ADD"))
+        if ((IsKw("ADD") || IsKw("DROP")) && (IsKwAt(1, "DISPLAY") || IsKwAt(1, "ORDER")))
         {
-            if (AcceptKw("DISPLAY")) { a.Kind = AlterDomainActionKind.AddDisplay; a.Value = ParseExpr(); }
-            else if (AcceptKw("ORDER")) { a.Kind = AlterDomainActionKind.AddOrder; a.Value = ParseExpr(); }
-            else if (AcceptKw("ANNOTATIONS")) { a.Kind = AlterDomainActionKind.AddAnnotations; a.Annotations = ParseDomainAnnotations(); }
-            else throw Fail($"Expected DISPLAY, ORDER or ANNOTATIONS after ALTER DOMAIN ADD but found {Describe(Cur)}");
+            var a = new AlterDomainAction();
+            bool add = Next().Value == "ADD";
+            bool display = Next().Value == "DISPLAY";
+            a.Kind = add ? (display ? AlterDomainActionKind.AddDisplay : AlterDomainActionKind.AddOrder)
+                         : (display ? AlterDomainActionKind.DropDisplay : AlterDomainActionKind.DropOrder);
+            if (add) a.Value = ParseExpr();
+            st.Action = Fin(a, start);
         }
-        else if (AcceptKw("DROP"))
-        {
-            if (AcceptKw("DISPLAY")) a.Kind = AlterDomainActionKind.DropDisplay;
-            else if (AcceptKw("ORDER")) a.Kind = AlterDomainActionKind.DropOrder;
-            else if (AcceptKw("ANNOTATIONS")) { a.Kind = AlterDomainActionKind.DropAnnotations; a.Annotations = ParseDomainAnnotations(); }
-            else throw Fail($"Expected DISPLAY, ORDER or ANNOTATIONS after ALTER DOMAIN DROP but found {Describe(Cur)}");
-        }
-        else throw Fail($"Expected ADD or DROP after ALTER DOMAIN name but found {Describe(Cur)}");
-        st.Action = Fin(a, start);
+        if (!AtStatementEnd()) st.OtherClauses = ParseSyntaxItems(AtStatementEnd);
         return Fin(st, start);
     }
 
@@ -977,6 +955,7 @@ public sealed partial class SqlParser
             do st.EdgeTables.Add(ParseGraphEdgeTable()); while (AcceptOp(","));
             ExpectOp(")");
         }
+        if (!AtStatementEnd()) st.OtherClauses = ParseSyntaxItems(AtStatementEnd);
         return Fin(st, start);
     }
 
@@ -1019,6 +998,7 @@ public sealed partial class SqlParser
             if (IsKw("PROPERTIES") || (IsKw("NO") && IsKwAt(1, "PROPERTIES"))) l.Properties = ParseGraphProperties();
             t.Labels.Add(l);
         }
+        if (!IsOp(",") && !IsOp(")")) t.OtherClauses = ParseSyntaxItems(() => IsOp(","));
     }
 
     private GraphEdgeEndpoint ParseGraphEdgeEndpoint()

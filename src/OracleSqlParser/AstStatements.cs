@@ -524,7 +524,8 @@ public sealed partial class CreateViewStatement : Statement
     public Identifier? CheckOptionConstraint { get; set; }
 }
 
-/// <summary>CREATE [OR REPLACE] [USECASE] DOMAIN d AS type [DEFAULT ...] [constraints] [COLLATE ...] [DISPLAY ...] [ORDER ...] [ANNOTATIONS (...)].</summary>
+/// <summary>CREATE [OR REPLACE] [USECASE] DOMAIN d AS type [DEFAULT ...] [constraints] [COLLATE ...] [DISPLAY ...] [ORDER ...].
+/// Clauses without a dedicated node (ANNOTATIONS, the multi-column AS (...) form) are kept in OtherClauses.</summary>
 public sealed partial class CreateDomainStatement : Statement
 {
     public bool OrReplace { get; set; }
@@ -537,22 +538,18 @@ public sealed partial class CreateDomainStatement : Statement
     public Identifier? Collation { get; set; }
     public Expression? Display { get; set; }
     public Expression? Order { get; set; }
-    public List<DomainAnnotation> Annotations { get; set; } = [];
+    /// <summary>Trailing clauses without a dedicated node, as a token tree.</summary>
+    public List<SyntaxItem> OtherClauses { get; set; } = [];
 }
 
-public sealed partial class DomainAnnotation : SqlNode
-{
-    public Identifier Name { get; set; } = null!;
-    public Expression? Value { get; set; }
-}
+public enum AlterDomainActionKind { AddDisplay, DropDisplay, AddOrder, DropOrder }
 
-public enum AlterDomainActionKind { AddDisplay, DropDisplay, AddOrder, DropOrder, AddAnnotations, DropAnnotations }
-
-/// <summary>ALTER DOMAIN d ADD|DROP DISPLAY/ORDER/ANNOTATIONS (...).</summary>
+/// <summary>ALTER DOMAIN d ADD|DROP DISPLAY|ORDER [expr]. Any other action is kept in OtherClauses.</summary>
 public sealed partial class AlterDomainStatement : Statement
 {
     public List<Identifier> Name { get; set; } = [];
-    public AlterDomainAction Action { get; set; } = null!;
+    public AlterDomainAction? Action { get; set; }
+    public List<SyntaxItem> OtherClauses { get; set; } = [];
 }
 
 public sealed partial class AlterDomainAction : SqlNode
@@ -560,7 +557,6 @@ public sealed partial class AlterDomainAction : SqlNode
     public AlterDomainActionKind Kind { get; set; }
     /// <summary>The DISPLAY or ORDER expression for the Add forms.</summary>
     public Expression? Value { get; set; }
-    public List<DomainAnnotation> Annotations { get; set; } = [];
 }
 
 /// <summary>CREATE [OR REPLACE] PROPERTY GRAPH g VERTEX TABLES (...) [EDGE TABLES (...)] (SQL/PGQ).</summary>
@@ -570,6 +566,8 @@ public sealed partial class CreatePropertyGraphStatement : Statement
     public List<Identifier> Name { get; set; } = [];
     public List<GraphVertexTable> VertexTables { get; set; } = [];
     public List<GraphEdgeTable> EdgeTables { get; set; } = [];
+    /// <summary>Trailing clauses without a dedicated node, as a token tree.</summary>
+    public List<SyntaxItem> OtherClauses { get; set; } = [];
 }
 
 /// <summary>A table used as vertices or edges: table [AS alias] [KEY (cols)] [LABEL ... [PROPERTIES ...]]...</summary>
@@ -579,6 +577,8 @@ public abstract partial class GraphElementTable : SqlNode
     public Identifier? Alias { get; set; }
     public List<Identifier> Key { get; set; } = [];
     public List<GraphElementLabel> Labels { get; set; } = [];
+    /// <summary>Clauses after the labels that have no dedicated node, as a token tree.</summary>
+    public List<SyntaxItem> OtherClauses { get; set; } = [];
 }
 
 public sealed partial class GraphVertexTable : GraphElementTable

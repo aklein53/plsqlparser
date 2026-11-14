@@ -364,6 +364,22 @@ public sealed partial class SqlParser
         var start = Cur;
         Next(); Next();
         var gt = new GraphTable { Graph = ParseDottedName() };
+        int mark = _p;
+        try { ParseGraphBody(gt); }
+        catch (ParseException)
+        {
+            // Syntax outside the typed grammar (e.g. quantified sub-path patterns) keeps the body as a token tree.
+            _p = mark;
+            gt.Match.Clear(); gt.Where = null; gt.RowsPer = null; gt.RowsPerVariables.Clear(); gt.Columns.Clear();
+            gt.OtherClauses = ParseSyntaxItems(() => false);
+        }
+        ExpectOp(")");
+        return Fin(gt, start);
+    }
+
+    /// <summary>MATCH paths [WHERE cond] [ONE ROW PER ...] COLUMNS (...), up to the closing parenthesis of GRAPH_TABLE.</summary>
+    private void ParseGraphBody(GraphTable gt)
+    {
         ExpectKw("MATCH");
         do gt.Match.Add(ParseGraphPathPattern()); while (AcceptOp(","));
         if (AcceptKw("WHERE")) gt.Where = ParseExpr();
@@ -384,8 +400,7 @@ public sealed partial class SqlParser
         ExpectOp("(");
         do gt.Columns.Add(ParseGraphColumn()); while (AcceptOp(","));
         ExpectOp(")");
-        ExpectOp(")");
-        return Fin(gt, start);
+        if (!IsOp(")")) throw Fail($"Expected ')' to close GRAPH_TABLE but found {Describe(Cur)}");
     }
 
     private GraphPathPattern ParseGraphPathPattern()
