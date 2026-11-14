@@ -49,6 +49,13 @@ public class DmlAndSessionShapeTests
             Shape.Of("MERGE INTO t USING (SELECT * FROM s) s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.v = s.v WHERE s.v > 0 DELETE WHERE t.v = 0 WHEN NOT MATCHED THEN INSERT (id, v) VALUES (s.id, s.v) WHERE s.v > 1")
                 );
 
+    [Fact]
+    public void Merge_LogErrors_Shape() =>
+        Assert.Equal(
+            "(MergeStatement target=(NamedTable name=[T]) source=(SubqueryTable query=(SelectStatement body=(QuerySpecification selectList=[(StarSelectItem)] from=[(NamedTable name=[S])])) alias=S) on=(paren (= T.ID S.ID)) clauses=[" +
+            "(MergeClause matched set=[(SetClause columns=[T.V] value=S.V)])] errorLogging=(ErrorLogging table=[ERR_T] tag='x' rejectLimit=5))",
+            Shape.Of("MERGE INTO t USING (SELECT * FROM s) s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.v = s.v LOG ERRORS INTO err_t ('x') REJECT LIMIT 5"));
+
     [Theory]
     [InlineData("COMMIT", "(CommitStatement)")]
     [InlineData("COMMIT WORK COMMENT 'c'", "(CommitStatement work comment='c')")]

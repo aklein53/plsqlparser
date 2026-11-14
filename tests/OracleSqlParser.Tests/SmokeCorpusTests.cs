@@ -46,6 +46,7 @@ public class SmokeCorpusTests
     [InlineData("DELETE FROM t x WHERE x.a = 1")]
     [InlineData("DELETE t")]
     [InlineData("MERGE INTO t USING (SELECT * FROM s) s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.v = s.v WHERE s.v > 0 DELETE WHERE t.v = 0 WHEN NOT MATCHED THEN INSERT (id, v) VALUES (s.id, s.v)")]
+    [InlineData("MERGE INTO t USING (SELECT * FROM s) s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.v = s.v LOG ERRORS INTO err_t ('x') REJECT LIMIT 5")]
     [InlineData("SELECT 1 FROM dual; SELECT 2 FROM dual;\n/\nSELECT 3 FROM dual")]
     [InlineData("-- comment\nSELECT /* c */ 1 FROM dual")]
     [InlineData("SELECT * FROM sales PIVOT (SUM(amount) AS total, COUNT(*) c FOR quarter IN ('Q1' AS q1, 'Q2' q2)) p")]

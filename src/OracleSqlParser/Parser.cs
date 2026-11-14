@@ -765,6 +765,12 @@ public sealed partial class SqlParser
             ExpectKw("INTO");
             do st.ReturningInto.Add(ParsePostfix()); while (AcceptOp(","));
         }
+        ParseErrorLogging(st);
+    }
+
+    /// <summary>LOG ERRORS [INTO t] [('tag')] [REJECT LIMIT n | UNLIMITED]; also the last clause of MERGE.</summary>
+    private void ParseErrorLogging(DmlStatement st)
+    {
         if (IsKw("LOG") && IsKwAt(1, "ERRORS"))
         {
             var s = Next(); Next();
@@ -818,6 +824,7 @@ public sealed partial class SqlParser
             st.Clauses.Add(Fin(mc, cs));
         }
         if (st.Clauses.Count == 0) throw Fail("Expected WHEN clause in MERGE");
+        ParseErrorLogging(st);
         return Fin(st, start);
     }
 
