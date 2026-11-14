@@ -28,6 +28,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="AlterAuditPolicyStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterAuditPolicyStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterAuditPolicyStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterAuditPolicyStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="AlterObjectStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(AlterObjectStatement node) => Visit((SqlNode)node);
 
@@ -133,6 +143,56 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="AtTimeZoneExpression"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(AtTimeZoneExpression node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AuditObject"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AuditObject node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AuditObject"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AuditObject node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AuditOption"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AuditOption node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AuditOption"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AuditOption node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AuditPolicyItem"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AuditPolicyItem node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AuditPolicyItem"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AuditPolicyItem node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AuditPolicyList"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AuditPolicyList node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AuditPolicyList"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AuditPolicyList node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AuditStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AuditStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AuditStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AuditStatement node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -433,6 +493,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="ContinueStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(ContinueStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="CreateAuditPolicyStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(CreateAuditPolicyStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="CreateAuditPolicyStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(CreateAuditPolicyStatement node)
     {
         Visit(node);
         node.AcceptChildren(this);

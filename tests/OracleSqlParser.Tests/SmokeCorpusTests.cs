@@ -125,6 +125,8 @@ public class SmokeCorpusTests
     [InlineData("ALTER SYSTEM FLUSH SHARED_POOL")]
     [InlineData("CREATE ROLE app_role NOT IDENTIFIED")]
     [InlineData("CREATE PROFILE app_prof LIMIT SESSIONS_PER_USER 10 PASSWORD_VERIFY_FUNCTION NULL")]
+    [InlineData("CREATE AUDIT POLICY scratch_pol ACTIONS DELETE ON hr.emp ONLY TOPLEVEL")]
+    [InlineData("AUDIT POLICY scratch_pol BY scratch_u WHENEVER NOT SUCCESSFUL")]
     [InlineData("CREATE DIRECTORY scratch_dir AS '/tmp'")]
     [InlineData("CREATE TEMPORARY TABLESPACE scratch_tmp TEMPFILE 'scratch_tmp.dbf' SIZE 5M AUTOEXTEND ON NEXT 1M MAXSIZE UNLIMITED")]
     [InlineData("CREATE CONTEXT scratch_ctx USING scratch_pkg INITIALIZED GLOBALLY")]

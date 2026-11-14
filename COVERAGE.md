@@ -34,7 +34,9 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 | CREATE PROFILE / ALTER PROFILE (LIMIT name value | UNLIMITED | DEFAULT | NULL, PASSWORD_VERIFY_FUNCTION, CONTAINER, CASCADE) | `CreateProfileStatement`, `AlterProfileStatement`, `ProfileLimit` | typed | DdlShape, SqlScriptGenerator |
 | CREATE DIRECTORY, CREATE [SHARED] [PUBLIC] DATABASE LINK (CONNECT TO user IDENTIFIED BY / CURRENT_USER, AUTHENTICATED BY, USING), CREATE CONTEXT (INITIALIZED, ACCESSED GLOBALLY) | `CreateDirectoryStatement`, `CreateDatabaseLinkStatement`, `CreateContextStatement` | typed | DdlShape |
 | CREATE [BIGFILE|SMALLFILE] [TEMPORARY|UNDO] TABLESPACE (DATAFILE/TEMPFILE specs, LOGGING, ONLINE, EXTENT MANAGEMENT LOCAL, SEGMENT SPACE MANAGEMENT, ENCRYPTION; rarer options in `OtherClauses`), ALTER TABLESPACE (ADD DATAFILE/TEMPFILE, RESIZE, AUTOEXTEND, ONLINE/OFFLINE, READ ONLY/WRITE, RENAME TO, [NO]LOGGING, BEGIN/END BACKUP) | `CreateTablespaceStatement`, `AlterTablespaceStatement`, `TablespaceAction`, `DatafileSpec` | typed | DdlShape |
-| ANALYZE, AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE | `AdminStatement` | header+tree |
+| ANALYZE, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE | `AdminStatement` | header+tree |
+| AUDIT / NOAUDIT, traditional (options, ON object, BY users or ACCESS/SESSION, WHENEVER [NOT] SUCCESSFUL) and unified (POLICY ... BY/EXCEPT, CONTEXT NAMESPACE ... ATTRIBUTES, BY USERS WITH ROLES) | `AuditStatement`, `AuditOption`, `AuditObject` | typed | DdlShape, DmlAndSessionShape |
+| CREATE AUDIT POLICY / ALTER AUDIT POLICY (PRIVILEGES, ACTIONS incl. COMPONENT= and ON object, ROLES, ADD/DROP lists, WHEN ... EVALUATE PER, ONLY TOPLEVEL, CONTAINER, CONDITION DROP) | `CreateAuditPolicyStatement`, `AlterAuditPolicyStatement`, `AuditPolicyList`, `AuditPolicyItem` | typed | DdlShape |
 
 ## PL/SQL
 

@@ -457,6 +457,96 @@ public sealed partial class AlterTablespaceStatement : Statement
     public List<TablespaceAction> Actions { get; set; } = [];
 }
 
+// ---------- AUDIT / NOAUDIT / AUDIT POLICY ----------
+
+/// <summary>A traditional audit option as a keyword phrase: SELECT, CREATE TABLE, ALL.</summary>
+public sealed partial class AuditOption : SqlNode
+{
+    public string Name { get; set; } = "";
+}
+
+/// <summary>The object of ON: [schema.]object, DIRECTORY name, or DEFAULT.</summary>
+public sealed partial class AuditObject : SqlNode
+{
+    public bool Default { get; set; }
+    public bool Directory { get; set; }
+    public List<Identifier> Name { get; set; } = [];
+}
+
+public enum AuditBy { Access, Session }
+
+/// <summary>
+/// AUDIT / NOAUDIT. Traditional form: options [ON object] [BY users | BY ACCESS|SESSION] [WHENEVER [NOT] SUCCESSFUL].
+/// Unified form: POLICY name [BY users | EXCEPT users] or CONTEXT NAMESPACE ns ATTRIBUTES a, b [BY users].
+/// </summary>
+public sealed partial class AuditStatement : Statement
+{
+    public bool Noaudit { get; set; }
+    /// <summary>AUDIT POLICY name (unified).</summary>
+    public Identifier? Policy { get; set; }
+    /// <summary>AUDIT CONTEXT NAMESPACE ns (unified).</summary>
+    public Identifier? ContextNamespace { get; set; }
+    public List<Identifier> ContextAttributes { get; set; } = [];
+    /// <summary>Traditional audit options.</summary>
+    public List<AuditOption> Options { get; set; } = [];
+    /// <summary>Traditional ON object.</summary>
+    public AuditObject? On { get; set; }
+    public List<Identifier> ByUsers { get; set; } = [];
+    /// <summary>BY USERS WITH ROLES role, ... (unified).</summary>
+    public List<Identifier> WithRoles { get; set; } = [];
+    /// <summary>EXCEPT user, ... (unified policies).</summary>
+    public List<Identifier> ExceptUsers { get; set; } = [];
+    /// <summary>BY ACCESS or BY SESSION (traditional).</summary>
+    public AuditBy? By { get; set; }
+    /// <summary>WHENEVER [NOT] SUCCESSFUL: true = SUCCESSFUL, false = NOT SUCCESSFUL.</summary>
+    public bool? Successful { get; set; }
+}
+
+public enum AuditPolicyListKind { Privileges, Actions, Roles }
+
+/// <summary>When an audit policy condition is evaluated.</summary>
+public enum AuditEvaluation { Statement, Session, Instance }
+
+/// <summary>One item of a PRIVILEGES or ACTIONS list: an optional COMPONENT=name, a keyword phrase, and an optional ON object.</summary>
+public sealed partial class AuditPolicyItem : SqlNode
+{
+    public Identifier? Component { get; set; }
+    public string Name { get; set; } = "";
+    public AuditObject? On { get; set; }
+}
+
+/// <summary>A PRIVILEGES, ACTIONS or ROLES list of CREATE/ALTER AUDIT POLICY. ALTER ... DROP sets <see cref="Drop"/>.</summary>
+public sealed partial class AuditPolicyList : SqlNode
+{
+    public AuditPolicyListKind Kind { get; set; }
+    public bool Drop { get; set; }
+    public List<AuditPolicyItem> Items { get; set; } = [];
+    public List<Identifier> Roles { get; set; } = [];
+}
+
+public sealed partial class CreateAuditPolicyStatement : Statement
+{
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<AuditPolicyList> Lists { get; set; } = [];
+    /// <summary>WHEN 'condition' EVALUATE PER ...</summary>
+    public Expression? Condition { get; set; }
+    public AuditEvaluation? Evaluate { get; set; }
+    public bool OnlyToplevel { get; set; }
+    public GrantContainer? Container { get; set; }
+}
+
+public sealed partial class AlterAuditPolicyStatement : Statement
+{
+    public bool IfExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<AuditPolicyList> Lists { get; set; } = [];
+    public Expression? Condition { get; set; }
+    public AuditEvaluation? Evaluate { get; set; }
+    /// <summary>ALTER AUDIT POLICY ... CONDITION DROP.</summary>
+    public bool DropCondition { get; set; }
+}
+
 // ---------- Generic object DDL (typed header + token-tree body) ----------
 
 public enum ObjectKind
@@ -491,7 +581,7 @@ public sealed partial class AlterObjectStatement : Statement
     public List<SyntaxItem> Body { get; set; } = [];
 }
 
-/// <summary>Statements such as ANALYZE, AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT (token-tree body).</summary>
+/// <summary>Statements such as ANALYZE, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT (token-tree body).</summary>
 public sealed partial class AdminStatement : Statement
 {
     public string Verb { get; set; } = "";

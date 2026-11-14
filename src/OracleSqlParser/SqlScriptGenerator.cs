@@ -157,6 +157,9 @@ public sealed partial class SqlScriptGenerator
                 case AlterTableAction ata: AlterAction(ata); break;
                 case IndexColumn ic: IndexCol(ic); break;
                 case TriggerEvent te: TriggerEv(te); break;
+                case AuditObject aob: AuditObjectText(aob); break;
+                case AuditOption aop: AuditOptionText(aop); break;
+                case AuditPolicyItem api: AuditPolicyItemText(api); break;
                 case DatafileSpec df: DatafileSpecText(df); break;
                 case TablespaceAction ta: TablespaceActionText(ta); break;
                 case ProfileLimit pl: ProfileLimitText(pl); break;

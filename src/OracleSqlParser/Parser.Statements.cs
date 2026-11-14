@@ -39,7 +39,8 @@ public sealed partial class SqlParser
             case "RENAME" when !SqlPlusCommands.Contains("RENAME"): return ParseRename();
             case "PURGE": return ParsePurge();
             case "FLASHBACK" when IsKwAt(1, "TABLE"): return ParseFlashbackTable();
-            case "ANALYZE": case "AUDIT": case "NOAUDIT": case "ASSOCIATE": case "DISASSOCIATE": case "ADMINISTER": case "FLASHBACK":
+            case "AUDIT": case "NOAUDIT": return ParseAudit(start);
+            case "ANALYZE": case "ASSOCIATE": case "DISASSOCIATE": case "ADMINISTER": case "FLASHBACK":
             {
                 var verb = Next().Value;
                 var body = ParseSyntaxItems(AtStatementEnd);
@@ -825,6 +826,173 @@ public sealed partial class SqlParser
         return Fin(a, s);
     }
 
+    // ---- AUDIT / NOAUDIT / AUDIT POLICY ----
+
+    private Statement ParseAudit(Token start)
+    {
+        var st = new AuditStatement { Noaudit = Next().Value == "NOAUDIT" };
+        if (AcceptKw("POLICY")) st.Policy = ParseIdentifier();
+        else if (AcceptKw("CONTEXT"))
+        {
+            ExpectKw("NAMESPACE");
+            st.ContextNamespace = ParseIdentifier();
+            if (AcceptKw("ATTRIBUTES")) st.ContextAttributes = ParseIdentifierList();
+        }
+        else
+        {
+            do st.Options.Add(ParseAuditOption()); while (AcceptOp(","));
+        }
+        ParseAuditTail(st);
+        return Fin(st, start);
+    }
+
+    /// <summary>The words of one traditional option, up to a comma or ON / BY / WHENEVER.</summary>
+    private AuditOption ParseAuditOption()
+    {
+        var s = Cur;
+        var words = new List<string>();
+        int prog = -1;
+        while (!AtStatementEnd() && !IsOp(",") && !IsKw("ON") && !IsKw("BY") && !IsKw("WHENEVER") && Progress(ref prog))
+            words.Add(Next().Value);
+        if (words.Count == 0) throw Fail($"Expected an audit option but found {Describe(Cur)}");
+        return Fin(new AuditOption { Name = string.Join(" ", words) }, s);
+    }
+
+    private void ParseAuditTail(AuditStatement st)
+    {
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog))
+        {
+            if (AcceptKw("ON")) st.On = ParseAuditObject();
+            else if (AcceptKw("EXCEPT")) st.ExceptUsers = ParseIdentifierList();
+            else if (AcceptKw("BY"))
+            {
+                if (AcceptKw("ACCESS")) st.By = AuditBy.Access;
+                else if (AcceptKw("SESSION")) st.By = AuditBy.Session;
+                else if (IsKw("USERS") && IsKwAt(1, "WITH")) { Next(); Next(); ExpectKw("ROLES"); st.WithRoles = ParseIdentifierList(); }
+                else st.ByUsers.AddRange(ParseIdentifierList());
+            }
+            else if (AcceptKw("WHENEVER"))
+            {
+                bool negated = AcceptKw("NOT");
+                ExpectKw("SUCCESSFUL");
+                st.Successful = !negated;
+            }
+            else throw Fail($"Unexpected {Describe(Cur)} in {(st.Noaudit ? "NOAUDIT" : "AUDIT")}");
+        }
+    }
+
+    private AuditObject ParseAuditObject()
+    {
+        var s = Cur;
+        var o = new AuditObject();
+        if (AcceptKw("DEFAULT")) o.Default = true;
+        else
+        {
+            if (AcceptKw("DIRECTORY")) o.Directory = true;
+            o.Name = ParseDottedName();
+        }
+        return Fin(o, s);
+    }
+
+    private Statement ParseCreateAuditPolicy(Token start, bool orReplace, bool pub)
+    {
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE AUDIT POLICY");
+        var st = new CreateAuditPolicyStatement { IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog))
+        {
+            if (IsKw("PRIVILEGES") || IsKw("ACTIONS") || IsKw("ROLES")) st.Lists.Add(ParseAuditPolicyList());
+            else if (AcceptKw("WHEN"))
+            {
+                var (cond, ev) = ParseConditionEvaluate();
+                st.Condition = cond;
+                st.Evaluate = ev;
+            }
+            else if (AcceptKw("ONLY")) { ExpectKw("TOPLEVEL"); st.OnlyToplevel = true; }
+            else if (IsKw("CONTAINER") && IsOpAt(1, "=")) st.Container = TryParseContainer();
+            else throw Fail($"Unexpected {Describe(Cur)} in CREATE AUDIT POLICY");
+        }
+        return Fin(st, start);
+    }
+
+    private Statement ParseAlterAuditPolicy(Token start, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to ALTER AUDIT POLICY");
+        var st = new AlterAuditPolicyStatement { IfExists = TryIfExists() };
+        st.Name = ParseIdentifier();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog))
+        {
+            if (AtAuditPolicyList()) st.Lists.Add(ParseAuditPolicyList());
+            else if (AcceptKw("CONDITION"))
+            {
+                if (AcceptKw("DROP")) st.DropCondition = true;
+                else
+                {
+                    var (cond, ev) = ParseConditionEvaluate();
+                    st.Condition = cond;
+                    st.Evaluate = ev;
+                }
+            }
+            else throw Fail($"Unexpected {Describe(Cur)} in ALTER AUDIT POLICY");
+        }
+        return Fin(st, start);
+    }
+
+    /// <summary>ADD|DROP PRIVILEGES/ACTIONS/ROLES, or the bare keyword on CREATE. ADD and DROP are only list starters before one of these words.</summary>
+    private bool AtAuditPolicyList()
+    {
+        if (IsKw("ADD") || IsKw("DROP")) return IsKwAt(1, "PRIVILEGES") || IsKwAt(1, "ACTIONS") || IsKwAt(1, "ROLES");
+        return IsKw("PRIVILEGES") || IsKw("ACTIONS") || IsKw("ROLES");
+    }
+
+    private AuditPolicyList ParseAuditPolicyList()
+    {
+        var s = Cur;
+        var l = new AuditPolicyList();
+        if (AcceptKw("DROP")) l.Drop = true;
+        else AcceptKw("ADD");
+        if (AcceptKw("PRIVILEGES")) l.Kind = AuditPolicyListKind.Privileges;
+        else if (AcceptKw("ACTIONS")) l.Kind = AuditPolicyListKind.Actions;
+        else { ExpectKw("ROLES"); l.Kind = AuditPolicyListKind.Roles; }
+        if (l.Kind == AuditPolicyListKind.Roles) l.Roles = ParseIdentifierList();
+        else do l.Items.Add(ParseAuditPolicyItem()); while (AcceptOp(","));
+        return Fin(l, s);
+    }
+
+    private AuditPolicyItem ParseAuditPolicyItem()
+    {
+        var s = Cur;
+        var it = new AuditPolicyItem();
+        if (IsKw("COMPONENT") && IsOpAt(1, "=")) { Next(); Next(); it.Component = ParseIdentifier(); }
+        var words = new List<string>();
+        int prog = -1;
+        while (!AtAuditPolicyItemEnd() && Progress(ref prog)) words.Add(Next().Value);
+        if (words.Count == 0 && it.Component == null) throw Fail($"Expected a privilege or action but found {Describe(Cur)}");
+        it.Name = string.Join(" ", words);
+        if (AcceptKw("ON")) it.On = ParseAuditObject();
+        return Fin(it, s);
+    }
+
+    private bool AtAuditPolicyItemEnd() =>
+        AtStatementEnd() || IsOp(",") || IsKw("ON") || IsKw("WHEN") || IsKw("ONLY") || IsKw("CONTAINER") || IsKw("CONDITION") || AtAuditPolicyList();
+
+    /// <summary>'condition' EVALUATE PER STATEMENT | SESSION | INSTANCE.</summary>
+    private (Expression, AuditEvaluation) ParseConditionEvaluate()
+    {
+        var cond = ParseAdditive();
+        ExpectKw("EVALUATE");
+        ExpectKw("PER");
+        var ev = AcceptKw("STATEMENT") ? AuditEvaluation.Statement
+            : AcceptKw("SESSION") ? AuditEvaluation.Session
+            : AcceptKw("INSTANCE") ? AuditEvaluation.Instance
+            : throw Fail($"Expected STATEMENT, SESSION or INSTANCE but found {Describe(Cur)}");
+        return (cond, ev);
+    }
+
     // ---- DROP / ALTER (generic) ----
 
     private Statement ParseDrop()
@@ -863,6 +1031,7 @@ public sealed partial class SqlParser
         if (kind == ObjectKind.Role) return ParseAlterRole(start, pub);
         if (kind == ObjectKind.Profile) return ParseAlterProfile(start, pub);
         if (kind == ObjectKind.Tablespace) return ParseAlterTablespace(start, pub);
+        if (kind == ObjectKind.AuditPolicy) return ParseAlterAuditPolicy(start, pub);
         var st = new AlterObjectStatement { Kind = kind, Public = pub };
         st.IfExists = TryIfExists();
         if (ObjectKindHasName(kind) && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) st.Name = ParseDottedName();
@@ -963,6 +1132,7 @@ public sealed partial class SqlParser
         TryParseObjectKind(out var kind);
         switch (kind)
         {
+            case ObjectKind.AuditPolicy: return ParseCreateAuditPolicy(start, orReplace, pub);
             case ObjectKind.Tablespace: return ParseCreateTablespace(start, orReplace, pub, bigfile, tsType);
             case ObjectKind.DatabaseLink: return ParseCreateDatabaseLink(start, orReplace, pub, shared);
             case ObjectKind.Directory: return ParseCreateDirectory(start, orReplace, pub);

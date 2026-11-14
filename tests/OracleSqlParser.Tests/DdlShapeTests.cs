@@ -231,6 +231,27 @@ public class DdlShapeTests
     [InlineData("ALTER TABLESPACE ts RENAME TO ts2", "(AlterTablespaceStatement name=TS actions=[(TablespaceAction kind=RenameTo newName=TS2)])")]
     public void CreateAlterTablespace(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
+    [Theory]
+    [InlineData("AUDIT SELECT ON emp", "(AuditStatement options=[(AuditOption name=SELECT)] on=(AuditObject name=[EMP]))")]
+    [InlineData("NOAUDIT SELECT ON emp BY ACCESS", "(AuditStatement noaudit options=[(AuditOption name=SELECT)] on=(AuditObject name=[EMP]) by=Access)")]
+    [InlineData("AUDIT CREATE TABLE BY u", "(AuditStatement options=[(AuditOption name=CREATE TABLE)] byUsers=[U])")]
+    [InlineData("AUDIT ALL ON DEFAULT", "(AuditStatement options=[(AuditOption name=ALL)] on=(AuditObject default))")]
+    [InlineData("AUDIT ALL ON DIRECTORY d BY ACCESS WHENEVER SUCCESSFUL",
+        "(AuditStatement options=[(AuditOption name=ALL)] on=(AuditObject directory name=[D]) by=Access successful=true)")]
+    [InlineData("AUDIT POLICY p BY hr, sh WHENEVER NOT SUCCESSFUL", "(AuditStatement policy=P byUsers=[HR SH] successful=false)")]
+    [InlineData("AUDIT POLICY read_dir_pol EXCEPT hr", "(AuditStatement policy=READ_DIR_POL exceptUsers=[HR])")]
+    [InlineData("AUDIT POLICY p BY USERS WITH ROLES r1", "(AuditStatement policy=P withRoles=[R1])")]
+    [InlineData("AUDIT CONTEXT NAMESPACE userenv ATTRIBUTES current_user, db_name BY hr",
+        "(AuditStatement contextNamespace=USERENV contextAttributes=[CURRENT_USER DB_NAME] byUsers=[HR])")]
+    [InlineData("CREATE AUDIT POLICY p PRIVILEGES CREATE ANY TABLE, DROP ANY TABLE ACTIONS SELECT ON hr.emp WHEN 'x' EVALUATE PER STATEMENT ONLY TOPLEVEL",
+        "(CreateAuditPolicyStatement name=P lists=[(AuditPolicyList kind=Privileges items=[(AuditPolicyItem name=CREATE ANY TABLE) (AuditPolicyItem name=DROP ANY TABLE)]) (AuditPolicyList kind=Actions items=[(AuditPolicyItem name=SELECT on=(AuditObject name=[HR EMP]))])] condition='x' evaluate=Statement onlyToplevel)")]
+    [InlineData("CREATE AUDIT POLICY pol ACTIONS COMPONENT=DATAPUMP EXPORT ROLES r1",
+        "(CreateAuditPolicyStatement name=POL lists=[(AuditPolicyList kind=Actions items=[(AuditPolicyItem component=DATAPUMP name=EXPORT)]) (AuditPolicyList kind=Roles roles=[R1])])")]
+    [InlineData("ALTER AUDIT POLICY pol ADD PRIVILEGES CREATE SESSION DROP ROLES r2 CONDITION 'x' EVALUATE PER INSTANCE",
+        "(AlterAuditPolicyStatement name=POL lists=[(AuditPolicyList kind=Privileges items=[(AuditPolicyItem name=CREATE SESSION)]) (AuditPolicyList kind=Roles drop roles=[R2])] condition='x' evaluate=Instance)")]
+    [InlineData("ALTER AUDIT POLICY pol CONDITION DROP", "(AlterAuditPolicyStatement name=POL dropCondition)")]
+    public void AuditAndAuditPolicy(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
     [Fact]
     public void CreateJava_Source()
     {

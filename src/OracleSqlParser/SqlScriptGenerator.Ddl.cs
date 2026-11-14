@@ -74,6 +74,24 @@ public sealed partial class SqlScriptGenerator
                     RoleIdentificationText(ar.Authentication, ar.Password, ar.Package);
                     ContainerClause(ar.Container);
                     break;
+                case AuditStatement au: AuditStatementText(au); break;
+                case CreateAuditPolicyStatement cap:
+                    Add("CREATE AUDIT POLICY");
+                    if (cap.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cap.Name);
+                    foreach (var pl in cap.Lists) { Sp(); AuditPolicyListText(pl, false); }
+                    if (cap.Condition != null) { Add(" WHEN "); AuditEvaluationText(cap.Condition, cap.Evaluate!.Value); }
+                    if (cap.OnlyToplevel) Add(" ONLY TOPLEVEL");
+                    ContainerClause(cap.Container);
+                    break;
+                case AlterAuditPolicyStatement aap:
+                    Add("ALTER AUDIT POLICY");
+                    if (aap.IfExists) Add(" IF EXISTS");
+                    Sp(); Id(aap.Name);
+                    foreach (var pl in aap.Lists) { Sp(); AuditPolicyListText(pl, true); }
+                    if (aap.DropCondition) Add(" CONDITION DROP");
+                    else if (aap.Condition != null) { Add(" CONDITION "); AuditEvaluationText(aap.Condition, aap.Evaluate!.Value); }
+                    break;
                 case CreateTablespaceStatement ct:
                     Add("CREATE");
                     if (ct.Bigfile != null) Add(ct.Bigfile.Value ? " BIGFILE" : " SMALLFILE");
@@ -312,6 +330,56 @@ public sealed partial class SqlScriptGenerator
                 if (ct.DefaultStorageEncrypt) Add(" DEFAULT STORAGE (ENCRYPT)");
             }
             if (ct.OtherClauses.Count > 0) { Sp(); SyntaxList(ct.OtherClauses); }
+        }
+
+        // ---------- AUDIT / NOAUDIT / AUDIT POLICY ----------
+
+        private void AuditStatementText(AuditStatement au)
+        {
+            Add(au.Noaudit ? "NOAUDIT" : "AUDIT");
+            if (au.Policy != null) { Add(" POLICY "); Id(au.Policy); }
+            else if (au.ContextNamespace != null)
+            {
+                Add(" CONTEXT NAMESPACE "); Id(au.ContextNamespace);
+                if (au.ContextAttributes.Count > 0) { Add(" ATTRIBUTES "); IdList(au.ContextAttributes); }
+            }
+            else if (au.Options.Count > 0) { Sp(); Sep(au.Options, AuditOptionText); }
+            if (au.On != null) { Add(" ON "); AuditObjectText(au.On); }
+            if (au.ByUsers.Count > 0) { Add(" BY "); IdList(au.ByUsers); }
+            if (au.WithRoles.Count > 0) { Add(" BY USERS WITH ROLES "); IdList(au.WithRoles); }
+            if (au.ExceptUsers.Count > 0) { Add(" EXCEPT "); IdList(au.ExceptUsers); }
+            if (au.By != null) Add(au.By == AuditBy.Access ? " BY ACCESS" : " BY SESSION");
+            if (au.Successful != null) Add(au.Successful.Value ? " WHENEVER SUCCESSFUL" : " WHENEVER NOT SUCCESSFUL");
+        }
+
+        private void AuditOptionText(AuditOption o) => Add(o.Name);
+
+        private void AuditObjectText(AuditObject o)
+        {
+            if (o.Default) { Add("DEFAULT"); return; }
+            if (o.Directory) Add("DIRECTORY ");
+            Name(o.Name);
+        }
+
+        private void AuditPolicyListText(AuditPolicyList l, bool alter)
+        {
+            if (alter) Add(l.Drop ? "DROP " : "ADD ");
+            Add(l.Kind switch { AuditPolicyListKind.Privileges => "PRIVILEGES ", AuditPolicyListKind.Actions => "ACTIONS ", _ => "ROLES " });
+            if (l.Kind == AuditPolicyListKind.Roles) IdList(l.Roles);
+            else Sep(l.Items, AuditPolicyItemText);
+        }
+
+        private void AuditPolicyItemText(AuditPolicyItem it)
+        {
+            if (it.Component != null) { Add("COMPONENT="); Id(it.Component); if (it.Name.Length > 0) Sp(); }
+            Add(it.Name);
+            if (it.On != null) { Add(" ON "); AuditObjectText(it.On); }
+        }
+
+        private void AuditEvaluationText(Expression cond, AuditEvaluation ev)
+        {
+            Expr(cond);
+            Add(" EVALUATE PER " + ev.ToString().ToUpperInvariant());
         }
 
         // ---------- CREATE / ALTER USER ----------
