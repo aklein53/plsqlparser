@@ -42,6 +42,17 @@ string json = AstJson.Serialize(result.Script, includePositions: true);
 
 SQL*Plus scripts: `&name` and `&&name` are substitution variables by default. A `SET DEFINE OFF` line (or `SET DEF OFF`) turns substitution off for the rest of the input, so `&` is then ordinary text, as it already is inside string literals; `SET DEFINE ON` turns it back on, and `SET DEFINE <char>` (for example `SET DEFINE ^`) makes that character the prefix instead. Only a `SET` that starts a line and is followed by nothing but the value counts, so `UPDATE t SET define = 1` is unaffected. For plain SQL that is not a script, `new ParseOptions { SubstitutionEnabled = false }` turns substitution off from the start.
 
+## Targeting older Oracle versions
+
+`ParseOptions.OracleVersion` names the release a script must run on: `Oracle19`, `Oracle21` or `Oracle23`. The default is `Oracle23`, so nothing changes unless you set it. For an older target, constructs introduced later are still parsed and kept in the tree, but each one adds a `ParseError`, for example `'IS TRUE/FALSE' requires Oracle 23 or later (targeting Oracle 19)`. Check `Errors` as usual; the tree is still usable for tooling. `ParseStatement` and `ParseExpression` throw on the first such diagnostic, like any other error.
+
+```csharp
+var r = SqlParser.Parse("SELECT 1 FROM dual WHERE (1 = 1) IS TRUE", new ParseOptions { OracleVersion = OracleVersion.Oracle19 });
+// r.Errors: one error, "'IS TRUE/FALSE' requires Oracle 23 or later (targeting Oracle 19)"
+```
+
+The gated constructs and their versions are listed in [COVERAGE.md](https://github.com/aklein53/plsqlparser/blob/main/COVERAGE.md#version-gates).
+
 ## CLI
 
 ```

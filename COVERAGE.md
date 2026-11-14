@@ -70,6 +70,28 @@ SQL*Plus commands (`SET`, `SPOOL`, `DEFINE`, `@script`, `PROMPT`, `REM`, `WHENEV
 (arguments are a token tree); `EXEC`/`EXECUTE` call or `target := value` → `ExecStatement` whose body is a `ProcedureCallStatement` or `AssignmentStatement` (SQL*Plus runs it as `BEGIN body; END;`); `&var`/`&&var` → `SubstitutionVariable`; `/` terminators.
 Error recovery resyncs at `;`, or for PL/SQL units at a `/` alone on its line (else the `;` after `END`).
 
+## Version gates
+
+`ParseOptions.OracleVersion` (default `Oracle23`) reports constructs newer than the target as a `ParseError` and keeps them in the tree. Each gated construct below names the release that introduced it. Only constructs whose version was confident are gated; the rest are listed under "Not gated".
+
+| Release | Constructs |
+|---|---|
+| 21c | JSON data type; IMMUTABLE and BLOCKCHAIN tables; SQL_MACRO / SQL_TABLE_MACRO; FOR loop iteration controls `BY`, several controls, `REPEAT`, `WHILE`/`WHEN`, `VALUES OF`/`INDICES OF`/`PAIRS OF`, parenthesised `EXECUTE IMMEDIATE`; typed and `MUTABLE`/`IMMUTABLE` iterands |
+| 23ai | `IS [NOT] TRUE/FALSE`; BOOLEAN type and TRUE/FALSE literals in SQL (PL/SQL is ungated); VECTOR type; `SELECT` without `FROM`; `IF [NOT] EXISTS`; `RETURNING OLD/NEW`; `UPDATE ... FROM` and `DELETE ... FROM`; `VALUES` table constructor (FROM, CTE, bare query); multi-row `INSERT ... VALUES`; `GRAPH_TABLE`; column `DOMAIN`; CREATE/ALTER/DROP of DOMAIN, PROPERTY GRAPH, JSON RELATIONAL DUALITY VIEW, MLE MODULE, MLE ENV; `LANGUAGE MLE` call specs |
+
+Not gated:
+
+- The MLE objects and `LANGUAGE MLE` call specs are gated at 23. I could not confirm the 21c release from Oracle's docs, so a 21c target may get a false error here.
+- SQL_MACRO was backported to 19c release updates. It is gated at 21 regardless; a 19c target on a backported release will see an error for it.
+- `GROUP BY` by alias or position is not gated. `GROUP BY 1` is valid in 19c, and an alias is an ordinary identifier at parse time, so 19c rejects it semantically, not in the parser.
+- The `FETCH APPROX` form, `ALTER USER ... READ ONLY`, and column-level `DEFAULT ON NULL FOR ...` qualifiers are not gated because I could not confirm their release.
+- `ANNOTATIONS` appears only inside gated CREATE/ALTER DOMAIN statements, so it is not gated separately.
+- `FOR` loops over a bare cursor or collection name, and `(SELECT ...)` controls, are classic and not gated.
+- The qualified-expression and MODEL `FOR` iteration forms (`FOR d FROM 1 TO 10 INCREMENT 1`, `FOR d IN (...)`) date from 10g and are not gated.
+- `GRANT ... ON SCHEMA` (23ai schema privileges) is not parsed as a typed form, so it is not gated. It is a token-tree fallback and needs parser support first.
+- `RESERVABLE` (lock-free reservations) and `VECTOR_DISTANCE` and other `VECTOR_*` functions are not parsed as typed forms, so they are not gated.
+- The `JSON {}` / `JSON []` constructor shorthand is not in this tree and is not gated here.
+
 ## Known gaps (each is a parse error today, not a silent mis-parse)
 
 - `JSON_TRANSFORM` `NESTED PATH` and `CASE` operations.
