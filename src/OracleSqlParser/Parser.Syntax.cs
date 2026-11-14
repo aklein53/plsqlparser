@@ -93,6 +93,11 @@ public sealed partial class SqlParser
     private PhysicalAttribute ParsePhysicalAttribute(Func<bool> stop)
     {
         var s = Cur;
+        if (IsKw("ANNOTATIONS") && IsOpAt(1, "("))
+        {
+            Next();
+            return Fin(new AnnotationsAttribute { Clause = ParseAnnotations(allowDrop: false) }, s);
+        }
         if (Cur.Type == TokenType.Identifier)
         {
             switch (Cur.Value)

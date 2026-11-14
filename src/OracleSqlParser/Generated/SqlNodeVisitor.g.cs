@@ -28,6 +28,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="AlterAnnotationsStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterAnnotationsStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterAnnotationsStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterAnnotationsStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="AlterAuditPolicyStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(AlterAuditPolicyStatement node) => Visit((SqlNode)node);
 
@@ -223,6 +233,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="AnnotationItem"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(AnnotationItem node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AnnotationsAttribute"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AnnotationsAttribute node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AnnotationsAttribute"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AnnotationsAttribute node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -2913,6 +2933,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="VariableDeclaration"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(VariableDeclaration node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="ViewColumn"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(ViewColumn node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="ViewColumn"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(ViewColumn node)
     {
         Visit(node);
         node.AcceptChildren(this);
