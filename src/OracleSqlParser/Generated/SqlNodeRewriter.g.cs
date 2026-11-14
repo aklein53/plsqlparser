@@ -43,6 +43,13 @@ public abstract partial class SqlNodeRewriter
         return node;
     }
 
+    /// <summary>Rewrites a <see cref="AlterMaterializedViewStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(AlterMaterializedViewStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
     /// <summary>Rewrites a <see cref="AlterObjectStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(AlterObjectStatement node)
     {

@@ -447,6 +447,14 @@ public sealed partial class SqlParser
             if (unit != null) return unit;
             _p = save;
         }
+        if (!pub && kind == ObjectKind.MaterializedView && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier)
+        {
+            int save = _p;
+            var name = ParseDottedName();
+            if (AtAlterMaterializedViewClauseStart() || IsKw("LOGGING") || IsKw("NOLOGGING") || IsKw("CACHE") || IsKw("NOCACHE") || IsKw("PARALLEL") || IsKw("NOPARALLEL"))
+                return ParseAlterMaterializedView(start, name);
+            _p = save;
+        }
         var st = new AlterObjectStatement { Kind = kind, Public = pub };
         st.IfExists = TryIfExists();
         if (ObjectKindHasName(kind) && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) st.Name = ParseDottedName();
@@ -876,6 +884,7 @@ public sealed partial class SqlParser
             else if (AcceptKw("FORCE")) rc.Method = RefreshMethod.Force;
             else if (IsKw("ON") && IsKwAt(1, "DEMAND")) { Next(); Next(); rc.Mode = RefreshMode.OnDemand; }
             else if (IsKw("ON") && IsKwAt(1, "COMMIT")) { Next(); Next(); rc.Mode = RefreshMode.OnCommit; }
+            else if (IsKw("ON") && IsKwAt(1, "STATEMENT")) { Next(); Next(); rc.Mode = RefreshMode.OnStatement; }
             else if (IsKw("START") && IsKwAt(1, "WITH")) { Next(); Next(); rc.StartWith = ParseAdditive(); }
             else if (AcceptKw("NEXT")) rc.Next = ParseAdditive();
             else if (IsKw("WITH") && IsKwAt(1, "PRIMARY")) { Next(); Next(); ExpectKw("KEY"); rc.WithPrimaryKey = true; }

@@ -29,6 +29,7 @@ public sealed partial class SqlScriptGenerator
                 case AlterCompileStatement acs: AlterCompile(acs); break;
                 case AlterTriggerStatement ats: AlterTrigger(ats); break;
                 case AlterViewStatement avs: AlterView(avs); break;
+                case AlterMaterializedViewStatement amv: AlterMaterializedView(amv); break;
                 case CreateObjectStatement or AlterObjectStatement or DropStatement or CreateTableStatement or CreateIndexStatement
                     or CreateViewStatement or CreateSequenceStatement or CreateSynonymStatement or AlterTableStatement
                     or CreateJavaStatement or CreateLibraryStatement:

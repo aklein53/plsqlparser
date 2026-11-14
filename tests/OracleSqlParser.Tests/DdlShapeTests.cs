@@ -213,6 +213,24 @@ public class DdlShapeTests
     public void AlterCompileAndUnits(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
+    [InlineData("ALTER MATERIALIZED VIEW mv REFRESH FAST ON COMMIT", "(AlterMaterializedViewStatement name=[MV] refresh=(RefreshClause method=Fast mode=OnCommit))")]
+    [InlineData("ALTER MATERIALIZED VIEW mv REFRESH COMPLETE ON DEMAND START WITH SYSDATE NEXT SYSDATE + 1",
+        "(AlterMaterializedViewStatement name=[MV] refresh=(RefreshClause method=Complete mode=OnDemand startWith=SYSDATE next=(+ SYSDATE 1)))")]
+    [InlineData("ALTER MATERIALIZED VIEW mv REFRESH FORCE ON STATEMENT WITH PRIMARY KEY", "(AlterMaterializedViewStatement name=[MV] refresh=(RefreshClause method=Force mode=OnStatement withPrimaryKey))")]
+    [InlineData("ALTER MATERIALIZED VIEW mv NEVER REFRESH", "(AlterMaterializedViewStatement name=[MV] refresh=(RefreshClause method=Never))")]
+    [InlineData("ALTER MATERIALIZED VIEW mv ENABLE QUERY REWRITE", "(AlterMaterializedViewStatement name=[MV] queryRewrite=true)")]
+    [InlineData("ALTER MATERIALIZED VIEW mv DISABLE QUERY REWRITE", "(AlterMaterializedViewStatement name=[MV] queryRewrite=false)")]
+    [InlineData("ALTER MATERIALIZED VIEW mv COMPILE", "(AlterMaterializedViewStatement name=[MV] compile)")]
+    [InlineData("ALTER MATERIALIZED VIEW mv CONSIDER FRESH", "(AlterMaterializedViewStatement name=[MV] considerFresh)")]
+    [InlineData("ALTER MATERIALIZED VIEW mv SHRINK SPACE COMPACT CASCADE", "(AlterMaterializedViewStatement name=[MV] shrinkSpace shrinkCompact shrinkCascade)")]
+    [InlineData("ALTER MATERIALIZED VIEW mv NOCACHE NOLOGGING PARALLEL 4",
+        "(AlterMaterializedViewStatement name=[MV] attributes=[(CacheAttribute) (LoggingAttribute) (ParallelAttribute degree=4)])")]
+    [InlineData("ALTER MATERIALIZED VIEW mv REFRESH FAST ENABLE QUERY REWRITE LOGGING",
+        "(AlterMaterializedViewStatement name=[MV] refresh=(RefreshClause method=Fast) queryRewrite=true attributes=[(LoggingAttribute logging)])")]
+    [InlineData("CREATE MATERIALIZED VIEW mv REFRESH FAST ON STATEMENT AS SELECT 1 FROM dual", "(CreateViewStatement materialized name=[MV] refresh=(RefreshClause method=Fast mode=OnStatement) query=" + SelDual + ")")]
+    public void AlterMaterializedView(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
     [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateObjectStatement kind=User name=[BOB] body=[(WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=PW)])")]
     [InlineData("CREATE ROLE r", "(CreateObjectStatement kind=Role name=[R])")]
     [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'",

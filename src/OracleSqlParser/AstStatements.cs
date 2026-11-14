@@ -482,7 +482,7 @@ public sealed partial class IndexColumn : SqlNode
 
 public enum ViewBequeath { CurrentUser, Definer }
 public enum RefreshMethod { Fast, Complete, Force, Never }
-public enum RefreshMode { OnDemand, OnCommit }
+public enum RefreshMode { OnDemand, OnCommit, OnStatement }
 
 public sealed partial class RefreshClause : SqlNode
 {

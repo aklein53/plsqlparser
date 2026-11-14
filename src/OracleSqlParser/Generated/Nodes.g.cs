@@ -270,6 +270,69 @@ public partial class AlterIndexStatement
     }
 }
 
+public partial class AlterMaterializedViewStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Refresh is not null) yield return Refresh;
+        if (Attributes is not null) foreach (var x in Attributes) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        Refresh?.Accept(visitor);
+        if (Attributes is not null) foreach (var x in Attributes) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AlterMaterializedViewStatement.Name");
+        Refresh = SqlNodeRewriter.RewriteOptional(rewriter, Refresh, "AlterMaterializedViewStatement.Refresh");
+        SqlNodeRewriter.RewriteList(rewriter, Attributes, "AlterMaterializedViewStatement.Attributes");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterMaterializedViewStatement();
+        CopySpan(this, c);
+        c.Name = CloneList(Name);
+        c.Refresh = CloneChild(Refresh);
+        c.QueryRewrite = QueryRewrite;
+        c.Compile = Compile;
+        c.ConsiderFresh = ConsiderFresh;
+        c.ShrinkSpace = ShrinkSpace;
+        c.ShrinkCompact = ShrinkCompact;
+        c.ShrinkCascade = ShrinkCascade;
+        c.Attributes = CloneList(Attributes);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterMaterializedViewStatement)other;
+        return PairList(Name, o.Name, pending)
+            && Pair(Refresh, o.Refresh, pending)
+            && QueryRewrite == o.QueryRewrite
+            && Compile == o.Compile
+            && ConsiderFresh == o.ConsiderFresh
+            && ShrinkSpace == o.ShrinkSpace
+            && ShrinkCompact == o.ShrinkCompact
+            && ShrinkCascade == o.ShrinkCascade
+            && PairList(Attributes, o.Attributes, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class AlterObjectStatement
 {
     /// <inheritdoc/>
