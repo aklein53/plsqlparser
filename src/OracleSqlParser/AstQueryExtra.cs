@@ -12,8 +12,8 @@ public sealed partial class JsonObjectConstructor : Expression
 /// <summary>One member of a JSON object constructor. The value is an expression, or a <see cref="JsonArrayConstructor"/>.</summary>
 public sealed partial class JsonMember : SqlNode
 {
-    public Expression Key { get; set; } = null!;
-    public Expression Value { get; set; } = null!;
+    public required Expression Key { get; set; }
+    public required Expression Value { get; set; }
     public JsonNullHandling? NullHandling { get; set; }
     public DataType? Returning { get; set; }
 }
@@ -42,7 +42,7 @@ public sealed partial class CreateDualityViewStatement : Statement
     public bool Relational { get; set; }
     public List<Identifier> Name { get; set; } = [];
     /// <summary>The SQL form's query; null for the GraphQL form (kept in <see cref="OtherClauses"/>).</summary>
-    public SelectStatement Query { get; set; } = null!;
+    public SelectStatement? Query { get; set; }
     /// <summary>The GraphQL form (v AS t @insert @update { ... }), as a token tree.</summary>
     public List<SyntaxItem> OtherClauses { get; set; } = [];
 }
@@ -52,7 +52,7 @@ public sealed partial class CreateDualityViewStatement : Statement
 public sealed partial class SampleClause : SqlNode
 {
     public bool Block { get; set; }
-    public Expression Percent { get; set; } = null!;
+    public required Expression Percent { get; set; }
     public Expression? Seed { get; set; }
 }
 
@@ -66,13 +66,13 @@ public sealed partial class FlashbackClause : SqlNode
     public FlashbackUnit Unit { get; set; }
     /// <summary>The valid-time period name for PERIOD FOR.</summary>
     public Identifier? Period { get; set; }
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     public Expression? ToValue { get; set; }
 }
 
 public sealed partial class PivotTable : TableReference
 {
-    public TableReference Source { get; set; } = null!;
+    public required TableReference Source { get; set; }
     public bool Xml { get; set; }
     public List<PivotAggregate> Aggregates { get; set; } = [];
     public List<ColumnReference> ForColumns { get; set; } = [];
@@ -83,19 +83,19 @@ public sealed partial class PivotTable : TableReference
 
 public sealed partial class PivotAggregate : SqlNode
 {
-    public Expression Function { get; set; } = null!;
+    public required Expression Function { get; set; }
     public Identifier? Alias { get; set; }
 }
 
 public sealed partial class PivotInItem : SqlNode
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     public Identifier? Alias { get; set; }
 }
 
 public sealed partial class UnpivotTable : TableReference
 {
-    public TableReference Source { get; set; } = null!;
+    public required TableReference Source { get; set; }
     public bool IncludeNulls { get; set; }
     public List<ColumnReference> ValueColumns { get; set; } = [];
     public List<ColumnReference> ForColumns { get; set; } = [];
@@ -110,7 +110,7 @@ public sealed partial class UnpivotInItem : SqlNode
 
 public sealed partial class XmlNamespace : SqlNode
 {
-    public Expression Uri { get; set; } = null!;
+    public required Expression Uri { get; set; }
     public Identifier? Alias { get; set; }
     /// <summary>DEFAULT 'uri'.</summary>
     public bool IsDefault { get; set; }
@@ -120,7 +120,7 @@ public sealed partial class XmlNamespace : SqlNode
 public sealed partial class XmlTable : TableReference
 {
     public List<XmlNamespace> Namespaces { get; set; } = [];
-    public Expression XQuery { get; set; } = null!;
+    public required Expression XQuery { get; set; }
     public PassingClause? Passing { get; set; }
     public List<PathColumn> Columns { get; set; } = [];
 }
@@ -128,9 +128,9 @@ public sealed partial class XmlTable : TableReference
 /// <summary>JSON_TABLE(...) in a FROM clause.</summary>
 public sealed partial class JsonTable : TableReference
 {
-    public Expression Input { get; set; } = null!;
+    public required Expression Input { get; set; }
     public FormatClause? InputFormat { get; set; }
-    public Expression Path { get; set; } = null!;
+    public required Expression Path { get; set; }
     /// <summary>ERROR/EMPTY ON ... clauses after the path.</summary>
     public List<FunctionClause> Clauses { get; set; } = [];
     public List<PathColumn> Columns { get; set; } = [];
@@ -161,7 +161,7 @@ public enum SkipKind { PastLastRow, ToNextRow, ToFirst, ToLast }
 
 public sealed partial class MatchRecognizeTable : TableReference
 {
-    public TableReference Source { get; set; } = null!;
+    public required TableReference Source { get; set; }
     public List<Expression> PartitionBy { get; set; } = [];
     public List<OrderByItem> OrderBy { get; set; } = [];
     public List<ExpressionSelectItem> Measures { get; set; } = [];
@@ -171,23 +171,23 @@ public sealed partial class MatchRecognizeTable : TableReference
     public Identifier? SkipVariable { get; set; }
     /// <summary>PATTERN is preceded by SEEK instead of INITIAL.</summary>
     public bool Seek { get; set; }
-    public PatternNode Pattern { get; set; } = null!;
+    public required PatternNode Pattern { get; set; }
     public List<PatternSubset> Subsets { get; set; } = [];
     public List<PatternDefine> Define { get; set; } = [];
 }
 
 public abstract partial class PatternNode : SqlNode { }
-public sealed partial class PatternVariable : PatternNode { public Identifier Name { get; set; } = null!; }
+public sealed partial class PatternVariable : PatternNode { public required Identifier Name { get; set; } }
 public sealed partial class PatternAnchor : PatternNode { public bool IsStart { get; set; } }
 public sealed partial class PatternConcat : PatternNode { public List<PatternNode> Items { get; set; } = []; }
 public sealed partial class PatternAlternation : PatternNode { public List<PatternNode> Items { get; set; } = []; }
-public sealed partial class PatternGroup : PatternNode { public PatternNode Inner { get; set; } = null!; }
+public sealed partial class PatternGroup : PatternNode { public required PatternNode Inner { get; set; } }
 public sealed partial class PatternPermute : PatternNode { public List<PatternNode> Items { get; set; } = []; }
-public sealed partial class PatternExclusion : PatternNode { public PatternNode Inner { get; set; } = null!; }
+public sealed partial class PatternExclusion : PatternNode { public required PatternNode Inner { get; set; } }
 
 public sealed partial class PatternQuantified : PatternNode
 {
-    public PatternNode Inner { get; set; } = null!;
+    public required PatternNode Inner { get; set; }
     public int Min { get; set; }
     /// <summary>null = unbounded.</summary>
     public int? Max { get; set; }
@@ -196,14 +196,14 @@ public sealed partial class PatternQuantified : PatternNode
 
 public sealed partial class PatternSubset : SqlNode
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<Identifier> Members { get; set; } = [];
 }
 
 public sealed partial class PatternDefine : SqlNode
 {
-    public Identifier Variable { get; set; } = null!;
-    public Expression Condition { get; set; } = null!;
+    public required Identifier Variable { get; set; }
+    public required Expression Condition { get; set; }
 }
 
 /// <summary>GRAPH_TABLE(graph MATCH path [, path] [WHERE cond] [ONE ROW PER ...] COLUMNS (expr [AS alias], ...)) (SQL/PGQ).</summary>
@@ -273,14 +273,14 @@ public sealed partial class GraphQuantifier : SqlNode
 /// <summary>( path ) quantifier: a parenthesised sub-path pattern that repeats.</summary>
 public sealed partial class GraphSubpatternElement : GraphPatternElement
 {
-    public GraphPathPattern Path { get; set; } = null!;
+    public required GraphPathPattern Path { get; set; }
     public GraphQuantifier? Quantifier { get; set; }
 }
 
 /// <summary>One COLUMNS item: expr [AS alias].</summary>
 public sealed partial class GraphColumn : SqlNode
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     public Identifier? Alias { get; set; }
 }
 
@@ -313,8 +313,8 @@ public sealed partial class ModelClause : SqlNode
 
 public sealed partial class ReferenceModel : SqlNode
 {
-    public Identifier Name { get; set; } = null!;
-    public SelectStatement Query { get; set; } = null!;
+    public required Identifier Name { get; set; }
+    public required SelectStatement Query { get; set; }
     public List<ExpressionSelectItem> DimensionBy { get; set; } = [];
     public List<ExpressionSelectItem> Measures { get; set; } = [];
     public NavMode? Nav { get; set; }
@@ -324,9 +324,9 @@ public sealed partial class ReferenceModel : SqlNode
 public sealed partial class ModelRule : SqlNode
 {
     public RulesMode? Mode { get; set; }
-    public Expression Target { get; set; } = null!;
+    public required Expression Target { get; set; }
     public List<OrderByItem> OrderBy { get; set; } = [];
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
 }
 
 /// <summary>
@@ -335,7 +335,7 @@ public sealed partial class ModelRule : SqlNode
 /// </summary>
 public sealed partial class CellReference : Expression
 {
-    public Expression Base { get; set; } = null!;
+    public required Expression Base { get; set; }
     public List<Expression> Subscripts { get; set; } = [];
 }
 
@@ -350,22 +350,22 @@ public sealed partial class QualifiedExpression : Expression
     public Expression? Choice { get; set; }
     public bool Others { get; set; }
     public IndexIterator? Iterator { get; set; }
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
 }
 
 /// <summary>The <c>FOR variable IN low..high</c> index choice of a qualified expression.</summary>
 public sealed partial class IndexIterator : SqlNode
 {
-    public Identifier Variable { get; set; } = null!;
-    public Expression Low { get; set; } = null!;
-    public Expression High { get; set; } = null!;
+    public required Identifier Variable { get; set; }
+    public required Expression Low { get; set; }
+    public required Expression High { get; set; }
 }
 
 /// <summary>Inclusive range subscript <c>from TO to</c> in a JSON dot-notation array step, e.g. t.c.a[0 to 2].</summary>
 public sealed partial class SubscriptRange : Expression
 {
-    public Expression From { get; set; } = null!;
-    public Expression To { get; set; } = null!;
+    public required Expression From { get; set; }
+    public required Expression To { get; set; }
 }
 
 /// <summary>(VALUES (..), (..)) table value constructor, optionally followed by an alias column list.</summary>
@@ -385,33 +385,33 @@ public sealed partial class ValuesQuery : QueryExpression
 
 public sealed partial class MemberAccess : Expression
 {
-    public Expression Target { get; set; } = null!;
-    public Identifier Member { get; set; } = null!;
+    public required Expression Target { get; set; }
+    public required Identifier Member { get; set; }
 }
 
 /// <summary>Method call on an expression: <c>target.name(args)</c>, e.g. <c>UTL_HTTP.REQUEST(url).foo()</c>.</summary>
 public sealed partial class MethodCall : Expression
 {
-    public Expression Target { get; set; } = null!;
-    public Identifier Name { get; set; } = null!;
+    public required Expression Target { get; set; }
+    public required Identifier Name { get; set; }
     public List<Argument> Arguments { get; set; } = [];
 }
 
 /// <summary>Call on the result of a call or subscript, e.g. <c>f(x)(y)</c> or <c>arr(1)(2)</c>; the callee is not a plain name.</summary>
 public sealed partial class ChainedCall : Expression
 {
-    public Expression Target { get; set; } = null!;
+    public required Expression Target { get; set; }
     public List<Argument> Arguments { get; set; } = [];
 }
 
 public sealed partial class CursorExpression : Expression
 {
-    public SelectStatement Query { get; set; } = null!;
+    public required SelectStatement Query { get; set; }
 }
 
 public sealed partial class CurrentOfExpression : Expression
 {
-    public Identifier Cursor { get; set; } = null!;
+    public required Identifier Cursor { get; set; }
 }
 
 // ---------- Multitable INSERT ----------
@@ -422,7 +422,7 @@ public sealed partial class MultiTableInsertStatement : DmlStatement
     public bool Conditional { get; set; }
     public List<MultiInsertBranch> Branches { get; set; } = [];
     public MultiInsertBranch? Else { get; set; }
-    public SelectStatement Query { get; set; } = null!;
+    public required SelectStatement Query { get; set; }
 }
 
 public sealed partial class MultiInsertBranch : SqlNode
@@ -433,7 +433,7 @@ public sealed partial class MultiInsertBranch : SqlNode
 
 public sealed partial class InsertIntoClause : SqlNode
 {
-    public TableReference Table { get; set; } = null!;
+    public required TableReference Table { get; set; }
     public List<Identifier> Columns { get; set; } = [];
     public List<Expression> Values { get; set; } = [];
 }

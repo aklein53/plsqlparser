@@ -23,7 +23,7 @@ public sealed partial class ExceptionHandler : SqlNode
 /// <summary>$IF cond $THEN ... [$ELSIF cond $THEN ...] [$ELSE ...] $END where the branches hold statements.</summary>
 public sealed partial class ConditionalStatement : Statement
 {
-    public Expression Condition { get; set; } = null!;
+    public required Expression Condition { get; set; }
     public List<Statement> ThenStatements { get; set; } = [];
     public List<ConditionalStatementBranch> ElsifBranches { get; set; } = [];
     public List<Statement>? ElseStatements { get; set; }
@@ -31,20 +31,20 @@ public sealed partial class ConditionalStatement : Statement
 
 public sealed partial class ConditionalStatementBranch : SqlNode
 {
-    public Expression Condition { get; set; } = null!;
+    public required Expression Condition { get; set; }
     public List<Statement> Statements { get; set; } = [];
 }
 
 /// <summary>$ERROR 'message' $END in a statement list: a compile-time error, raised when its branch is selected.</summary>
 public sealed partial class CompilationErrorStatement : Statement
 {
-    public Expression Message { get; set; } = null!;
+    public required Expression Message { get; set; }
 }
 
 /// <summary>$IF cond $THEN ... [$ELSIF cond $THEN ...] [$ELSE ...] $END where the branches hold declarations.</summary>
 public sealed partial class ConditionalDeclaration : Declaration
 {
-    public Expression Condition { get; set; } = null!;
+    public required Expression Condition { get; set; }
     public List<Declaration> ThenDeclarations { get; set; } = [];
     public List<ConditionalDeclarationBranch> ElsifBranches { get; set; } = [];
     public List<Declaration>? ElseDeclarations { get; set; }
@@ -52,20 +52,20 @@ public sealed partial class ConditionalDeclaration : Declaration
 
 public sealed partial class ConditionalDeclarationBranch : SqlNode
 {
-    public Expression Condition { get; set; } = null!;
+    public required Expression Condition { get; set; }
     public List<Declaration> Declarations { get; set; } = [];
 }
 
 /// <summary>$ERROR 'message' $END in a declaration list: a compile-time error, raised when its branch is selected.</summary>
 public sealed partial class CompilationErrorDeclaration : Declaration
 {
-    public Expression Message { get; set; } = null!;
+    public required Expression Message { get; set; }
 }
 
 /// <summary>Inquiry directive such as $$PLSQL_UNIT or a $$flag set with PLSQL_CCFLAGS.</summary>
 public sealed partial class InquiryDirective : Expression
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
 }
 
 // ---------- Declarations ----------
@@ -74,9 +74,9 @@ public abstract partial class Declaration : SqlNode { }
 
 public sealed partial class VariableDeclaration : Declaration
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public bool Constant { get; set; }
-    public DataType Type { get; set; } = null!;
+    public required DataType Type { get; set; }
     public bool NotNull { get; set; }
     public Expression? Default { get; set; }
 }
@@ -84,7 +84,7 @@ public sealed partial class VariableDeclaration : Declaration
 /// <summary>$IF cond $THEN ... [$ELSIF cond $THEN ...] [$ELSE ...] $END around parameters (the commas are inside the branches).</summary>
 public sealed partial class ConditionalParameter : ParameterItem
 {
-    public Expression Condition { get; set; } = null!;
+    public required Expression Condition { get; set; }
     public List<ParameterItem> ThenParameters { get; set; } = [];
     public List<ConditionalParameterBranch> ElsifBranches { get; set; } = [];
     public List<ParameterItem>? ElseParameters { get; set; }
@@ -92,18 +92,18 @@ public sealed partial class ConditionalParameter : ParameterItem
 
 public sealed partial class ConditionalParameterBranch : SqlNode
 {
-    public Expression Condition { get; set; } = null!;
+    public required Expression Condition { get; set; }
     public List<ParameterItem> Parameters { get; set; } = [];
 }
 
 public sealed partial class ExceptionDeclaration : Declaration
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
 }
 
 public sealed partial class PragmaDeclaration : Declaration
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<Expression> Arguments { get; set; } = [];
 }
 
@@ -116,7 +116,7 @@ public abstract partial class ParameterItem : SqlNode
 
 public sealed partial class Parameter : ParameterItem
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public ParamMode? Mode { get; set; }
     public bool NoCopy { get; set; }
     public DataType? Type { get; set; }
@@ -125,7 +125,7 @@ public sealed partial class Parameter : ParameterItem
 
 public sealed partial class CursorDeclaration : Declaration
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<ParameterItem> Parameters { get; set; } = [];
     public DataType? ReturnType { get; set; }
     public SelectStatement? Query { get; set; }
@@ -133,7 +133,7 @@ public sealed partial class CursorDeclaration : Declaration
 
 public sealed partial class RecordTypeDeclaration : Declaration
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<VariableDeclaration> Fields { get; set; } = [];
 }
 
@@ -141,24 +141,24 @@ public enum CollectionKind { Table, Varray }
 
 public sealed partial class CollectionTypeDeclaration : Declaration
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public CollectionKind Kind { get; set; }
     public Expression? Limit { get; set; }
-    public DataType ElementType { get; set; } = null!;
+    public required DataType ElementType { get; set; }
     public bool NotNull { get; set; }
     public DataType? IndexBy { get; set; }
 }
 
 public sealed partial class RefCursorTypeDeclaration : Declaration
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public DataType? ReturnType { get; set; }
 }
 
 public sealed partial class SubtypeDeclaration : Declaration
 {
-    public Identifier Name { get; set; } = null!;
-    public DataType BaseType { get; set; } = null!;
+    public required Identifier Name { get; set; }
+    public required DataType BaseType { get; set; }
     public Expression? RangeLow { get; set; }
     public Expression? RangeHigh { get; set; }
     public bool NotNull { get; set; }
@@ -264,7 +264,7 @@ public sealed partial class CreateProgramStatement : Statement
 {
     public bool OrReplace { get; set; }
     public EditionableKind? Editionable { get; set; }
-    public SubprogramDeclaration Subprogram { get; set; } = null!;
+    public required SubprogramDeclaration Subprogram { get; set; }
 }
 
 public sealed partial class CreatePackageStatement : Statement
@@ -308,7 +308,7 @@ public sealed partial class TriggerEvent : SqlNode
 public sealed partial class ReferencingItem : SqlNode
 {
     public ReferencingKind Kind { get; set; }
-    public Identifier Alias { get; set; } = null!;
+    public required Identifier Alias { get; set; }
 }
 
 public sealed partial class CreateTriggerStatement : Statement
@@ -379,18 +379,18 @@ public sealed partial class NullStatement : Statement { }
 
 public sealed partial class AssignmentStatement : Statement
 {
-    public Expression Target { get; set; } = null!;
-    public Expression Value { get; set; } = null!;
+    public required Expression Target { get; set; }
+    public required Expression Value { get; set; }
 }
 
 public sealed partial class ProcedureCallStatement : Statement
 {
-    public Expression Call { get; set; } = null!;
+    public required Expression Call { get; set; }
 }
 
 public sealed partial class IfStatement : Statement
 {
-    public Expression Condition { get; set; } = null!;
+    public required Expression Condition { get; set; }
     public List<Statement> ThenStatements { get; set; } = [];
     public List<IfBranch> ElsifBranches { get; set; } = [];
     public List<Statement>? ElseStatements { get; set; }
@@ -398,7 +398,7 @@ public sealed partial class IfStatement : Statement
 
 public sealed partial class IfBranch : SqlNode
 {
-    public Expression Condition { get; set; } = null!;
+    public required Expression Condition { get; set; }
     public List<Statement> Statements { get; set; } = [];
 }
 
@@ -411,7 +411,7 @@ public sealed partial class PlsqlCaseStatement : Statement
 
 public sealed partial class CaseStatementWhen : SqlNode
 {
-    public Expression When { get; set; } = null!;
+    public required Expression When { get; set; }
     public List<Statement> Statements { get; set; } = [];
 }
 
@@ -433,7 +433,7 @@ public sealed partial class LoopStatement : Statement
 /// <summary>A FOR loop variable: name, optional type (FOR i NUMBER(5,1) IN ...), and MUTABLE.</summary>
 public sealed partial class ForIterand : SqlNode
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public DataType? Type { get; set; }
     public bool Mutable { get; set; }
 }
@@ -452,51 +452,51 @@ public abstract partial class IterationControl : SqlNode
 public sealed partial class RangeControl : IterationControl
 {
     public bool Reverse { get; set; }
-    public Expression Lower { get; set; } = null!;
-    public Expression Upper { get; set; } = null!;
+    public required Expression Lower { get; set; }
+    public required Expression Upper { get; set; }
     public Expression? By { get; set; }
 }
 
 /// <summary>A single value, or a bare cursor or collection name (FOR r IN c1 LOOP).</summary>
 public sealed partial class ExpressionControl : IterationControl
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
 }
 
 /// <summary>REPEAT expr: repeatedly evaluates expr, using the previous value of the loop variable.</summary>
 public sealed partial class RepeatControl : IterationControl
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
 }
 
 /// <summary>VALUES OF collection: iterates over the collection's values.</summary>
 public sealed partial class ValuesOfControl : IterationControl
 {
-    public Expression Collection { get; set; } = null!;
+    public required Expression Collection { get; set; }
 }
 
 /// <summary>INDICES OF collection: iterates over the collection's index values.</summary>
 public sealed partial class IndicesOfControl : IterationControl
 {
-    public Expression Collection { get; set; } = null!;
+    public required Expression Collection { get; set; }
 }
 
 /// <summary>PAIRS OF collection: iterates over index and value together (two iterands).</summary>
 public sealed partial class PairsOfControl : IterationControl
 {
-    public Expression Collection { get; set; } = null!;
+    public required Expression Collection { get; set; }
 }
 
 /// <summary>FOR r IN (SELECT ...): cursor FOR loop over a query.</summary>
 public sealed partial class CursorControl : IterationControl
 {
-    public SelectStatement Query { get; set; } = null!;
+    public required SelectStatement Query { get; set; }
 }
 
 /// <summary>EXECUTE IMMEDIATE sql [USING ...]: iterates over the rows of a dynamic query.</summary>
 public sealed partial class DynamicSqlControl : IterationControl
 {
-    public Expression Sql { get; set; } = null!;
+    public required Expression Sql { get; set; }
     public List<UsingArgument> Using { get; set; } = [];
 }
 
@@ -514,7 +514,7 @@ public sealed partial class ContinueStatement : Statement
 
 public sealed partial class GotoStatement : Statement
 {
-    public Identifier Target { get; set; } = null!;
+    public required Identifier Target { get; set; }
 }
 
 public sealed partial class ReturnStatement : Statement
@@ -530,12 +530,12 @@ public sealed partial class RaiseStatement : Statement
 public sealed partial class UsingArgument : SqlNode
 {
     public ParamMode? Mode { get; set; }
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
 }
 
 public sealed partial class OpenStatement : Statement
 {
-    public Expression Cursor { get; set; } = null!;
+    public required Expression Cursor { get; set; }
     public SelectStatement? ForQuery { get; set; }
     public Expression? ForExpression { get; set; }
     public List<UsingArgument> Using { get; set; } = [];
@@ -543,7 +543,7 @@ public sealed partial class OpenStatement : Statement
 
 public sealed partial class FetchStatement : Statement
 {
-    public Expression Cursor { get; set; } = null!;
+    public required Expression Cursor { get; set; }
     public bool BulkCollect { get; set; }
     public List<Expression> Into { get; set; } = [];
     public Expression? Limit { get; set; }
@@ -551,12 +551,12 @@ public sealed partial class FetchStatement : Statement
 
 public sealed partial class CloseStatement : Statement
 {
-    public Expression Cursor { get; set; } = null!;
+    public required Expression Cursor { get; set; }
 }
 
 public sealed partial class ExecuteImmediateStatement : Statement
 {
-    public Expression Sql { get; set; } = null!;
+    public required Expression Sql { get; set; }
     public bool BulkCollect { get; set; }
     public List<Expression> Into { get; set; } = [];
     public List<UsingArgument> Using { get; set; } = [];
@@ -566,7 +566,7 @@ public sealed partial class ExecuteImmediateStatement : Statement
 
 public sealed partial class ForallStatement : Statement
 {
-    public Identifier Index { get; set; } = null!;
+    public required Identifier Index { get; set; }
     public Expression? Lower { get; set; }
     public Expression? Upper { get; set; }
     public Expression? IndicesOf { get; set; }
@@ -574,12 +574,12 @@ public sealed partial class ForallStatement : Statement
     public Expression? BetweenLow { get; set; }
     public Expression? BetweenHigh { get; set; }
     public bool SaveExceptions { get; set; }
-    public Statement Body { get; set; } = null!;
+    public required Statement Body { get; set; }
 }
 
 public sealed partial class PipeRowStatement : Statement
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
 }
 
 public enum JavaObjectKind { Source, Class, Resource }
@@ -611,7 +611,7 @@ public sealed partial class CreateLibraryStatement : Statement
     public EditionableKind? Editionable { get; set; }
     public SharingKind? Sharing { get; set; }
     public List<Identifier> Name { get; set; } = [];
-    public Expression Path { get; set; } = null!;
+    public required Expression Path { get; set; }
     public Expression? Agent { get; set; }
     public Identifier? Credential { get; set; }
 }

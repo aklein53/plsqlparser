@@ -105,9 +105,9 @@ public sealed partial class SqlParser
                 case "TABLESPACE":
                 {
                     Next();
-                    var ta = new TablespaceAttribute { Default = AcceptKw("DEFAULT") };
-                    ta.Name = ParseIdentifier();
-                    return Fin(ta, s);
+                    var isDefault = AcceptKw("DEFAULT");
+                    var taName = ParseIdentifier();
+                    return Fin(new TablespaceAttribute { Default = isDefault, Name = taName }, s);
                 }
                 case "PCTFREE" or "PCTUSED" or "INITRANS" or "MAXTRANS" or "PCTTHRESHOLD":
                 {

@@ -30,7 +30,7 @@ public sealed partial class RollbackStatement : Statement
 
 public sealed partial class SavepointStatement : Statement
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
 }
 
 public enum TransactionAccess { ReadOnly, ReadWrite }
@@ -53,7 +53,7 @@ public sealed partial class SetConstraintsStatement : Statement
 
 public sealed partial class RoleSpec : SqlNode
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public Expression? IdentifiedBy { get; set; }
 }
 
@@ -86,12 +86,12 @@ public sealed partial class AlterSessionStatement : Statement
 public sealed partial class SessionSetting : SqlNode
 {
     public List<Identifier> Name { get; set; } = [];
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
 }
 
 public sealed partial class CallStatement : Statement
 {
-    public Expression Routine { get; set; } = null!;
+    public required Expression Routine { get; set; }
     public Expression? Into { get; set; }
 }
 
@@ -99,7 +99,7 @@ public sealed partial class ExplainPlanStatement : Statement
 {
     public Expression? StatementId { get; set; }
     public List<Identifier> IntoTable { get; set; } = [];
-    public Statement Statement { get; set; } = null!;
+    public required Statement Statement { get; set; }
 }
 
 public enum LockMode { RowShare, RowExclusive, ShareUpdate, Share, ShareRowExclusive, Exclusive }
@@ -201,7 +201,7 @@ public sealed partial class FlashbackTableStatement : Statement
 /// </summary>
 public sealed partial class ExecStatement : Statement
 {
-    public Statement Body { get; set; } = null!;
+    public required Statement Body { get; set; }
 }
 
 /// <summary>A SQL*Plus client command (SET, SPOOL, DEFINE, @script, PROMPT, REM, VARIABLE, WHENEVER, ...). Never sent to the server.</summary>
@@ -264,14 +264,14 @@ public sealed partial class UserClause : SqlNode
 public sealed partial class CreateUserStatement : Statement
 {
     public bool IfNotExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<UserClause> Clauses { get; set; } = [];
 }
 
 public sealed partial class AlterUserStatement : Statement
 {
     public bool IfExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<UserClause> Clauses { get; set; } = [];
 }
 
@@ -282,7 +282,7 @@ public enum RoleAuthentication { NotIdentified, Password, Package, External, Glo
 public sealed partial class CreateRoleStatement : Statement
 {
     public bool IfNotExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     /// <summary>NOT IDENTIFIED, IDENTIFIED BY/USING/EXTERNALLY/GLOBALLY, or null when absent.</summary>
     public RoleAuthentication? Authentication { get; set; }
     /// <summary>IDENTIFIED BY password. Printed as typed (passwords are case-sensitive even when unquoted).</summary>
@@ -295,7 +295,7 @@ public sealed partial class CreateRoleStatement : Statement
 public sealed partial class AlterRoleStatement : Statement
 {
     public bool IfExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public RoleAuthentication? Authentication { get; set; }
     public Identifier? Password { get; set; }
     public List<Identifier> Package { get; set; } = [];
@@ -313,7 +313,7 @@ public enum ProfileKeyword { Unlimited, Default, Null }
 /// </summary>
 public sealed partial class ProfileLimit : SqlNode
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public Expression? Value { get; set; }
     public ProfileKeyword? Keyword { get; set; }
     /// <summary>PASSWORD_VERIFY_FUNCTION [schema.]function.</summary>
@@ -323,7 +323,7 @@ public sealed partial class ProfileLimit : SqlNode
 public sealed partial class CreateProfileStatement : Statement
 {
     public bool IfNotExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<ProfileLimit> Limits { get; set; } = [];
     public GrantContainer? Container { get; set; }
 }
@@ -331,7 +331,7 @@ public sealed partial class CreateProfileStatement : Statement
 public sealed partial class AlterProfileStatement : Statement
 {
     public bool IfExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<ProfileLimit> Limits { get; set; } = [];
     public GrantContainer? Container { get; set; }
     /// <summary>ALTER PROFILE ... CASCADE: apply the new limits to users already assigned the profile.</summary>
@@ -344,10 +344,10 @@ public sealed partial class CreateDirectoryStatement : Statement
 {
     public bool OrReplace { get; set; }
     public bool IfNotExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public SharingKind? Sharing { get; set; }
     /// <summary>AS 'path'.</summary>
-    public Expression Path { get; set; } = null!;
+    public required Expression Path { get; set; }
 }
 
 public sealed partial class CreateDatabaseLinkStatement : Statement
@@ -378,7 +378,7 @@ public sealed partial class CreateContextStatement : Statement
 {
     public bool OrReplace { get; set; }
     public bool IfNotExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<Identifier> Package { get; set; } = [];
     public ContextInit? Initialized { get; set; }
     public bool AccessedGlobally { get; set; }
@@ -412,7 +412,7 @@ public sealed partial class CreateTablespaceStatement : Statement
     public bool? Bigfile { get; set; }
     public TablespaceType? Kind { get; set; }
     public bool IfNotExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     /// <summary>DATAFILE or TEMPFILE specs (one keyword per clause, comma-separated specs).</summary>
     public List<DatafileSpec> Files { get; set; } = [];
     /// <summary>LOGGING (true) or NOLOGGING (false).</summary>
@@ -457,7 +457,7 @@ public sealed partial class TablespaceAction : SqlNode
 public sealed partial class AlterTablespaceStatement : Statement
 {
     public bool IfExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<TablespaceAction> Actions { get; set; } = [];
 }
 
@@ -533,7 +533,7 @@ public sealed partial class AuditPolicyList : SqlNode
 public sealed partial class CreateAuditPolicyStatement : Statement
 {
     public bool IfNotExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<AuditPolicyList> Lists { get; set; } = [];
     /// <summary>WHEN 'condition' EVALUATE PER ...</summary>
     public Expression? Condition { get; set; }
@@ -545,7 +545,7 @@ public sealed partial class CreateAuditPolicyStatement : Statement
 public sealed partial class AlterAuditPolicyStatement : Statement
 {
     public bool IfExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<AuditPolicyList> Lists { get; set; } = [];
     public Expression? Condition { get; set; }
     public AuditEvaluation? Evaluate { get; set; }
@@ -620,7 +620,7 @@ public abstract partial class PhysicalAttribute : SqlNode { }
 
 public sealed partial class TablespaceAttribute : PhysicalAttribute
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public bool Default { get; set; }
 }
 
@@ -629,7 +629,7 @@ public enum NumericAttributeKind { PctFree, PctUsed, InitTrans, MaxTrans, PctThr
 public sealed partial class NumericAttribute : PhysicalAttribute
 {
     public NumericAttributeKind Kind { get; set; }
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
 }
 
 public sealed partial class StorageAttribute : PhysicalAttribute
@@ -747,7 +747,7 @@ public sealed partial class EncryptClause : SqlNode
 
 public sealed partial class ColumnDefinition : SqlNode
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public DataType? Type { get; set; }
     public Expression? Default { get; set; }
     public bool DefaultOnNull { get; set; }
@@ -806,13 +806,13 @@ public sealed partial class TableConstraint : SqlNode
 /// <summary>ANNOTATIONS (...) among the physical attributes of CREATE TABLE, CREATE INDEX, CREATE VIEW and CREATE MATERIALIZED VIEW.</summary>
 public sealed partial class AnnotationsAttribute : PhysicalAttribute
 {
-    public AnnotationsClause Clause { get; set; } = null!;
+    public required AnnotationsClause Clause { get; set; }
 }
 
 /// <summary>A column (or view column) with its own ANNOTATIONS clause: name [ANNOTATIONS (...)].</summary>
 public sealed partial class ViewColumn : SqlNode
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public AnnotationsClause? Annotations { get; set; }
 }
 
@@ -848,7 +848,7 @@ public sealed partial class CreateIndexStatement : Statement
 
 public sealed partial class IndexColumn : SqlNode
 {
-    public Expression Expression { get; set; } = null!;
+    public required Expression Expression { get; set; }
     public bool Descending { get; set; }
 }
 
@@ -883,7 +883,7 @@ public sealed partial class CreateViewStatement : Statement
     public RefreshClause? Refresh { get; set; }
     public bool? QueryRewrite { get; set; }
     public List<PhysicalAttribute> Attributes { get; set; } = [];
-    public SelectStatement Query { get; set; } = null!;
+    public required SelectStatement Query { get; set; }
     public bool ReadOnly { get; set; }
     public bool CheckOption { get; set; }
     public Identifier? CheckOptionConstraint { get; set; }
@@ -932,7 +932,7 @@ public sealed partial class AnnotationItem : SqlNode
     public AnnotationAction? Action { get; set; }
     public bool IfNotExists { get; set; }
     public bool IfExists { get; set; }
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public Expression? Value { get; set; }
 }
 
@@ -969,8 +969,8 @@ public sealed partial class GraphVertexTable : GraphElementTable
 
 public sealed partial class GraphEdgeTable : GraphElementTable
 {
-    public GraphEdgeEndpoint Source { get; set; } = null!;
-    public GraphEdgeEndpoint Destination { get; set; } = null!;
+    public required GraphEdgeEndpoint Source { get; set; }
+    public required GraphEdgeEndpoint Destination { get; set; }
 }
 
 /// <summary>SOURCE/DESTINATION of an edge table: [KEY (edge cols) REFERENCES] vertex_table [(vertex cols)].</summary>
@@ -984,7 +984,7 @@ public sealed partial class GraphEdgeEndpoint : SqlNode
 /// <summary>LABEL name with an optional PROPERTIES clause.</summary>
 public sealed partial class GraphElementLabel : SqlNode
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public GraphPropertiesClause? Properties { get; set; }
 }
 
@@ -1001,7 +1001,7 @@ public sealed partial class GraphPropertiesClause : SqlNode
 /// <summary>One property: column [AS name].</summary>
 public sealed partial class GraphProperty : SqlNode
 {
-    public Identifier Property { get; set; } = null!;
+    public required Identifier Property { get; set; }
     public Identifier? Alias { get; set; }
 }
 

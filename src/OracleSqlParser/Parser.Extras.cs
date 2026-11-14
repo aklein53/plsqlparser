@@ -24,23 +24,24 @@ public sealed partial class SqlParser
     private SearchClause ParseSearchClause()
     {
         var s = Next(); // SEARCH
-        var sc = new SearchClause { DepthFirst = Next().Value == "DEPTH" };
+        var depthFirst = Next().Value == "DEPTH";
         ExpectKw("FIRST"); ExpectKw("BY");
-        sc.By = ParseOrderByList();
+        var by = ParseOrderByList();
         ExpectKw("SET");
-        sc.SetColumn = ParseIdentifier();
-        return Fin(sc, s);
+        var setColumn = ParseIdentifier();
+        return Fin(new SearchClause { DepthFirst = depthFirst, By = by, SetColumn = setColumn }, s);
     }
 
     private CycleClause ParseCycleClause()
     {
         var s = Next(); // CYCLE
-        var cc = new CycleClause { Columns = ParseIdentifierList() };
+        var columns = ParseIdentifierList();
         ExpectKw("SET");
-        cc.SetColumn = ParseIdentifier();
-        if (AcceptKw("TO")) cc.CycleValue = ParseExpr();
-        if (AcceptKw("DEFAULT")) cc.DefaultValue = ParseExpr();
-        return Fin(cc, s);
+        var setColumn = ParseIdentifier();
+        Expression? cycleValue = null, defaultValue = null;
+        if (AcceptKw("TO")) cycleValue = ParseExpr();
+        if (AcceptKw("DEFAULT")) defaultValue = ParseExpr();
+        return Fin(new CycleClause { Columns = columns, SetColumn = setColumn, CycleValue = cycleValue, DefaultValue = defaultValue }, s);
     }
 
     // ---- table modifiers: sample, flashback, pivot, match_recognize ----
@@ -78,27 +79,31 @@ public sealed partial class SqlParser
     private SampleClause ParseSample()
     {
         var s = Next(); // SAMPLE
-        var sc = new SampleClause { Block = AcceptKw("BLOCK") };
+        var block = AcceptKw("BLOCK");
         ExpectOp("(");
-        sc.Percent = ParseAdditive();
+        var percent = ParseAdditive();
         ExpectOp(")");
-        if (AcceptKw("SEED")) { ExpectOp("("); sc.Seed = ParseAdditive(); ExpectOp(")"); }
-        return Fin(sc, s);
+        Expression? seed = null;
+        if (AcceptKw("SEED")) { ExpectOp("("); seed = ParseAdditive(); ExpectOp(")"); }
+        return Fin(new SampleClause { Block = block, Percent = percent, Seed = seed }, s);
     }
 
     private FlashbackClause ParseFlashback()
     {
         var s = Cur;
-        var fb = new FlashbackClause();
-        if (IsKw("VERSIONS")) { Next(); Next(); fb.Mode = FlashbackMode.VersionsBetween; }
-        else { Next(); Next(); fb.Mode = FlashbackMode.AsOf; }
-        if (IsKw("PERIOD")) { Next(); ExpectKw("FOR"); fb.Unit = FlashbackUnit.Period; fb.Period = ParseIdentifier(); }
-        else if (AcceptKw("SCN")) fb.Unit = FlashbackUnit.Scn;
-        else if (AcceptKw("TIMESTAMP")) fb.Unit = FlashbackUnit.Timestamp;
+        FlashbackMode mode;
+        if (IsKw("VERSIONS")) { Next(); Next(); mode = FlashbackMode.VersionsBetween; }
+        else { Next(); Next(); mode = FlashbackMode.AsOf; }
+        FlashbackUnit unit;
+        Identifier? period = null;
+        if (IsKw("PERIOD")) { Next(); ExpectKw("FOR"); unit = FlashbackUnit.Period; period = ParseIdentifier(); }
+        else if (AcceptKw("SCN")) unit = FlashbackUnit.Scn;
+        else if (AcceptKw("TIMESTAMP")) unit = FlashbackUnit.Timestamp;
         else throw FailExpected($"Expected SCN or TIMESTAMP but found {Describe(Cur)}", "SCN", "TIMESTAMP");
-        fb.Value = ParseAdditive();
-        if (fb.Mode == FlashbackMode.VersionsBetween) { ExpectKw("AND"); fb.ToValue = ParseAdditive(); }
-        return Fin(fb, s);
+        var value = ParseAdditive();
+        Expression? toValue = null;
+        if (mode == FlashbackMode.VersionsBetween) { ExpectKw("AND"); toValue = ParseAdditive(); }
+        return Fin(new FlashbackClause { Mode = mode, Unit = unit, Period = period, Value = value, ToValue = toValue }, s);
     }
 
     private TableReference ParsePivot(TableReference source, Token start)
@@ -172,39 +177,52 @@ public sealed partial class SqlParser
     private TableReference ParseMatchRecognize(TableReference source, Token start)
     {
         Next(); Next(); // MATCH_RECOGNIZE (
-        var mr = new MatchRecognizeTable { Source = source };
-        if (IsKw("PARTITION")) { Next(); ExpectKw("BY"); do mr.PartitionBy.Add(ParseExpr()); while (AcceptOp(",")); }
-        if (IsKw("ORDER")) { Next(); ExpectKw("BY"); mr.OrderBy = ParseOrderByList(); }
-        if (AcceptKw("MEASURES")) do mr.Measures.Add(ParseExpressionSelectItem()); while (AcceptOp(","));
-        if (AcceptKw("ONE")) { ExpectKw("ROW"); ExpectKw("PER"); ExpectKw("MATCH"); mr.RowsPerMatch = RowsPerMatch.OneRow; }
+        // Pattern is required and parsed after the header clauses, so those are collected in locals and the node is built after PATTERN.
+        var partitionBy = new List<Expression>();
+        var orderBy = new List<OrderByItem>();
+        var measures = new List<ExpressionSelectItem>();
+        RowsPerMatch? rowsPerMatch = null;
+        AllRowsMode? allRowsMode = null;
+        SkipKind? skip = null;
+        Identifier? skipVariable = null;
+        bool seek = false;
+        if (IsKw("PARTITION")) { Next(); ExpectKw("BY"); do partitionBy.Add(ParseExpr()); while (AcceptOp(",")); }
+        if (IsKw("ORDER")) { Next(); ExpectKw("BY"); orderBy = ParseOrderByList(); }
+        if (AcceptKw("MEASURES")) do measures.Add(ParseExpressionSelectItem()); while (AcceptOp(","));
+        if (AcceptKw("ONE")) { ExpectKw("ROW"); ExpectKw("PER"); ExpectKw("MATCH"); rowsPerMatch = RowsPerMatch.OneRow; }
         else if (IsKw("ALL") && IsKwAt(1, "ROWS"))
         {
             Next(); Next(); ExpectKw("PER"); ExpectKw("MATCH");
-            mr.RowsPerMatch = RowsPerMatch.AllRows;
-            if (AcceptKw("SHOW")) { ExpectKw("EMPTY"); ExpectKw("MATCHES"); mr.AllRowsMode = AllRowsMode.ShowEmptyMatches; }
-            else if (AcceptKw("OMIT")) { ExpectKw("EMPTY"); ExpectKw("MATCHES"); mr.AllRowsMode = AllRowsMode.OmitEmptyMatches; }
-            else if (IsKw("WITH") && IsKwAt(1, "UNMATCHED")) { Next(); Next(); ExpectKw("ROWS"); mr.AllRowsMode = AllRowsMode.WithUnmatchedRows; }
+            rowsPerMatch = RowsPerMatch.AllRows;
+            if (AcceptKw("SHOW")) { ExpectKw("EMPTY"); ExpectKw("MATCHES"); allRowsMode = AllRowsMode.ShowEmptyMatches; }
+            else if (AcceptKw("OMIT")) { ExpectKw("EMPTY"); ExpectKw("MATCHES"); allRowsMode = AllRowsMode.OmitEmptyMatches; }
+            else if (IsKw("WITH") && IsKwAt(1, "UNMATCHED")) { Next(); Next(); ExpectKw("ROWS"); allRowsMode = AllRowsMode.WithUnmatchedRows; }
         }
         if (AcceptKw("AFTER"))
         {
             ExpectKw("MATCH"); ExpectKw("SKIP");
-            if (AcceptKw("PAST")) { ExpectKw("LAST"); ExpectKw("ROW"); mr.Skip = SkipKind.PastLastRow; }
+            if (AcceptKw("PAST")) { ExpectKw("LAST"); ExpectKw("ROW"); skip = SkipKind.PastLastRow; }
             else
             {
                 ExpectKw("TO");
-                if (AcceptKw("NEXT")) { ExpectKw("ROW"); mr.Skip = SkipKind.ToNextRow; }
+                if (AcceptKw("NEXT")) { ExpectKw("ROW"); skip = SkipKind.ToNextRow; }
                 else
                 {
-                    mr.Skip = AcceptKw("LAST") ? SkipKind.ToLast : (AcceptKw("FIRST") ? SkipKind.ToFirst : SkipKind.ToFirst);
-                    mr.SkipVariable = ParseIdentifier();
+                    skip = AcceptKw("LAST") ? SkipKind.ToLast : (AcceptKw("FIRST") ? SkipKind.ToFirst : SkipKind.ToFirst);
+                    skipVariable = ParseIdentifier();
                 }
             }
         }
-        if (AcceptKw("SEEK")) mr.Seek = true; else AcceptKw("INITIAL");
+        if (AcceptKw("SEEK")) seek = true; else AcceptKw("INITIAL");
         ExpectKw("PATTERN");
         ExpectOp("(");
-        mr.Pattern = ParsePatternAlternation();
+        var pattern = ParsePatternAlternation();
         ExpectOp(")");
+        var mr = new MatchRecognizeTable
+        {
+            Source = source, PartitionBy = partitionBy, OrderBy = orderBy, Measures = measures, RowsPerMatch = rowsPerMatch,
+            AllRowsMode = allRowsMode, Skip = skip, SkipVariable = skipVariable, Seek = seek, Pattern = pattern,
+        };
         if (AcceptKw("SUBSET"))
         {
             do
@@ -222,10 +240,10 @@ public sealed partial class SqlParser
         do
         {
             var s = Cur;
-            var pd = new PatternDefine { Variable = ParseIdentifier() };
+            var variable = ParseIdentifier();
             ExpectKw("AS");
-            pd.Condition = ParseExpr();
-            mr.Define.Add(Fin(pd, s));
+            var condition = ParseExpr();
+            mr.Define.Add(Fin(new PatternDefine { Variable = variable, Condition = condition }, s));
         } while (AcceptOp(","));
         ExpectOp(")");
         return Fin(mr, start);
@@ -315,42 +333,46 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         Next(); Next();
-        var xt = new XmlTable();
+        // XQuery is required and follows the namespace list, so the parts are collected in locals and the node is built last.
+        var namespaces = new List<XmlNamespace>();
         if (IsKw("XMLNAMESPACES"))
         {
             Next(); ExpectOp("(");
             do
             {
                 var s = Cur;
-                var ns = new XmlNamespace();
-                if (AcceptKw("DEFAULT")) { ns.IsDefault = true; ns.Uri = ParsePrimary(); }
+                if (AcceptKw("DEFAULT")) namespaces.Add(Fin(new XmlNamespace { IsDefault = true, Uri = ParsePrimary() }, s));
                 else
                 {
-                    ns.Uri = ParsePrimary();
+                    var uri = ParsePrimary();
                     ExpectKw("AS");
-                    ns.Alias = ParseIdentifier();
+                    var alias = ParseIdentifier();
+                    namespaces.Add(Fin(new XmlNamespace { Uri = uri, Alias = alias }, s));
                 }
-                xt.Namespaces.Add(Fin(ns, s));
             } while (AcceptOp(","));
             ExpectOp(")");
             ExpectOp(",");
         }
-        xt.XQuery = ParseExpr();
-        if (IsKw("PASSING")) xt.Passing = (PassingClause)ParseFunctionClause();
+        var xQuery = ParseExpr();
+        PassingClause? passing = null;
+        if (IsKw("PASSING")) passing = (PassingClause)ParseFunctionClause();
+        var columns = new List<PathColumn>();
         if (AcceptKw("COLUMNS"))
-            do xt.Columns.Add(ParsePathColumn()); while (AcceptOp(","));
+            do columns.Add(ParsePathColumn()); while (AcceptOp(","));
         ExpectOp(")");
-        return Fin(xt, start);
+        return Fin(new XmlTable { Namespaces = namespaces, XQuery = xQuery, Passing = passing, Columns = columns }, start);
     }
 
     private TableReference ParseJsonTable()
     {
         var start = Cur;
         Next(); Next();
-        var jt = new JsonTable { Input = ParseExpr() };
-        if (IsKw("FORMAT")) jt.InputFormat = (FormatClause)ParseFunctionClause();
+        var input = ParseExpr();
+        FormatClause? inputFormat = null;
+        if (IsKw("FORMAT")) inputFormat = (FormatClause)ParseFunctionClause();
         ExpectOp(",");
-        jt.Path = ParseExpr();
+        var path = ParseExpr();
+        var jt = new JsonTable { Input = input, InputFormat = inputFormat, Path = path };
         int prog124 = -1;
         while (!IsKw("COLUMNS") && Cur.Type != TokenType.EOF && Progress(ref prog124)) jt.Clauses.Add(ParseFunctionClause());
         ExpectKw("COLUMNS");
@@ -576,10 +598,11 @@ public sealed partial class SqlParser
         while (IsKw("REFERENCE") && Progress(ref prog126))
         {
             var rs = Next();
-            var rm = new ReferenceModel { Name = ParseIdentifier() };
+            var name = ParseIdentifier();
             ExpectKw("ON"); ExpectOp("(");
-            rm.Query = ParseSelectStatement();
+            var query = ParseSelectStatement();
             ExpectOp(")");
+            var rm = new ReferenceModel { Name = name, Query = query };
             ExpectKw("DIMENSION"); ExpectKw("BY");
             rm.DimensionBy = ParseModelItems();
             ExpectKw("MEASURES");
@@ -626,10 +649,12 @@ public sealed partial class SqlParser
     private ModelRule ParseModelRule()
     {
         var s = Cur;
-        var r = new ModelRule();
-        if (IsKw("UPDATE")) { Next(); r.Mode = RulesMode.Update; }
-        else if (IsKw("UPSERT")) { Next(); r.Mode = AcceptKw("ALL") ? RulesMode.UpsertAll : RulesMode.Upsert; }
-        r.Target = ParsePostfix();
+        // Target and Value are required; the node is built once both are parsed.
+        RulesMode? mode = null;
+        if (IsKw("UPDATE")) { Next(); mode = RulesMode.Update; }
+        else if (IsKw("UPSERT")) { Next(); mode = AcceptKw("ALL") ? RulesMode.UpsertAll : RulesMode.Upsert; }
+        var target = ParsePostfix();
+        var orderBy = new List<OrderByItem>();
         if (IsKw("ORDER") && IsKwAt(1, "BY"))
         {
             Next(); Next();
@@ -639,12 +664,12 @@ public sealed partial class SqlParser
                 var item = new OrderByItem { Expression = ParseAdditive() };
                 if (AcceptKw("DESC")) item.Descending = true; else AcceptKw("ASC");
                 if (AcceptKw("NULLS")) { if (AcceptKw("FIRST")) item.Nulls = NullsOrdering.First; else { ExpectKw("LAST"); item.Nulls = NullsOrdering.Last; } }
-                r.OrderBy.Add(Fin(item, os));
+                orderBy.Add(Fin(item, os));
             } while (AcceptOp(","));
         }
         ExpectOp("=");
-        r.Value = ParseExpr();
-        return Fin(r, s);
+        var value = ParseExpr();
+        return Fin(new ModelRule { Mode = mode, Target = target, OrderBy = orderBy, Value = value }, s);
     }
 
     private Expression ParseSubscripts(Expression target, Token start)
@@ -694,11 +719,14 @@ public sealed partial class SqlParser
 
     private Statement ParseMultiTableInsert(HintClause? hint, Token start)
     {
-        var st = new MultiTableInsertStatement { Hint = hint };
-        if (!AcceptKw("ALL") && AcceptKw("FIRST")) st.First = true;
+        // Query is required and is parsed last, so the branches are collected in locals and the node is built at the end.
+        var first = !AcceptKw("ALL") && AcceptKw("FIRST");
+        var conditional = false;
+        var branches = new List<MultiInsertBranch>();
+        MultiInsertBranch? elseBranch = null;
         if (IsKw("WHEN"))
         {
-            st.Conditional = true;
+            conditional = true;
             int prog127 = -1;
             while (IsKw("WHEN") && Progress(ref prog127))
             {
@@ -706,20 +734,21 @@ public sealed partial class SqlParser
                 var branch = new MultiInsertBranch { When = ParseExpr() };
                 ExpectKw("THEN");
                 branch.Targets = ParseInsertIntos();
-                st.Branches.Add(Fin(branch, bs));
+                branches.Add(Fin(branch, bs));
             }
             if (IsKw("ELSE"))
             {
                 var es = Next();
-                st.Else = Fin(new MultiInsertBranch { Targets = ParseInsertIntos() }, es);
+                elseBranch = Fin(new MultiInsertBranch { Targets = ParseInsertIntos() }, es);
             }
         }
         else
         {
             var bs = Cur;
-            st.Branches.Add(Fin(new MultiInsertBranch { Targets = ParseInsertIntos() }, bs));
+            branches.Add(Fin(new MultiInsertBranch { Targets = ParseInsertIntos() }, bs));
         }
-        st.Query = ParseSelectStatement();
+        var query = ParseSelectStatement();
+        var st = new MultiTableInsertStatement { Hint = hint, First = first, Conditional = conditional, Branches = branches, Else = elseBranch, Query = query };
         return Fin(st, start);
     }
 
@@ -764,19 +793,22 @@ public sealed partial class SqlParser
     private JsonMember ParseJsonMember()
     {
         var s = Cur;
-        var m = new JsonMember { Key = ParsePrimary() };
+        // Key and Value are required; the node is built once the value is parsed, and the trailing options follow.
+        var key = ParsePrimary();
+        Expression value;
         if (Cur.Type == TokenType.Bind && Cur.Text.Length > 1 && char.IsDigit(Cur.Text[1]))
         {
             // 'key':1 with no space lexes ':1' as a bind; here it is a colon and a number (as in JSON_OBJECT)
             var bt = Next();
-            m.Value = Fin(new Literal { Kind = LiteralKind.Number, Value = bt.Text[1..] }, bt);
+            value = Fin(new Literal { Kind = LiteralKind.Number, Value = bt.Text[1..] }, bt);
         }
         else
         {
             if (Cur.Text != ":") throw FailExpected($"Expected ':' in a JSON member but found {Describe(Cur)}", ":");
             Next();
-            m.Value = IsOp("[") ? ParseJsonArray(keyword: false) : ParseExpr();
+            value = IsOp("[") ? ParseJsonArray(keyword: false) : ParseExpr();
         }
+        var m = new JsonMember { Key = key, Value = value };
         if (IsKw("ABSENT") && IsKwAt(1, "ON") && IsKwAt(2, "NULL")) { Next(); Next(); Next(); m.NullHandling = JsonNullHandling.AbsentOnNull; }
         else if (IsKw("NULL") && IsKwAt(1, "ON") && IsKwAt(2, "NULL")) { Next(); Next(); Next(); m.NullHandling = JsonNullHandling.NullOnNull; }
         if (AcceptKw("RETURNING")) m.Returning = ParseDataType();

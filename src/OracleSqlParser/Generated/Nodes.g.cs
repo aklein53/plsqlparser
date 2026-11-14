@@ -3770,7 +3770,7 @@ public partial class CreateDualityViewStatement
     internal override void RewriteChildren(SqlNodeRewriter rewriter)
     {
         SqlNodeRewriter.RewriteList(rewriter, Name, "CreateDualityViewStatement.Name");
-        Query = SqlNodeRewriter.RewriteRequired(rewriter, Query, "CreateDualityViewStatement.Query");
+        Query = SqlNodeRewriter.RewriteOptional(rewriter, Query, "CreateDualityViewStatement.Query");
         SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "CreateDualityViewStatement.OtherClauses");
     }
 
@@ -3786,7 +3786,7 @@ public partial class CreateDualityViewStatement
             OrReplace = OrReplace,
             Relational = Relational,
             Name = CloneList(Name),
-            Query = CloneChild(Query)!,
+            Query = CloneChild(Query),
             OtherClauses = CloneList(OtherClauses),
             Labels = CloneStrings(Labels),
         };

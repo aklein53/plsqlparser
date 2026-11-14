@@ -155,9 +155,9 @@ public sealed partial class SqlParser
             do
             {
                 var s = Cur;
-                var ot = new IsOfType { Only = AcceptKw("ONLY") };
-                ot.Type = ParseDataType();
-                ie.OfTypes.Add(Fin(ot, s));
+                var only = AcceptKw("ONLY");
+                var dataType = ParseDataType();
+                ie.OfTypes.Add(Fin(new IsOfType { Only = only, Type = dataType }, s));
             } while (AcceptOp(","));
             ExpectOp(")");
         }
@@ -548,62 +548,68 @@ public sealed partial class SqlParser
 
     private Argument ParseArgument()
     {
+        // Value is required, so each argument is built once its value is parsed; the optional parts are collected in locals.
         var a = Cur;
-        var arg = new Argument();
-        if (IsOp("*")) { Next(); arg.Value = Fin(new StarExpression(), a); return Fin(arg, a); }
+        if (IsOp("*")) { Next(); return Fin(new Argument { Value = Fin(new StarExpression(), a) }, a); }
         // PL/SQL qualified expression choices (OTHERS and the iterator cannot be a FunctionCall argument name)
         if (IsKw("OTHERS") && Cur.Type == TokenType.Identifier && IsOpAt(1, "=>"))
         {
             Next(); Next();
-            arg.Value = Fin(new QualifiedExpression { Others = true, Value = ParseExpr() }, a);
-            return Fin(arg, a);
+            var others = Fin(new QualifiedExpression { Others = true, Value = ParseExpr() }, a);
+            return Fin(new Argument { Value = others }, a);
         }
         if (IsKw("FOR") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && IsKwAt(2, "IN"))
         {
             RequireVersion(OracleVersion.Oracle21, "qualified-expression FOR iterator", Cur);
             var fs = Next();
-            var it = new IndexIterator { Variable = ParseIdentifier() };
+            var variable = ParseIdentifier();
             ExpectKw("IN");
-            it.Low = ParseAdditive();
+            var low = ParseAdditive();
             ExpectOp("..");
-            it.High = ParseAdditive();
+            var high = ParseAdditive();
+            var it = new IndexIterator { Variable = variable, Low = low, High = high };
             ExpectOp("=>");
-            arg.Value = Fin(new QualifiedExpression { Iterator = Fin(it, fs), Value = ParseExpr() }, a);
-            return Fin(arg, a);
+            var iterated = Fin(new QualifiedExpression { Iterator = Fin(it, fs), Value = ParseExpr() }, a);
+            return Fin(new Argument { Value = iterated }, a);
         }
+        Identifier? argName = null;
+        ArgumentKeyword? keyword = null;
         if (Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier && IsOpAt(1, "=>"))
         {
-            arg.Name = ParseIdentifier();
+            argName = ParseIdentifier();
             Next();
         }
         if (Cur.Type == TokenType.Identifier && LeadingArgWords.Contains(Cur.Value) &&
             PeekTok().Type is TokenType.Identifier or TokenType.String or TokenType.QuotedIdentifier or TokenType.Number or TokenType.Bind)
         {
-            arg.Keyword = Next().Value switch
+            keyword = Next().Value switch
             {
                 "NAME" => ArgumentKeyword.Name, "EVALNAME" => ArgumentKeyword.EvalName, "DOCUMENT" => ArgumentKeyword.Document,
                 "CONTENT" => ArgumentKeyword.Content, _ => ArgumentKeyword.Key,
             };
         }
-        arg.Value = ParseExpr();
-        if (IsOp("=>") && arg.Name == null)
+        var value = ParseExpr();
+        if (IsOp("=>") && argName == null)
         {
             // index => value with a non-name index: a PL/SQL qualified expression
             Next();
-            arg.Value = Fin(new QualifiedExpression { Choice = arg.Value, Value = ParseExpr() }, a);
-            return Fin(arg, a);
+            var choice = Fin(new QualifiedExpression { Choice = value, Value = ParseExpr() }, a);
+            return Fin(new Argument { Keyword = keyword, Value = choice }, a);
         }
-        if (AcceptKw("VALUE")) arg.MappedValue = ParseExpr();
-        else if (Cur.Text == ":" && Cur.Type is TokenType.Operator or TokenType.Bind) { Next(); arg.MappedValue = ParseExpr(); } // 'key' : value
+        Expression? mappedValue = null;
+        FormatClause? format = null;
+        Identifier? alias = null;
+        if (AcceptKw("VALUE")) mappedValue = ParseExpr();
+        else if (Cur.Text == ":" && Cur.Type is TokenType.Operator or TokenType.Bind) { Next(); mappedValue = ParseExpr(); } // 'key' : value
         else if (_jsonObjectArgs && Cur.Type == TokenType.Bind && Cur.Text.Length > 1 && char.IsDigit(Cur.Text[1]))
         {
             // 'key':1 with no space lexes ':1' as a bind; in this position it is a colon and a number
             var bt = Next();
-            arg.MappedValue = Fin(new Literal { Kind = LiteralKind.Number, Value = bt.Text[1..] }, bt);
+            mappedValue = Fin(new Literal { Kind = LiteralKind.Number, Value = bt.Text[1..] }, bt);
         }
-        if (IsKw("FORMAT") && IsKwAt(1, "JSON")) arg.Format = (FormatClause)ParseFunctionClause();
-        if (IsKw("AS") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier) { Next(); arg.Alias = ParseIdentifier(); }
-        return Fin(arg, a);
+        if (IsKw("FORMAT") && IsKwAt(1, "JSON")) format = (FormatClause)ParseFunctionClause();
+        if (IsKw("AS") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier) { Next(); alias = ParseIdentifier(); }
+        return Fin(new Argument { Name = argName, Keyword = keyword, Value = value, MappedValue = mappedValue, Format = format, Alias = alias }, a);
     }
 
     private void ParseNullTreatment(FunctionCall fc)
@@ -836,15 +842,17 @@ public sealed partial class SqlParser
         if (IsKw("ROWS") || IsKw("RANGE") || IsKw("GROUPS"))
         {
             var fs = Cur;
-            var frame = new WindowFrame { Unit = Next().Value switch { "ROWS" => FrameUnit.Rows, "RANGE" => FrameUnit.Range, _ => FrameUnit.Groups } };
+            var unit = Next().Value switch { "ROWS" => FrameUnit.Rows, "RANGE" => FrameUnit.Range, _ => FrameUnit.Groups };
+            FrameBound startBound;
+            FrameBound? endBound = null;
             if (AcceptKw("BETWEEN"))
             {
-                frame.StartBound = ParseFrameBound();
+                startBound = ParseFrameBound();
                 ExpectKw("AND");
-                frame.EndBound = ParseFrameBound();
+                endBound = ParseFrameBound();
             }
-            else frame.StartBound = ParseFrameBound();
-            ws.Frame = Fin(frame, fs);
+            else startBound = ParseFrameBound();
+            ws.Frame = Fin(new WindowFrame { Unit = unit, StartBound = startBound, EndBound = endBound }, fs);
         }
         ExpectOp(")");
         return Fin(ws, start);
@@ -881,10 +889,10 @@ public sealed partial class SqlParser
         while (IsKw("WHEN") && Progress(ref prog118))
         {
             var ws = Next();
-            var w = new WhenClause { When = ParseExpr() };
+            var when = ParseExpr();
             ExpectKw("THEN");
-            w.Then = ParseExpr();
-            ce.Whens.Add(Fin(w, ws));
+            var then = ParseExpr();
+            ce.Whens.Add(Fin(new WhenClause { When = when, Then = then }, ws));
         }
         if (ce.Whens.Count == 0) throw FailExpected("Expected WHEN in CASE expression", "WHEN");
         if (AcceptKw("ELSE")) ce.Else = ParseExpr();
@@ -895,24 +903,26 @@ public sealed partial class SqlParser
     private Expression ParseCastLike()
     {
         var start = Cur;
-        var cast = new CastExpression
+        var kind = Next().Value switch
         {
-            Kind = Next().Value switch
-            {
-                "XMLCAST" => CastKind.XmlCast, "TREAT" => CastKind.Treat, "VALIDATE_CONVERSION" => CastKind.ValidateConversion,
-                "XMLSERIALIZE" => CastKind.XmlSerialize, _ => CastKind.Cast,
-            },
+            "XMLCAST" => CastKind.XmlCast, "TREAT" => CastKind.Treat, "VALIDATE_CONVERSION" => CastKind.ValidateConversion,
+            "XMLSERIALIZE" => CastKind.XmlSerialize, _ => CastKind.Cast,
         };
         ExpectOp("(");
-        if (cast.Kind == CastKind.XmlSerialize && (IsKw("DOCUMENT") || IsKw("CONTENT"))) cast.Clauses.Add(ParseFunctionClause());
-        if (IsKw("MULTISET") && IsOpAt(1, "(")) { Next(); cast.Multiset = true; cast.Value = ParsePostfix(); }
-        else cast.Value = ParseExpr();
+        // Value and Type are required, so the node is built once they are parsed; the trailing options are added to it below.
+        var clauses = new List<FunctionClause>();
+        if (kind == CastKind.XmlSerialize && (IsKw("DOCUMENT") || IsKw("CONTENT"))) clauses.Add(ParseFunctionClause());
+        bool multiset = false;
+        Expression value;
+        if (IsKw("MULTISET") && IsOpAt(1, "(")) { Next(); multiset = true; value = ParsePostfix(); }
+        else value = ParseExpr();
         ExpectKw("AS");
-        if (cast.Kind == CastKind.Treat) cast.Ref = AcceptKw("REF");
+        bool isRef = kind == CastKind.Treat && AcceptKw("REF");
         int versionMark = _versionErrors.Count;
-        cast.Type = ParseDataType();
+        var dataType = ParseDataType();
         // TREAT(... AS JSON) is not gated: its release is not confirmed, so a 19c target must not see a false error.
-        if (cast.Kind == CastKind.Treat) _versionErrors.RemoveRange(versionMark, _versionErrors.Count - versionMark);
+        if (kind == CastKind.Treat) _versionErrors.RemoveRange(versionMark, _versionErrors.Count - versionMark);
+        var cast = new CastExpression { Kind = kind, Multiset = multiset, Value = value, Ref = isRef, Type = dataType, Clauses = clauses };
         int prog119 = -1;
         while (!IsOp(")") && Cur.Type != TokenType.EOF && Progress(ref prog119))
         {
@@ -951,22 +961,25 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         Next(); Next();
-        var tr = new TrimExpression();
+        // Source is required; the trim specification and characters are optional.
+        TrimSpec? spec = null;
+        Expression? characters = null;
+        Expression source;
         if (IsKw("LEADING") || IsKw("TRAILING") || IsKw("BOTH"))
         {
-            tr.Spec = Next().Value switch { "LEADING" => TrimSpec.Leading, "TRAILING" => TrimSpec.Trailing, _ => TrimSpec.Both };
-            if (!IsKw("FROM")) tr.Characters = ParseExpr();
+            spec = Next().Value switch { "LEADING" => TrimSpec.Leading, "TRAILING" => TrimSpec.Trailing, _ => TrimSpec.Both };
+            if (!IsKw("FROM")) characters = ParseExpr();
             ExpectKw("FROM");
-            tr.Source = ParseExpr();
+            source = ParseExpr();
         }
         else
         {
             var first = ParseExpr();
-            if (AcceptKw("FROM")) { tr.Characters = first; tr.Source = ParseExpr(); }
-            else tr.Source = first;
+            if (AcceptKw("FROM")) { characters = first; source = ParseExpr(); }
+            else source = first;
         }
         ExpectOp(")");
-        return Fin(tr, start);
+        return Fin(new TrimExpression { Spec = spec, Characters = characters, Source = source }, start);
     }
 
     // ---- data types ----

@@ -36,9 +36,9 @@ public sealed partial class SqlParser
             while (!AtStatementEnd() && Progress(ref prog))
             {
                 var s = Cur;
-                var p = new SessionSetting { Name = ParseDottedName() };
+                var settingName = ParseDottedName();
                 ExpectOp("=");
-                p.Value = ParseExpr();
+                var p = new SessionSetting { Name = settingName, Value = ParseExpr() };
                 st.Parameters.Add(Fin(p, s));
             }
         }

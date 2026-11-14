@@ -501,30 +501,35 @@ public sealed partial class SqlParser
     private SelectStatement ParseSelectStatementCore()
     {
         var start = Cur;
-        var stmt = new SelectStatement();
+        // Body is required, so the statement is built once the WITH list and the body are parsed; the optional parts follow below.
+        var withDeclarations = new List<Declaration>();
+        var ctes = new List<CommonTableExpression>();
         if (AcceptKw("WITH"))
         {
             int prog104 = -1;
-            while ((IsKw("FUNCTION") || IsKw("PROCEDURE")) && Progress(ref prog104)) { stmt.WithDeclarations.Add(ParseSubprogram()); AcceptOp(";"); }
+            while ((IsKw("FUNCTION") || IsKw("PROCEDURE")) && Progress(ref prog104)) { withDeclarations.Add(ParseSubprogram()); AcceptOp(";"); }
             if (!(IsKw("SELECT") || IsOp("(")))
             do
             {
                 var cs = Cur;
-                var cte = new CommonTableExpression { Name = ParseIdentifier() };
-                if (AcceptOp("(")) { cte.Columns = ParseIdentifierList(); ExpectOp(")"); }
+                var cteName = ParseIdentifier();
+                var cteColumns = new List<Identifier>();
+                if (AcceptOp("(")) { cteColumns = ParseIdentifierList(); ExpectOp(")"); }
                 ExpectKw("AS");
                 ExpectOp("(");
-                cte.Query = ParseSelectStatement();
+                var cteQuery = ParseSelectStatement();
                 ExpectOp(")");
+                var cte = new CommonTableExpression { Name = cteName, Columns = cteColumns, Query = cteQuery };
                 if (IsKw("SEARCH") && (IsKwAt(1, "DEPTH") || IsKwAt(1, "BREADTH"))) cte.Search = ParseSearchClause();
                 if (IsKw("CYCLE")) cte.Cycle = ParseCycleClause();
-                stmt.With.Add(Fin(cte, cs));
+                ctes.Add(Fin(cte, cs));
             } while (AcceptOp(","));
         }
 
         // A bare VALUES list is a query body only in a CTE here (`WITH x AS (VALUES ...)`); elsewhere it is a table constructor.
         if (IsKw("VALUES")) RequireVersion(OracleVersion.Oracle23, "VALUES table constructor", Cur);
-        stmt.Body = IsKw("VALUES") ? ParseValuesQuery() : ParseQueryExpression();
+        var body = IsKw("VALUES") ? ParseValuesQuery() : ParseQueryExpression();
+        var stmt = new SelectStatement { With = ctes, WithDeclarations = withDeclarations, Body = body };
 
         if (IsKw("ORDER"))
         {
@@ -783,8 +788,8 @@ public sealed partial class SqlParser
             else if (leftPartition.Count > 0) throw FailExpected("Expected an outer join after PARTITION BY", "an outer join");
             else break;
 
-            var join = new JoinTable { Left = left, Kind = kind, Natural = natural, LeftPartitionBy = leftPartition };
-            join.Right = ParseTablePrimary();
+            var right = ParseTablePrimary();
+            var join = new JoinTable { Left = left, Right = right, Kind = kind, Natural = natural, LeftPartitionBy = leftPartition };
             if (IsKw("PARTITION") && IsKwAt(1, "BY")) { Next(); Next(); join.RightPartitionBy = ParsePartitionByList(); }
             // Oracle: a partitioned outer join is a LEFT or RIGHT join (never FULL), natural or not, on one side only.
             if (join.LeftPartitionBy.Count > 0 || join.RightPartitionBy.Count > 0)
@@ -900,11 +905,12 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         ExpectKw("INSERT");
-        var st = new InsertStatement();
-        if (Cur.Type == TokenType.Hint) st.Hint = ParseHint(Next());
-        if (IsKw("ALL") || IsKw("FIRST") || IsKw("WHEN")) return ParseMultiTableInsert(st.Hint, start);
+        HintClause? hint = null;
+        if (Cur.Type == TokenType.Hint) hint = ParseHint(Next());
+        if (IsKw("ALL") || IsKw("FIRST") || IsKw("WHEN")) return ParseMultiTableInsert(hint, start);
         ExpectKw("INTO");
-        st.Target = ParseTablePrimary();
+        var target = ParseTablePrimary();
+        var st = new InsertStatement { Hint = hint, Target = target };
         if (IsOp("(") && !LooksLikeQueryAfterParen())
         {
             Next(); st.Columns = ParseIdentifierList(); ExpectOp(")");
@@ -936,9 +942,10 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         ExpectKw("UPDATE");
-        var st = new UpdateStatement();
-        if (Cur.Type == TokenType.Hint) st.Hint = ParseHint(Next());
-        st.Target = ParseTablePrimary();
+        HintClause? hint = null;
+        if (Cur.Type == TokenType.Hint) hint = ParseHint(Next());
+        var target = ParseTablePrimary();
+        var st = new UpdateStatement { Hint = hint, Target = target };
         ExpectKw("SET");
         st.Set = ParseSetClauses();
         if (AcceptVersioned("FROM", OracleVersion.Oracle23, "UPDATE ... FROM")) { do st.From.Add(ParseJoinedTable()); while (AcceptOp(",")); }
@@ -953,24 +960,23 @@ public sealed partial class SqlParser
         do
         {
             var s = Cur;
-            var sc = new SetClause();
             if (IsKw("ROW") && IsOpAt(1, "="))
             {
                 Next(); Next();
-                sc.Row = true;
-                sc.Value = ParseExpr();
-                list.Add(Fin(sc, s));
+                var rowValue = ParseExpr();
+                list.Add(Fin(new SetClause { Row = true, Value = rowValue }, s));
                 continue;
             }
+            var columns = new List<ColumnReference>();
             if (AcceptOp("("))
             {
-                do sc.Columns.Add(ParseColumnReferenceOnly()); while (AcceptOp(","));
+                do columns.Add(ParseColumnReferenceOnly()); while (AcceptOp(","));
                 ExpectOp(")");
             }
-            else sc.Columns.Add(ParseColumnReferenceOnly());
+            else columns.Add(ParseColumnReferenceOnly());
             ExpectOp("=");
-            sc.Value = ParseExpr();
-            list.Add(Fin(sc, s));
+            var value = ParseExpr();
+            list.Add(Fin(new SetClause { Columns = columns, Value = value }, s));
         } while (AcceptOp(","));
         return list;
     }
@@ -979,10 +985,11 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         ExpectKw("DELETE");
-        var st = new DeleteStatement();
-        if (Cur.Type == TokenType.Hint) st.Hint = ParseHint(Next());
+        HintClause? hint = null;
+        if (Cur.Type == TokenType.Hint) hint = ParseHint(Next());
         AcceptKw("FROM");
-        st.Target = ParseTablePrimary();
+        var target = ParseTablePrimary();
+        var st = new DeleteStatement { Hint = hint, Target = target };
         if (AcceptVersioned("FROM", OracleVersion.Oracle23, "DELETE ... FROM")) { do st.From.Add(ParseJoinedTable()); while (AcceptOp(",")); }
         if (AcceptKw("WHERE")) st.Where = ParseWhereCondition();
         ParseDmlTail(st);
@@ -1019,17 +1026,17 @@ public sealed partial class SqlParser
     private ReturningItem ParseReturningItem()
     {
         var s = Cur;
-        var item = new ReturningItem();
+        ReturningImage? image = null;
         var next = PeekTok();
         bool nextStartsItem = next.Type == TokenType.QuotedIdentifier || (next.Type == TokenType.Identifier && !Reserved.Contains(next.Value));
         if ((IsKw("OLD") || IsKw("NEW")) && nextStartsItem)
         {
             RequireVersion(OracleVersion.Oracle23, "RETURNING OLD/NEW", Cur);
-            item.Image = IsKw("OLD") ? ReturningImage.Old : ReturningImage.New;
+            image = IsKw("OLD") ? ReturningImage.Old : ReturningImage.New;
             Next();
         }
-        item.Expression = ParseExpr();
-        return Fin(item, s);
+        var expression = ParseExpr();
+        return Fin(new ReturningItem { Image = image, Expression = expression }, s);
     }
 
     /// <summary>LOG ERRORS [INTO t] [('tag')] [REJECT LIMIT n | UNLIMITED]; also the last clause of MERGE.</summary>
@@ -1050,14 +1057,15 @@ public sealed partial class SqlParser
     {
         var start = Cur;
         ExpectKw("MERGE");
-        var st = new MergeStatement();
-        if (Cur.Type == TokenType.Hint) st.Hint = ParseHint(Next());
+        HintClause? hint = null;
+        if (Cur.Type == TokenType.Hint) hint = ParseHint(Next());
         ExpectKw("INTO");
-        st.Target = ParseTablePrimary();
+        var target = ParseTablePrimary();
         ExpectKw("USING");
-        st.Source = ParseTablePrimary();
+        var source = ParseTablePrimary();
         ExpectKw("ON");
-        st.On = ParseExpr();
+        var on = ParseExpr();
+        var st = new MergeStatement { Hint = hint, Target = target, Source = source, On = on };
         int prog105 = -1;
         while (IsKw("WHEN") && Progress(ref prog105))
         {

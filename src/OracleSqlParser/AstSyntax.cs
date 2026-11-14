@@ -139,7 +139,7 @@ public sealed partial class ValueClause : FunctionClause
 /// <summary>TRANSLATE(x USING NCHAR_CS) / CHR(n USING NCHAR_CS).</summary>
 public sealed partial class UsingCharsetClause : FunctionClause
 {
-    public Identifier Charset { get; set; } = null!;
+    public required Identifier Charset { get; set; }
 }
 
 /// <summary>PREDICTION(m USING a, b) / FEATURE_VALUE(... USING *).</summary>
@@ -153,7 +153,7 @@ public enum JsonTransformOp { Set, Insert, Replace, Append, Prepend, Remove, Kee
 public sealed partial class JsonTransformOperation : SqlNode
 {
     public JsonTransformOp Op { get; set; }
-    public Expression Path { get; set; } = null!;
+    public required Expression Path { get; set; }
     /// <summary>SET/INSERT/... value, or RENAME ... WITH new_name.</summary>
     public Expression? Value { get; set; }
     public FormatClause? Format { get; set; }

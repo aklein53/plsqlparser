@@ -33,7 +33,7 @@ public class TokenIndexTests
     [Fact]
     public void NodeBuiltInCode_HasNoTokenIndexes()
     {
-        var select = new SelectStatement();
+        var select = new SelectStatement { Body = new QuerySpecification() };
         Assert.Equal(-1, select.FirstTokenIndex);
         Assert.Equal(-1, select.LastTokenIndex);
     }

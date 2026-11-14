@@ -175,7 +175,7 @@ public sealed partial class ReturningItem : SqlNode
 {
     /// <summary>Null when neither OLD nor NEW is written: the value after the change is returned.</summary>
     public ReturningImage? Image { get; set; }
-    public Expression Expression { get; set; } = null!;
+    public required Expression Expression { get; set; }
 }
 
 public enum ReturningImage { Old, New }
@@ -192,7 +192,7 @@ public sealed partial class ErrorLogging : SqlNode
 public sealed partial class SelectStatement : Statement
 {
     public List<CommonTableExpression> With { get; set; } = [];
-    public QueryExpression Body { get; set; } = null!;
+    public required QueryExpression Body { get; set; }
     public bool OrderSiblings { get; set; }
     public List<OrderByItem> OrderBy { get; set; } = [];
     public Expression? Offset { get; set; }
@@ -204,9 +204,9 @@ public sealed partial class SelectStatement : Statement
 
 public sealed partial class CommonTableExpression : SqlNode
 {
-    public Identifier Name { get; set; } = null!;
+    public required Identifier Name { get; set; }
     public List<Identifier> Columns { get; set; } = [];
-    public SelectStatement Query { get; set; } = null!;
+    public required SelectStatement Query { get; set; }
     public SearchClause? Search { get; set; }
     public CycleClause? Cycle { get; set; }
 }
@@ -215,13 +215,13 @@ public sealed partial class SearchClause : SqlNode
 {
     public bool DepthFirst { get; set; }
     public List<OrderByItem> By { get; set; } = [];
-    public Identifier SetColumn { get; set; } = null!;
+    public required Identifier SetColumn { get; set; }
 }
 
 public sealed partial class CycleClause : SqlNode
 {
     public List<Identifier> Columns { get; set; } = [];
-    public Identifier SetColumn { get; set; } = null!;
+    public required Identifier SetColumn { get; set; }
     public Expression? CycleValue { get; set; }
     public Expression? DefaultValue { get; set; }
 }
@@ -250,24 +250,24 @@ public enum QuantifierKind { All, Distinct, Unique }
 
 public sealed partial class SetOperation : QueryExpression
 {
-    public QueryExpression Left { get; set; } = null!;
+    public required QueryExpression Left { get; set; }
     public SetOperator Operator { get; set; }
     public bool All { get; set; }
-    public QueryExpression Right { get; set; } = null!;
+    public required QueryExpression Right { get; set; }
 }
 
 public enum SetOperator { Union, Intersect, Minus }
 
 public sealed partial class ParenthesizedQuery : QueryExpression
 {
-    public SelectStatement Query { get; set; } = null!;
+    public required SelectStatement Query { get; set; }
 }
 
 public abstract partial class SelectItem : SqlNode { }
 
 public sealed partial class ExpressionSelectItem : SelectItem
 {
-    public Expression Expression { get; set; } = null!;
+    public required Expression Expression { get; set; }
     public Identifier? Alias { get; set; }
 }
 
@@ -279,7 +279,7 @@ public sealed partial class StarSelectItem : SelectItem
 
 public sealed partial class OrderByItem : SqlNode
 {
-    public Expression Expression { get; set; } = null!;
+    public required Expression Expression { get; set; }
     public bool Descending { get; set; }
     public NullsOrdering? Nulls { get; set; }
 }
@@ -312,7 +312,7 @@ public sealed partial class ForUpdateClause : SqlNode
 
 public sealed partial class InsertStatement : DmlStatement
 {
-    public TableReference Target { get; set; } = null!;
+    public required TableReference Target { get; set; }
     public List<Identifier> Columns { get; set; } = [];
     public List<List<Expression>> ValueRows { get; set; } = [];
     /// <summary>PL/SQL: INSERT INTO t VALUES record_variable.</summary>
@@ -322,7 +322,7 @@ public sealed partial class InsertStatement : DmlStatement
 
 public sealed partial class UpdateStatement : DmlStatement
 {
-    public TableReference Target { get; set; } = null!;
+    public required TableReference Target { get; set; }
     public List<SetClause> Set { get; set; } = [];
     /// <summary>23ai: UPDATE ... SET ... FROM table_references.</summary>
     public List<TableReference> From { get; set; } = [];
@@ -335,12 +335,12 @@ public sealed partial class SetClause : SqlNode
     /// <summary>PL/SQL: SET ROW = record (Columns is empty).</summary>
     public bool Row { get; set; }
     public List<ColumnReference> Columns { get; set; } = [];
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
 }
 
 public sealed partial class DeleteStatement : DmlStatement
 {
-    public TableReference Target { get; set; } = null!;
+    public required TableReference Target { get; set; }
     /// <summary>23ai: DELETE FROM target FROM table_references (direct joins).</summary>
     public List<TableReference> From { get; set; } = [];
     public Expression? Where { get; set; }
@@ -348,9 +348,9 @@ public sealed partial class DeleteStatement : DmlStatement
 
 public sealed partial class MergeStatement : DmlStatement
 {
-    public TableReference Target { get; set; } = null!;
-    public TableReference Source { get; set; } = null!;
-    public Expression On { get; set; } = null!;
+    public required TableReference Target { get; set; }
+    public required TableReference Source { get; set; }
+    public required Expression On { get; set; }
     public List<MergeClause> Clauses { get; set; } = [];
 }
 
@@ -390,26 +390,26 @@ public sealed partial class NamedTable : TableReference
 public sealed partial class SubqueryTable : TableReference
 {
     public bool Lateral { get; set; }
-    public SelectStatement Query { get; set; } = null!;
+    public required SelectStatement Query { get; set; }
 }
 
 /// <summary>TABLE(expr) collection expression.</summary>
 public sealed partial class TableFunction : TableReference
 {
-    public Expression Expression { get; set; } = null!;
+    public required Expression Expression { get; set; }
 }
 
 public sealed partial class ParenthesizedTable : TableReference
 {
-    public TableReference Inner { get; set; } = null!;
+    public required TableReference Inner { get; set; }
 }
 
 public sealed partial class JoinTable : TableReference
 {
-    public TableReference Left { get; set; } = null!;
+    public required TableReference Left { get; set; }
     public JoinKind Kind { get; set; }
     public bool Natural { get; set; }
-    public TableReference Right { get; set; } = null!;
+    public required TableReference Right { get; set; }
     public Expression? On { get; set; }
     public List<Identifier> Using { get; set; } = [];
     /// <summary>Partitioned outer join: PARTITION BY (...) on the left operand (only one side may be partitioned).</summary>
@@ -457,7 +457,7 @@ public sealed partial class Literal : Expression
 
 public sealed partial class IntervalLiteral : Expression
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     public IntervalUnit From { get; set; }
     public int? FromPrecision { get; set; }
     public IntervalUnit? To { get; set; }
@@ -470,7 +470,7 @@ public sealed partial class IntervalLiteral : Expression
 /// </summary>
 public sealed partial class IntervalExpression : Expression
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     public IntervalUnit From { get; set; }
     public int? FromPrecision { get; set; }
     public IntervalUnit To { get; set; }
@@ -493,7 +493,7 @@ public sealed partial class StarExpression : Expression
 
 public sealed partial class ParenthesizedExpression : Expression
 {
-    public Expression Inner { get; set; } = null!;
+    public required Expression Inner { get; set; }
 }
 
 /// <summary>(a, b, c) row/list value.</summary>
@@ -504,10 +504,10 @@ public sealed partial class ExpressionList : Expression
 
 public sealed partial class BinaryExpression : Expression
 {
-    public Expression Left { get; set; } = null!;
+    public required Expression Left { get; set; }
     /// <summary>Upper-cased operator text: + - * / ** || = &lt;&gt; &lt; &gt; &lt;= &gt;= AND OR LIKE ...</summary>
     public string Operator { get; set; } = "";
-    public Expression Right { get; set; } = null!;
+    public required Expression Right { get; set; }
 }
 
 /// <summary>Comparison against a quantified set, e.g. x = ANY (subquery).</summary>
@@ -515,30 +515,30 @@ public enum ComparisonQuantifier { Any, Some, All }
 
 public sealed partial class QuantifiedComparison : Expression
 {
-    public Expression Left { get; set; } = null!;
+    public required Expression Left { get; set; }
     public string Operator { get; set; } = "";
     public ComparisonQuantifier Quantifier { get; set; }
-    public Expression Right { get; set; } = null!;
+    public required Expression Right { get; set; }
 }
 
 public sealed partial class UnaryExpression : Expression
 {
     /// <summary>+, -, NOT, PRIOR, CONNECT_BY_ROOT, DISTINCT</summary>
     public string Operator { get; set; } = "";
-    public Expression Operand { get; set; } = null!;
+    public required Expression Operand { get; set; }
 }
 
 public sealed partial class BetweenExpression : Expression
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     public bool Not { get; set; }
-    public Expression Low { get; set; } = null!;
-    public Expression High { get; set; } = null!;
+    public required Expression Low { get; set; }
+    public required Expression High { get; set; }
 }
 
 public sealed partial class InExpression : Expression
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     public bool Not { get; set; }
     public List<Expression> List { get; set; } = [];
     public SelectStatement? Subquery { get; set; }
@@ -548,10 +548,10 @@ public enum LikeKind { Like, Likec, Like2, Like4 }
 
 public sealed partial class LikeExpression : Expression
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     public bool Not { get; set; }
     public LikeKind Kind { get; set; }
-    public Expression Pattern { get; set; } = null!;
+    public required Expression Pattern { get; set; }
     public Expression? Escape { get; set; }
 }
 
@@ -560,12 +560,12 @@ public enum IsTest { Null, Nan, Infinite, Empty, Present, ASet, Json, OfType, Da
 public sealed partial class IsOfType : SqlNode
 {
     public bool Only { get; set; }
-    public DataType Type { get; set; } = null!;
+    public required DataType Type { get; set; }
 }
 
 public sealed partial class IsExpression : Expression
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     public bool Not { get; set; }
     public IsTest Test { get; set; }
     /// <summary>IS JSON options (FORMAT JSON, STRICT/LAX, WITH/WITHOUT UNIQUE KEYS ...).</summary>
@@ -576,12 +576,12 @@ public sealed partial class IsExpression : Expression
 
 public sealed partial class ExistsExpression : Expression
 {
-    public SelectStatement Subquery { get; set; } = null!;
+    public required SelectStatement Subquery { get; set; }
 }
 
 public sealed partial class SubqueryExpression : Expression
 {
-    public SelectStatement Query { get; set; } = null!;
+    public required SelectStatement Query { get; set; }
 }
 
 public sealed partial class CaseExpression : Expression
@@ -593,8 +593,8 @@ public sealed partial class CaseExpression : Expression
 
 public sealed partial class WhenClause : SqlNode
 {
-    public Expression When { get; set; } = null!;
-    public Expression Then { get; set; } = null!;
+    public required Expression When { get; set; }
+    public required Expression Then { get; set; }
 }
 
 public enum CastKind { Cast, XmlCast, Treat, ValidateConversion, XmlSerialize }
@@ -604,10 +604,10 @@ public sealed partial class CastExpression : Expression
 {
     public CastKind Kind { get; set; }
     public bool Multiset { get; set; }
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     /// <summary>TREAT(x AS REF type).</summary>
     public bool Ref { get; set; }
-    public DataType Type { get; set; } = null!;
+    public required DataType Type { get; set; }
     /// <summary>DEFAULT x ON CONVERSION ERROR.</summary>
     public OnBehaviorClause? OnConversionError { get; set; }
     public Expression? Format { get; set; }
@@ -624,7 +624,7 @@ public enum ExtractField
 public sealed partial class ExtractExpression : Expression
 {
     public ExtractField Field { get; set; }
-    public Expression Source { get; set; } = null!;
+    public required Expression Source { get; set; }
 }
 
 public enum TrimSpec { Leading, Trailing, Both }
@@ -633,7 +633,7 @@ public sealed partial class TrimExpression : Expression
 {
     public TrimSpec? Spec { get; set; }
     public Expression? Characters { get; set; }
-    public Expression Source { get; set; } = null!;
+    public required Expression Source { get; set; }
 }
 
 public sealed partial class SubstitutionVariable : Expression
@@ -647,8 +647,8 @@ public sealed partial class SubstitutionVariable : Expression
 
 public sealed partial class CollateExpression : Expression
 {
-    public Expression Value { get; set; } = null!;
-    public Identifier Collation { get; set; } = null!;
+    public required Expression Value { get; set; }
+    public required Identifier Collation { get; set; }
 }
 
 /// <summary>FOR dim IN (...) / FOR dim [LIKE p] FROM a TO b INCREMENT n, used inside MODEL cell subscripts.</summary>
@@ -679,7 +679,7 @@ public sealed partial class DataType : SqlNode
 
 public sealed partial class AtTimeZoneExpression : Expression
 {
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     /// <summary>AT LOCAL (Zone is null).</summary>
     public bool Local { get; set; }
     public Expression? Zone { get; set; }
@@ -716,7 +716,7 @@ public sealed partial class Argument : SqlNode
     public Identifier? Name { get; set; }  // named notation: name => value
     /// <summary>Leading keyword in XML/JSON functions (XMLELEMENT(NAME x), JSON_OBJECT(KEY k ...)).</summary>
     public ArgumentKeyword? Keyword { get; set; }
-    public Expression Value { get; set; } = null!;
+    public required Expression Value { get; set; }
     /// <summary>JSON_OBJECT-style value in `KEY k VALUE v` / `k : v`.</summary>
     public Expression? MappedValue { get; set; }
     /// <summary>AS alias (XMLATTRIBUTES, XMLFOREST, XMLSERIALIZE's target excluded).</summary>
@@ -744,7 +744,7 @@ public sealed partial class WindowSpec : SqlNode
 public sealed partial class WindowFrame : SqlNode
 {
     public FrameUnit Unit { get; set; }
-    public FrameBound StartBound { get; set; } = null!;
+    public required FrameBound StartBound { get; set; }
     public FrameBound? EndBound { get; set; }
 }
 

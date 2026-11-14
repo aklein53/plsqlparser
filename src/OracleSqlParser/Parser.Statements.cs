@@ -179,11 +179,12 @@ public sealed partial class SqlParser
     {
         var start = Next();
         ExpectKw("PLAN");
-        var st = new ExplainPlanStatement();
-        if (IsKw("SET")) { Next(); ExpectKw("STATEMENT_ID"); ExpectOp("="); st.StatementId = ParseExpr(); }
-        if (AcceptKw("INTO")) st.IntoTable = ParseDottedName();
+        Expression? statementId = null;
+        var intoTable = new List<Identifier>();
+        if (IsKw("SET")) { Next(); ExpectKw("STATEMENT_ID"); ExpectOp("="); statementId = ParseExpr(); }
+        if (AcceptKw("INTO")) intoTable = ParseDottedName();
         ExpectKw("FOR");
-        st.Statement = ParseStatementCore();
+        var st = new ExplainPlanStatement { StatementId = statementId, IntoTable = intoTable, Statement = ParseStatementCore() };
         return Fin(st, start);
     }
 
@@ -433,9 +434,10 @@ public sealed partial class SqlParser
     private Statement ParseCreateUser(Token start, bool orReplace, bool pub)
     {
         if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE USER", ParseErrorCodes.InvalidCombination);
-        var st = new CreateUserStatement { IfNotExists = TryIfNotExists() };
-        st.Name = ParseIdentifier();
-        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        var ifNotExists = TryIfNotExists();
+        var name = ParseIdentifier();
+        if (!ifNotExists) ifNotExists = TryIfNotExists();
+        var st = new CreateUserStatement { IfNotExists = ifNotExists, Name = name };
         st.Clauses = ParseUserClauses();
         return Fin(st, start);
     }
@@ -443,8 +445,8 @@ public sealed partial class SqlParser
     private Statement ParseAlterUser(Token start, bool pub)
     {
         if (pub) throw Fail("PUBLIC does not apply to ALTER USER", ParseErrorCodes.InvalidCombination);
-        var st = new AlterUserStatement { IfExists = TryIfExists() };
-        st.Name = ParseIdentifier();
+        var ifExists = TryIfExists();
+        var st = new AlterUserStatement { IfExists = ifExists, Name = ParseIdentifier() };
         st.Clauses = ParseUserClauses();
         return Fin(st, start);
     }
@@ -553,9 +555,10 @@ public sealed partial class SqlParser
     private Statement ParseCreateRole(Token start, bool orReplace, bool pub)
     {
         if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE ROLE", ParseErrorCodes.InvalidCombination);
-        var st = new CreateRoleStatement { IfNotExists = TryIfNotExists() };
-        st.Name = ParseIdentifier();
-        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        var ifNotExists = TryIfNotExists();
+        var name = ParseIdentifier();
+        if (!ifNotExists) ifNotExists = TryIfNotExists();
+        var st = new CreateRoleStatement { IfNotExists = ifNotExists, Name = name };
         st.Authentication = ParseRoleIdentification(out var password, out var package);
         st.Password = password;
         st.Package = package;
@@ -566,8 +569,8 @@ public sealed partial class SqlParser
     private Statement ParseAlterRole(Token start, bool pub)
     {
         if (pub) throw Fail("PUBLIC does not apply to ALTER ROLE", ParseErrorCodes.InvalidCombination);
-        var st = new AlterRoleStatement { IfExists = TryIfExists() };
-        st.Name = ParseIdentifier();
+        var ifExists = TryIfExists();
+        var st = new AlterRoleStatement { IfExists = ifExists, Name = ParseIdentifier() };
         st.Authentication = ParseRoleIdentification(out var password, out var package);
         st.Password = password;
         st.Package = package;
@@ -604,9 +607,10 @@ public sealed partial class SqlParser
     private Statement ParseCreateProfile(Token start, bool orReplace, bool pub)
     {
         if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE PROFILE", ParseErrorCodes.InvalidCombination);
-        var st = new CreateProfileStatement { IfNotExists = TryIfNotExists() };
-        st.Name = ParseIdentifier();
-        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        var ifNotExists = TryIfNotExists();
+        var name = ParseIdentifier();
+        if (!ifNotExists) ifNotExists = TryIfNotExists();
+        var st = new CreateProfileStatement { IfNotExists = ifNotExists, Name = name };
         ParseProfileBody(st.Limits, out var container, out _, allowCascade: false);
         st.Container = container;
         return Fin(st, start);
@@ -615,8 +619,8 @@ public sealed partial class SqlParser
     private Statement ParseAlterProfile(Token start, bool pub)
     {
         if (pub) throw Fail("PUBLIC does not apply to ALTER PROFILE", ParseErrorCodes.InvalidCombination);
-        var st = new AlterProfileStatement { IfExists = TryIfExists() };
-        st.Name = ParseIdentifier();
+        var ifExists = TryIfExists();
+        var st = new AlterProfileStatement { IfExists = ifExists, Name = ParseIdentifier() };
         ParseProfileBody(st.Limits, out var container, out var cascade, allowCascade: true);
         st.Container = container;
         st.Cascade = cascade;
@@ -655,12 +659,13 @@ public sealed partial class SqlParser
     private Statement ParseCreateDirectory(Token start, bool orReplace, bool pub)
     {
         if (pub) throw Fail("PUBLIC does not apply to CREATE DIRECTORY", ParseErrorCodes.InvalidCombination);
-        var st = new CreateDirectoryStatement { OrReplace = orReplace, IfNotExists = TryIfNotExists() };
-        st.Name = ParseIdentifier();
-        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
-        st.Sharing = TryParseSharing();
+        var ifNotExists = TryIfNotExists();
+        var name = ParseIdentifier();
+        if (!ifNotExists) ifNotExists = TryIfNotExists();
+        var sharing = TryParseSharing();
         ExpectKw("AS");
-        st.Path = ParseAdditive();
+        var path = ParseAdditive();
+        var st = new CreateDirectoryStatement { OrReplace = orReplace, IfNotExists = ifNotExists, Name = name, Sharing = sharing, Path = path };
         return Fin(st, start);
     }
 
@@ -696,9 +701,10 @@ public sealed partial class SqlParser
     private Statement ParseCreateContext(Token start, bool orReplace, bool pub)
     {
         if (pub) throw Fail("PUBLIC does not apply to CREATE CONTEXT", ParseErrorCodes.InvalidCombination);
-        var st = new CreateContextStatement { OrReplace = orReplace, IfNotExists = TryIfNotExists() };
-        st.Name = ParseIdentifier();
-        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        var ifNotExists = TryIfNotExists();
+        var name = ParseIdentifier();
+        if (!ifNotExists) ifNotExists = TryIfNotExists();
+        var st = new CreateContextStatement { OrReplace = orReplace, IfNotExists = ifNotExists, Name = name };
         ExpectKw("USING");
         st.Package = ParseDottedName();
         if (AcceptKw("INITIALIZED"))
@@ -715,9 +721,10 @@ public sealed partial class SqlParser
     private Statement ParseCreateTablespace(Token start, bool orReplace, bool pub, bool? bigfile, TablespaceType? kind)
     {
         if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE TABLESPACE", ParseErrorCodes.InvalidCombination);
-        var st = new CreateTablespaceStatement { Bigfile = bigfile, Kind = kind, IfNotExists = TryIfNotExists() };
-        st.Name = ParseIdentifier();
-        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        var ifNotExists = TryIfNotExists();
+        var name = ParseIdentifier();
+        if (!ifNotExists) ifNotExists = TryIfNotExists();
+        var st = new CreateTablespaceStatement { Bigfile = bigfile, Kind = kind, IfNotExists = ifNotExists, Name = name };
         int prog = -1;
         while (!AtStatementEnd() && Progress(ref prog)) ParseTablespaceOption(st);
         return Fin(st, start);
@@ -797,8 +804,8 @@ public sealed partial class SqlParser
     private Statement ParseAlterTablespace(Token start, bool pub)
     {
         if (pub) throw Fail("PUBLIC does not apply to ALTER TABLESPACE", ParseErrorCodes.InvalidCombination);
-        var st = new AlterTablespaceStatement { IfExists = TryIfExists() };
-        st.Name = ParseIdentifier();
+        var ifExists = TryIfExists();
+        var st = new AlterTablespaceStatement { IfExists = ifExists, Name = ParseIdentifier() };
         int prog = -1;
         while (!AtStatementEnd() && Progress(ref prog)) st.Actions.Add(ParseTablespaceAction());
         return Fin(st, start);
@@ -927,9 +934,10 @@ public sealed partial class SqlParser
     private Statement ParseCreateAuditPolicy(Token start, bool orReplace, bool pub)
     {
         if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE AUDIT POLICY", ParseErrorCodes.InvalidCombination);
-        var st = new CreateAuditPolicyStatement { IfNotExists = TryIfNotExists() };
-        st.Name = ParseIdentifier();
-        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        var ifNotExists = TryIfNotExists();
+        var name = ParseIdentifier();
+        if (!ifNotExists) ifNotExists = TryIfNotExists();
+        var st = new CreateAuditPolicyStatement { IfNotExists = ifNotExists, Name = name };
         int prog = -1;
         while (!AtStatementEnd() && Progress(ref prog))
         {
@@ -950,8 +958,8 @@ public sealed partial class SqlParser
     private Statement ParseAlterAuditPolicy(Token start, bool pub)
     {
         if (pub) throw Fail("PUBLIC does not apply to ALTER AUDIT POLICY", ParseErrorCodes.InvalidCombination);
-        var st = new AlterAuditPolicyStatement { IfExists = TryIfExists() };
-        st.Name = ParseIdentifier();
+        var ifExists = TryIfExists();
+        var st = new AlterAuditPolicyStatement { IfExists = ifExists, Name = ParseIdentifier() };
         bool lastDrop = false;
         int prog = -1;
         while (!AtStatementEnd() && Progress(ref prog))
@@ -1085,9 +1093,9 @@ public sealed partial class SqlParser
             while (!AtStatementEnd() && Progress(ref prog20))
             {
                 var s = Cur;
-                var ss = new SessionSetting { Name = ParseDottedName() };
+                var name = ParseDottedName();
                 ExpectOp("=");
-                ss.Value = ParseExpr();
+                var ss = new SessionSetting { Name = name, Value = ParseExpr() };
                 st.Settings.Add(Fin(ss, s));
             }
         }
@@ -1496,34 +1504,49 @@ public sealed partial class SqlParser
 
     private Statement ParseCreateView(Token start, bool orReplace, bool force, bool noForce, bool editioning, bool materialized)
     {
-        var st = new CreateViewStatement { OrReplace = orReplace, Force = force, NoForce = noForce, Editioning = editioning, Materialized = materialized };
-        st.IfNotExists = TryIfNotExists();
-        st.Name = ParseDottedName();
-        st.Sharing = TryParseSharing();
+        // Query is required and is parsed last, so the options are collected in locals and the node is built at the end.
+        var ifNotExists = TryIfNotExists();
+        var name = ParseDottedName();
+        var sharing = TryParseSharing();
+        var columns = new List<ViewColumn>();
+        ViewBequeath? bequeath = null;
+        bool? buildImmediate = null;
+        RefreshClause? refresh = null;
+        bool? queryRewrite = null;
+        var attributes = new List<PhysicalAttribute>();
         if (IsOp("(") && !LooksLikeQueryAfterParen())
         {
             Next();
-            do st.Columns.Add(ParseViewColumn(allowDrop: false)); while (AcceptOp(","));
+            do columns.Add(ParseViewColumn(allowDrop: false)); while (AcceptOp(","));
             ExpectOp(")");
         }
-        if (IsKw("BEQUEATH")) { Next(); st.Bequeath = AcceptKw("CURRENT_USER") ? ViewBequeath.CurrentUser : (AcceptKw("DEFINER") ? ViewBequeath.Definer : throw FailExpected("Expected CURRENT_USER or DEFINER", "CURRENT_USER", "DEFINER")); }
+        if (IsKw("BEQUEATH")) { Next(); bequeath = AcceptKw("CURRENT_USER") ? ViewBequeath.CurrentUser : (AcceptKw("DEFINER") ? ViewBequeath.Definer : throw FailExpected("Expected CURRENT_USER or DEFINER", "CURRENT_USER", "DEFINER")); }
         int prog26 = -1;
         while (!AtAsQuery() && Progress(ref prog26))
         {
             if (AtStatementEnd()) throw FailExpected($"Expected AS but found {Describe(Cur)}", "AS");
-            if (IsKw("BUILD")) { Next(); st.BuildImmediate = AcceptKw("IMMEDIATE") ? true : (AcceptKw("DEFERRED") ? false : throw FailExpected("Expected IMMEDIATE or DEFERRED", "IMMEDIATE", "DEFERRED")); }
-            else if (IsKw("REFRESH") || (IsKw("NEVER") && IsKwAt(1, "REFRESH"))) st.Refresh = ParseRefresh();
-            else if ((IsKw("ENABLE") || IsKw("DISABLE")) && IsKwAt(1, "QUERY")) { st.QueryRewrite = Next().Value == "ENABLE"; Next(); ExpectKw("REWRITE"); }
-            else st.Attributes.Add(ParsePhysicalAttribute(() => AtAsQuery() || IsKw("BUILD") || IsKw("REFRESH") || IsKw("NEVER") || ((IsKw("ENABLE") || IsKw("DISABLE")) && IsKwAt(1, "QUERY"))));
+            if (IsKw("BUILD")) { Next(); buildImmediate = AcceptKw("IMMEDIATE") ? true : (AcceptKw("DEFERRED") ? false : throw FailExpected("Expected IMMEDIATE or DEFERRED", "IMMEDIATE", "DEFERRED")); }
+            else if (IsKw("REFRESH") || (IsKw("NEVER") && IsKwAt(1, "REFRESH"))) refresh = ParseRefresh();
+            else if ((IsKw("ENABLE") || IsKw("DISABLE")) && IsKwAt(1, "QUERY")) { queryRewrite = Next().Value == "ENABLE"; Next(); ExpectKw("REWRITE"); }
+            else attributes.Add(ParsePhysicalAttribute(() => AtAsQuery() || IsKw("BUILD") || IsKw("REFRESH") || IsKw("NEVER") || ((IsKw("ENABLE") || IsKw("DISABLE")) && IsKwAt(1, "QUERY"))));
         }
         Next(); // AS
-        st.Query = ParseSelectStatement();
-        if (IsKw("WITH") && IsKwAt(1, "READ")) { Next(); Next(); ExpectKw("ONLY"); st.ReadOnly = true; }
+        var query = ParseSelectStatement();
+        bool readOnly = false, checkOption = false;
+        Identifier? checkOptionConstraint = null;
+        if (IsKw("WITH") && IsKwAt(1, "READ")) { Next(); Next(); ExpectKw("ONLY"); readOnly = true; }
         else if (IsKw("WITH") && IsKwAt(1, "CHECK"))
         {
-            Next(); Next(); ExpectKw("OPTION"); st.CheckOption = true;
-            if (AcceptKw("CONSTRAINT")) st.CheckOptionConstraint = ParseIdentifier();
+            Next(); Next(); ExpectKw("OPTION"); checkOption = true;
+            if (AcceptKw("CONSTRAINT")) checkOptionConstraint = ParseIdentifier();
         }
+        var st = new CreateViewStatement
+        {
+            OrReplace = orReplace, Force = force, NoForce = noForce, Editioning = editioning, Materialized = materialized,
+            IfNotExists = ifNotExists, Name = name, Sharing = sharing, Columns = columns, Bequeath = bequeath,
+            BuildImmediate = buildImmediate, Refresh = refresh, QueryRewrite = queryRewrite, Attributes = attributes,
+            Query = query, ReadOnly = readOnly, CheckOption = checkOption, CheckOptionConstraint = checkOptionConstraint,
+        };
         return Fin(st, start);
     }
 
@@ -1614,22 +1637,25 @@ public sealed partial class SqlParser
     private AnnotationItem ParseAnnotationItem(bool allowDrop)
     {
         var s = Cur;
-        var it = new AnnotationItem();
+        AnnotationAction? action = null;
+        bool ifNotExists = false, ifExists = false;
         if (AcceptKw("ADD"))
         {
-            it.Action = AnnotationAction.Add;
-            if (IsKw("IF") && IsKwAt(1, "NOT") && IsKwAt(2, "EXISTS")) { Next(); Next(); Next(); it.IfNotExists = true; }
+            action = AnnotationAction.Add;
+            if (IsKw("IF") && IsKwAt(1, "NOT") && IsKwAt(2, "EXISTS")) { Next(); Next(); Next(); ifNotExists = true; }
         }
         else if (IsKw("DROP"))
         {
             if (!allowDrop) throw Fail("DROP is not allowed in an annotation list of a CREATE statement (ORA-11555)", ParseErrorCodes.InvalidCombination);
             Next();
-            it.Action = AnnotationAction.Drop;
-            if (IsKw("IF") && IsKwAt(1, "EXISTS")) { Next(); Next(); it.IfExists = true; }
+            action = AnnotationAction.Drop;
+            if (IsKw("IF") && IsKwAt(1, "EXISTS")) { Next(); Next(); ifExists = true; }
         }
-        it.Name = ParseIdentifier();
+        var name = ParseIdentifier();
         // A DROP item names an existing annotation only; other items may carry a value.
-        if (it.Action != AnnotationAction.Drop && !IsOp(",") && !IsOp(")")) it.Value = ParseExpr();
+        Expression? value = null;
+        if (action != AnnotationAction.Drop && !IsOp(",") && !IsOp(")")) value = ParseExpr();
+        var it = new AnnotationItem { Action = action, IfNotExists = ifNotExists, IfExists = ifExists, Name = name, Value = value };
         return Fin(it, s);
     }
 
@@ -1713,8 +1739,8 @@ public sealed partial class SqlParser
     private GraphVertexTable ParseGraphVertexTable()
     {
         var s = Cur;
-        var t = new GraphVertexTable();
-        ParseGraphElementCommon(t);
+        var (table, alias, key) = ParseGraphElementCommon();
+        var t = new GraphVertexTable { Table = table, Alias = alias, Key = key };
         ParseGraphLabels(t);
         return Fin(t, s);
     }
@@ -1722,22 +1748,25 @@ public sealed partial class SqlParser
     private GraphEdgeTable ParseGraphEdgeTable()
     {
         var s = Cur;
-        var t = new GraphEdgeTable();
-        ParseGraphElementCommon(t);
+        var (table, alias, key) = ParseGraphElementCommon();
         ExpectKw("SOURCE");
-        t.Source = ParseGraphEdgeEndpoint();
+        var source = ParseGraphEdgeEndpoint();
         ExpectKw("DESTINATION");
-        t.Destination = ParseGraphEdgeEndpoint();
+        var destination = ParseGraphEdgeEndpoint();
+        var t = new GraphEdgeTable { Table = table, Alias = alias, Key = key, Source = source, Destination = destination };
         ParseGraphLabels(t);
         return Fin(t, s);
     }
 
     /// <summary>The table, optional AS alias and optional KEY, shared by vertex and edge tables.</summary>
-    private void ParseGraphElementCommon(GraphElementTable t)
+    private (List<Identifier> Table, Identifier? Alias, List<Identifier> Key) ParseGraphElementCommon()
     {
-        t.Table = ParseDottedName();
-        if (AcceptKw("AS")) t.Alias = ParseIdentifier();
-        if (AcceptKw("KEY")) { ExpectOp("("); t.Key = ParseIdentifierList(); ExpectOp(")"); }
+        var table = ParseDottedName();
+        Identifier? alias = null;
+        var key = new List<Identifier>();
+        if (AcceptKw("AS")) alias = ParseIdentifier();
+        if (AcceptKw("KEY")) { ExpectOp("("); key = ParseIdentifierList(); ExpectOp(")"); }
+        return (table, alias, key);
     }
 
     /// <summary>
@@ -1966,12 +1995,12 @@ public sealed partial class SqlParser
 
     private Statement ParseCreateLibrary(Token start, bool orReplace, EditionableKind? ed)
     {
-        var st = new CreateLibraryStatement { OrReplace = orReplace, Editionable = ed };
         TryIfNotExists();
-        st.Name = ParseDottedName();
-        st.Sharing = TryParseSharing();
+        var name = ParseDottedName();
+        var sharing = TryParseSharing();
         if (!AcceptKw("IS")) ExpectKw("AS");
-        st.Path = ParsePrimary();
+        var path = ParsePrimary();
+        var st = new CreateLibraryStatement { OrReplace = orReplace, Editionable = ed, Name = name, Sharing = sharing, Path = path };
         if (AcceptKw("AGENT")) st.Agent = ParsePrimary();
         if (AcceptKw("CREDENTIAL")) st.Credential = ParseIdentifier();
         return Fin(st, start);

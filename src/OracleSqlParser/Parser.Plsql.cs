@@ -175,9 +175,10 @@ public sealed partial class SqlParser
     private VariableDeclaration ParseVariableDeclaration(bool allowConstant)
     {
         var start = Cur;
-        var v = new VariableDeclaration { Name = ParseIdentifier() };
-        if (allowConstant) v.Constant = AcceptKw("CONSTANT");
-        v.Type = ParseDataType();
+        var name = ParseIdentifier();
+        var constant = allowConstant && AcceptKw("CONSTANT");
+        var type = ParseDataType();
+        var v = new VariableDeclaration { Name = name, Constant = constant, Type = type };
         if (IsKw("NOT") && IsKwAt(1, "NULL")) { Next(); Next(); v.NotNull = true; }
         if (AcceptOp(":=") || AcceptKw("DEFAULT")) v.Default = ParseExpr();
         return Fin(v, start);
@@ -274,25 +275,32 @@ public sealed partial class SqlParser
             if (AcceptKw("RETURN")) rc.ReturnType = ParseDataType();
             return Fin(rc, start);
         }
-        var ct = new CollectionTypeDeclaration { Name = name };
-        if (AcceptKw("TABLE")) ct.Kind = CollectionKind.Table;
-        else if (AcceptKw("VARRAY")) ct.Kind = CollectionKind.Varray;
-        else if (IsKw("VARYING")) { Next(); ExpectKw("ARRAY"); ct.Kind = CollectionKind.Varray; }
+        // ElementType is required and comes after the kind and limit, so the node is built once the element type is parsed.
+        CollectionKind kind;
+        if (AcceptKw("TABLE")) kind = CollectionKind.Table;
+        else if (AcceptKw("VARRAY")) kind = CollectionKind.Varray;
+        else if (IsKw("VARYING")) { Next(); ExpectKw("ARRAY"); kind = CollectionKind.Varray; }
         else throw FailExpected($"Expected RECORD, TABLE, VARRAY or REF CURSOR but found {Describe(Cur)}", "RECORD", "TABLE", "VARRAY", "REF CURSOR");
-        if (ct.Kind == CollectionKind.Varray) { ExpectOp("("); ct.Limit = ParseExpr(); ExpectOp(")"); }
+        Expression? limit = null;
+        if (kind == CollectionKind.Varray) { ExpectOp("("); limit = ParseExpr(); ExpectOp(")"); }
         ExpectKw("OF");
-        ct.ElementType = ParseDataType();
-        if (IsKw("NOT") && IsKwAt(1, "NULL")) { Next(); Next(); ct.NotNull = true; }
-        if (IsKw("INDEX")) { Next(); ExpectKw("BY"); ct.IndexBy = ParseDataType(); }
+        var elementType = ParseDataType();
+        bool notNull = false;
+        if (IsKw("NOT") && IsKwAt(1, "NULL")) { Next(); Next(); notNull = true; }
+        DataType? indexBy = null;
+        if (IsKw("INDEX")) { Next(); ExpectKw("BY"); indexBy = ParseDataType(); }
+        var ct = new CollectionTypeDeclaration { Name = name, Kind = kind, Limit = limit, ElementType = elementType, NotNull = notNull, IndexBy = indexBy };
         return Fin(ct, start);
     }
 
     private Declaration ParseSubtypeDeclaration()
     {
         var start = Next(); // SUBTYPE
-        var st = new SubtypeDeclaration { Name = ParseIdentifier() };
+        // BaseType is required; the node is built once it is parsed, and the optional range and NOT NULL follow.
+        var name = ParseIdentifier();
         ExpectKw("IS");
-        st.BaseType = ParseDataType();
+        var baseType = ParseDataType();
+        var st = new SubtypeDeclaration { Name = name, BaseType = baseType };
         if (AcceptKw("RANGE"))
         {
             st.RangeLow = ParseAdditive();
@@ -630,10 +638,10 @@ public sealed partial class SqlParser
                 while ((IsKw("NEW") || IsKw("OLD") || IsKw("PARENT")) && Progress(ref prog135))
                 {
                     var rs = Cur;
-                    var ri = new ReferencingItem { Kind = Next().Value switch { "NEW" => ReferencingKind.New, "OLD" => ReferencingKind.Old, _ => ReferencingKind.Parent } };
+                    var kind = Next().Value switch { "NEW" => ReferencingKind.New, "OLD" => ReferencingKind.Old, _ => ReferencingKind.Parent };
                     AcceptKw("AS");
-                    ri.Alias = ParseIdentifier();
-                    tr.Referencing.Add(Fin(ri, rs));
+                    var alias = ParseIdentifier();
+                    tr.Referencing.Add(Fin(new ReferencingItem { Kind = kind, Alias = alias }, rs));
                 }
             }
             else if (IsKw("FOR") && IsKwAt(1, "EACH")) { Next(); Next(); ExpectKw("ROW"); tr.ForEachRow = true; }
@@ -1046,12 +1054,12 @@ public sealed partial class SqlParser
         do
         {
             var s = Cur;
-            var ua = new UsingArgument();
-            if (IsKw("IN") && IsKwAt(1, "OUT")) { Next(); Next(); ua.Mode = ParamMode.InOut; }
-            else if (IsKw("IN")) { Next(); ua.Mode = ParamMode.In; }
-            else if (IsKw("OUT")) { Next(); ua.Mode = ParamMode.Out; }
-            ua.Value = ParseExpr();
-            list.Add(Fin(ua, s));
+            ParamMode? mode = null;
+            if (IsKw("IN") && IsKwAt(1, "OUT")) { Next(); Next(); mode = ParamMode.InOut; }
+            else if (IsKw("IN")) { Next(); mode = ParamMode.In; }
+            else if (IsKw("OUT")) { Next(); mode = ParamMode.Out; }
+            var value = ParseExpr();
+            list.Add(Fin(new UsingArgument { Mode = mode, Value = value }, s));
         } while (AcceptOp(","));
         return list;
     }
@@ -1105,23 +1113,31 @@ public sealed partial class SqlParser
     private Statement ParseForall()
     {
         var start = Next();
-        var st = new ForallStatement { Index = ParseIdentifier() };
+        // Body is required and comes last, so the bounds are collected in locals and the node is built at the end.
+        var index = ParseIdentifier();
         ExpectKw("IN");
+        Expression? lower = null, upper = null, indicesOf = null, valuesOf = null, betweenLow = null, betweenHigh = null;
+        bool saveExceptions = false;
         if (IsKw("INDICES") && IsKwAt(1, "OF"))
         {
             Next(); Next();
-            st.IndicesOf = ParsePostfix();
-            if (AcceptKw("BETWEEN")) { st.BetweenLow = ParseAdditive(); ExpectKw("AND"); st.BetweenHigh = ParseAdditive(); }
+            indicesOf = ParsePostfix();
+            if (AcceptKw("BETWEEN")) { betweenLow = ParseAdditive(); ExpectKw("AND"); betweenHigh = ParseAdditive(); }
         }
-        else if (IsKw("VALUES") && IsKwAt(1, "OF")) { Next(); Next(); st.ValuesOf = ParsePostfix(); }
+        else if (IsKw("VALUES") && IsKwAt(1, "OF")) { Next(); Next(); valuesOf = ParsePostfix(); }
         else
         {
-            st.Lower = ParseExpr();
+            lower = ParseExpr();
             ExpectOp("..");
-            st.Upper = ParseExpr();
+            upper = ParseExpr();
         }
-        if (IsKw("SAVE") && IsKwAt(1, "EXCEPTIONS")) { Next(); Next(); st.SaveExceptions = true; }
-        st.Body = ParsePlsqlStatement();
+        if (IsKw("SAVE") && IsKwAt(1, "EXCEPTIONS")) { Next(); Next(); saveExceptions = true; }
+        var body = ParsePlsqlStatement();
+        var st = new ForallStatement
+        {
+            Index = index, Lower = lower, Upper = upper, IndicesOf = indicesOf, ValuesOf = valuesOf,
+            BetweenLow = betweenLow, BetweenHigh = betweenHigh, SaveExceptions = saveExceptions, Body = body,
+        };
         return Fin(st, start);
     }
 }
