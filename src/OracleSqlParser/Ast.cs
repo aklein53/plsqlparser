@@ -1114,6 +1114,8 @@ public sealed partial class FunctionCall : Expression
     public QuantifierKind? Quantifier { get; set; }
     /// <summary>The arguments, in source order; empty for a call without arguments.</summary>
     public List<Argument> Arguments { get; set; } = [];
+    /// <summary><c>NTH_VALUE</c>'s <c>FROM FIRST</c> (false) or <c>FROM LAST</c> (true), or null when absent.</summary>
+    public bool? FromLast { get; set; }
     /// <summary>True for <c>IGNORE NULLS</c>.</summary>
     public bool IgnoreNulls { get; set; }
     /// <summary>True for <c>RESPECT NULLS</c>.</summary>

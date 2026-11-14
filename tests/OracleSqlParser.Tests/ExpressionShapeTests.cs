@@ -208,3 +208,37 @@ public class ExpressionShapeTests
     public void IntervalExpressionsRejectInvalidForms(string sql) => Assert.False(SqlParser.Parse(sql).Success);
 
 }
+
+public class ExpertStressRegressionTests
+{
+    [Theory]
+    [InlineData("SELECT NTH_VALUE(x, 2) FROM LAST OVER (ORDER BY x) FROM t", "fromLast=true")]
+    [InlineData("SELECT NTH_VALUE(x, 2) FROM FIRST RESPECT NULLS OVER (ORDER BY x) FROM t", "fromLast=false respectNulls")]
+    public void NthValue_FromFirstLast(string sql, string fragment) =>
+        Assert.Contains(fragment, Shape.Of<FunctionCall>(sql));
+
+    [Fact]
+    public void NthValue_WithoutAnalyticTail_KeepsFromAsTable() =>
+        Assert.Contains("from=[(NamedTable name=[LAST])]", Shape.Of("SELECT NTH_VALUE(x, 2) FROM last"));
+
+    [Fact]
+    public void StringLiteral_MaySpanLines()
+    {
+        var lit = Shape.Parse("SELECT 'a\nb' FROM dual").Descendants().OfType<Literal>().Single();
+        Assert.Equal("a\nb", lit.Value);
+    }
+
+    [Fact]
+    public void UnterminatedLiteral_StillRecoversOnNextLine()
+    {
+        var r = SqlParser.Parse("SELECT 'oops FROM dual;\nSELECT 2 FROM dual");
+        Assert.Single(r.Errors);
+        Assert.Equal(ParseErrorCodes.UnterminatedLiteral, r.Errors[0].Code);
+        Assert.Single(r.Script.Statements);
+    }
+
+    [Fact]
+    public void AttributeMemberChain_AsForBound() =>
+        Assert.Equal("(RangeControl lower=1 upper=(MemberAccess target=SQL%BULK_EXCEPTIONS member=COUNT))",
+            Shape.Of<RangeControl>("BEGIN FOR j IN 1 .. SQL%BULK_EXCEPTIONS.COUNT LOOP NULL; END LOOP; END;"));
+}

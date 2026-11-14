@@ -386,10 +386,13 @@ public sealed class Lexer
     private Token PlainString(int start, int line, int col)
     {
         Advance(); // opening quote
+        // Oracle string literals may span lines. Only when no closing quote follows at all do we stop at the line end,
+        // so an unterminated literal does not swallow the rest of the script (recovery resumes on the next line).
+        bool terminated = HasClosingQuote(_i);
         var sb = new StringBuilder();
         while (true)
         {
-            if (_i >= _s.Length || Cur == '\n')
+            if (_i >= _s.Length || (Cur == '\n' && !terminated))
             {
                 Error("Unterminated string literal", start, line, col);
                 _pendingSemi = true;
@@ -399,6 +402,17 @@ public sealed class Lexer
             sb.Append(Cur); Advance();
         }
         return Make(TokenType.String, start, line, col, sb.ToString());
+    }
+
+    private bool HasClosingQuote(int from)
+    {
+        for (int k = from; k < _s.Length; k++)
+        {
+            if (_s[k] != '\'') continue;
+            if (k + 1 < _s.Length && _s[k + 1] == '\'') { k++; continue; }
+            return true;
+        }
+        return false;
     }
 
     private Token QuoteString(int start, int line, int col, int prefixLen)

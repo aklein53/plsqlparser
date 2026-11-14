@@ -452,7 +452,7 @@ public class ExpertStressTests(OracleFixture db)
     }
 
     /// <summary>XMLTABLE with namespaces and per-row XPath, grouped XMLAGG/XMLELEMENT/XMLSERIALIZE output.</summary>
-    [SkippableFact(Skip = "BUG: a string literal that spans a line break is rejected (Unterminated string literal); Oracle accepts it")]
+    [SkippableFact]
     public async Task Q11_XmlTableNamespacesAndXmlagg()
     {
         db.SkipIfUnavailable();
@@ -1023,7 +1023,7 @@ public class ExpertStressTests(OracleFixture db)
     }
 
     /// <summary>LEAD with default and NULLS LAST inside the window, NTH_VALUE FROM LAST over a full frame, FIRST_VALUE IGNORE NULLS.</summary>
-    [SkippableFact(Skip = "BUG: NTH_VALUE(...) FROM LAST is not parsed; FROM is taken as a table and LAST as its name (Unexpected 'OVER')")]
+    [SkippableFact]
     public async Task Q32_LeadDefaultNthValueFromLastFirstValueIgnoreNulls()
     {
         db.SkipIfUnavailable();
@@ -1333,7 +1333,7 @@ public class ExpertStressTests(OracleFixture db)
     }
 
     /// <summary>BULK COLLECT ... LIMIT loop with FORALL ... SAVE EXCEPTIONS and per-error handling through SQL%BULK_EXCEPTIONS.</summary>
-    [SkippableFact(Skip = "BUG: attribute chain SQL%BULK_EXCEPTIONS.COUNT as a FOR range bound is rejected (Expected LOOP but found '.')")]
+    [SkippableFact]
     public async Task P02_BulkCollectLimitForallSaveExceptions()
     {
         db.SkipIfUnavailable();
@@ -1378,7 +1378,8 @@ public class ExpertStressTests(OracleFixture db)
         var s = Shape.Parse(sql[4]);
         var fa = Find<ForallStatement>(s).Single();
         Assert.NotNull(fa.Upper);
-        Assert.Contains("SAVE EXCEPTIONS", Str(fa), StringComparison.OrdinalIgnoreCase);
+        Assert.True(fa.SaveExceptions);
+        Assert.Equal("(MemberAccess target=SQL%BULK_EXCEPTIONS member=COUNT)", Str(Find<RangeControl>(s).Single().Upper));
         Assert.Single(Find<ExceptionHandler>(s));
         await VerifyAsync(sql, ["SELECT order_id, line_no, shipped_qty FROM shipments ORDER BY order_id, line_no", "SELECT err_idx, err_code FROM shipment_errors ORDER BY err_idx"]);
     }

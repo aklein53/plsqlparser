@@ -451,8 +451,9 @@ public sealed partial class SqlParser
 
     private Expression ParseMemberChain(Expression result, Token start)
     {
+        // An attributed reference continues too: SQL%BULK_EXCEPTIONS.COUNT is a member of SQL%BULK_EXCEPTIONS.
         int prog114 = -1;
-        while (result is FunctionCall or MethodCall or MemberAccess or CellReference or ChainedCall && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog114))
+        while ((result is FunctionCall or MethodCall or MemberAccess or CellReference or ChainedCall || result is ColumnReference { Attribute: not null }) && IsOp(".") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && Progress(ref prog114))
         {
             Next();
             var m = ParseIdentifier();
@@ -534,6 +535,14 @@ public sealed partial class SqlParser
                 keep.OrderBy = ParseOrderByList();
                 ExpectOp(")");
                 fc.Keep = Fin(keep, ks);
+            }
+            // NTH_VALUE(x, n) FROM FIRST|LAST: only when an analytic tail follows, so FROM <table named FIRST/LAST> is never taken
+            else if (fc.FromLast == null && IsKw("FROM") && (IsKwAt(1, "FIRST") || IsKwAt(1, "LAST"))
+                     && (IsKwAt(2, "OVER") || IsKwAt(2, "IGNORE") || IsKwAt(2, "RESPECT"))
+                     && fc.Name.Count > 0 && fc.Name[^1].Value == "NTH_VALUE" && !fc.Name[^1].Quoted)
+            {
+                Next();
+                fc.FromLast = Next().Value == "LAST";
             }
             else if (IsKw("IGNORE") || IsKw("RESPECT")) ParseNullTreatment(fc);
             else if (IsKw("OVER") && (IsOpAt(1, "(") || PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier))

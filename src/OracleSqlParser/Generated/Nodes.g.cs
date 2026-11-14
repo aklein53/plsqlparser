@@ -8319,6 +8319,7 @@ public partial class FunctionCall
         new("Operations", Operations),
         new("Quantifier", Quantifier),
         new("Arguments", Arguments),
+        new("FromLast", FromLast, NullableBool: true),
         new("IgnoreNulls", IgnoreNulls),
         new("RespectNulls", RespectNulls),
         new("WithinGroup", WithinGroup),
@@ -8343,6 +8344,7 @@ public partial class FunctionCall
             Operations = CloneList(Operations),
             Quantifier = Quantifier,
             Arguments = CloneList(Arguments),
+            FromLast = FromLast,
             IgnoreNulls = IgnoreNulls,
             RespectNulls = RespectNulls,
             WithinGroup = CloneList(WithinGroup),
@@ -8364,6 +8366,7 @@ public partial class FunctionCall
             && PairList(Operations, o.Operations, pending)
             && Quantifier == o.Quantifier
             && PairList(Arguments, o.Arguments, pending)
+            && FromLast == o.FromLast
             && IgnoreNulls == o.IgnoreNulls
             && RespectNulls == o.RespectNulls
             && PairList(WithinGroup, o.WithinGroup, pending)
