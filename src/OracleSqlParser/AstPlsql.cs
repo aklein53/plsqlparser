@@ -20,7 +20,7 @@ public sealed partial class Block : Statement
 /// <summary>One <c>WHEN ... THEN</c> handler of an <c>EXCEPTION</c> section, such as <c>WHEN NO_DATA_FOUND THEN NULL</c>.</summary>
 public sealed partial class ExceptionHandler : SqlNode
 {
-    /// <summary>The exception names of the handler, one list per <c>OR</c>-separated group; empty when the handler is <c>OTHERS</c>.</summary>
+    /// <summary>The exception names of the handler, one entry per name separated by <c>OR</c> (each entry a dotted name); empty when the handler is <c>OTHERS</c>.</summary>
     public List<List<Identifier>> Exceptions { get; set; } = [];
     /// <summary>True for <c>WHEN OTHERS</c>.</summary>
     public bool Others { get; set; }
