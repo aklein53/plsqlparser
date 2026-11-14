@@ -2,16 +2,70 @@ using System.Text;
 
 namespace OracleSqlParser;
 
-public enum TokenType { Identifier, QuotedIdentifier, Number, String, Bind, Substitution, Hint, Operator, EOF }
+/// <summary>The category of a <see cref="Token"/>.</summary>
+public enum TokenType
+{
+    /// <summary>A bare word: a keyword or an unquoted identifier. Keywords are recognised by <see cref="Token.Value"/>.</summary>
+    Identifier,
 
-public enum TriviaKind { Whitespace, LineComment, BlockComment }
+    /// <summary>A double-quoted identifier, such as <c>"My Name"</c>.</summary>
+    QuotedIdentifier,
+
+    /// <summary>A numeric literal.</summary>
+    Number,
+
+    /// <summary>A character literal, including q-quoted and national-character forms.</summary>
+    String,
+
+    /// <summary>A bind variable such as <c>:name</c>.</summary>
+    Bind,
+
+    /// <summary>A SQL*Plus substitution variable such as <c>&amp;name</c> or <c>&amp;&amp;name</c>.</summary>
+    Substitution,
+
+    /// <summary>An optimizer hint, <c>/*+ ... */</c>. Hints are tokens rather than trivia.</summary>
+    Hint,
+
+    /// <summary>An operator or punctuation mark, such as <c>(</c>, <c>,</c>, <c>||</c> or <c>;</c>.</summary>
+    Operator,
+
+    /// <summary>The end of input. Always the last token; its span is empty.</summary>
+    EOF,
+}
+
+/// <summary>The category of a <see cref="Trivia"/> piece.</summary>
+public enum TriviaKind
+{
+    /// <summary>Spaces, tabs or line breaks.</summary>
+    Whitespace,
+
+    /// <summary>A <c>--</c> comment up to the end of the line.</summary>
+    LineComment,
+
+    /// <summary>A <c>/* ... */</c> comment.</summary>
+    BlockComment,
+}
 
 /// <summary>
 /// Source text that is not a token: whitespace or a comment. <see cref="Start"/> and <see cref="End"/> are offsets into
 /// the source; <see cref="Text"/> is the source substring.
 /// </summary>
+/// <param name="Kind">Whether the piece is whitespace, a line comment or a block comment.</param>
+/// <param name="Text">The source text of the piece.</param>
+/// <param name="Start">0-based offset of the first character.</param>
+/// <param name="End">0-based offset one past the last character.</param>
 public readonly record struct Trivia(TriviaKind Kind, string Text, int Start, int End);
 
+/// <summary>
+/// One lexical token. <see cref="Start"/> and <see cref="End"/> are 0-based source offsets (<see cref="End"/> is exclusive),
+/// and <see cref="Line"/> and <see cref="Column"/> are 1-based.
+/// </summary>
+/// <param name="Type">The token category.</param>
+/// <param name="Text">The source text of the token, exactly as written.</param>
+/// <param name="Start">0-based offset of the first character.</param>
+/// <param name="End">0-based offset one past the last character.</param>
+/// <param name="Line">1-based line of the first character.</param>
+/// <param name="Column">1-based column of the first character, counted in characters.</param>
 public readonly record struct Token(TokenType Type, string Text, int Start, int End, int Line, int Column)
 {
     /// <summary>Normalized value: unquoted identifiers upper-cased, quotes/escapes stripped.</summary>

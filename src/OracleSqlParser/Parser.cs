@@ -1,5 +1,9 @@
 namespace OracleSqlParser;
 
+/// <summary>
+/// The outcome of <see cref="SqlParser.Parse(string)"/>: the script tree, every diagnostic, and the token stream.
+/// Parsing never throws; check <see cref="Success"/> or <see cref="Errors"/>.
+/// </summary>
 public sealed class ParseResult
 {
     /// <summary>
@@ -8,7 +12,13 @@ public sealed class ParseResult
     /// </summary>
     public string Source { get; init; } = string.Empty;
 
+    /// <summary>The statements that parsed. Statements that failed are omitted, so the script can be partial when <see cref="Errors"/> is not empty.</summary>
     public SqlScript Script { get; init; } = new();
+
+    /// <summary>
+    /// Every lexical, syntax and version diagnostic, in the order found. Lexical errors come first, then syntax
+    /// errors, then version errors. Each carries a stable <see cref="ParseError.Code"/>.
+    /// </summary>
     public IReadOnlyList<ParseError> Errors { get; init; } = [];
 
     /// <summary>
@@ -18,6 +28,7 @@ public sealed class ParseResult
     /// </summary>
     public IReadOnlyList<Token> Tokens { get; init; } = [];
 
+    /// <summary>True when there are no diagnostics at all, including version diagnostics.</summary>
     public bool Success => Errors.Count == 0;
 }
 
