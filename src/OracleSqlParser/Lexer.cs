@@ -60,6 +60,7 @@ public sealed class Lexer
     private bool _define;
     private char _prefix = '&';
     private int _setState; // SQL*Plus SET DEFINE detection: 1 = saw SET at line start, 2 = saw SET DEFINE
+    private Token _prev; // the previous token returned by Next(), for context-sensitive ':'
 
     /// <summary>Lexical errors recorded so far (the lexer recovers and keeps going).</summary>
     public List<ParseError> Errors { get; } = [];
@@ -113,6 +114,7 @@ public sealed class Lexer
             t = t with { LeadingTrivia = _trivia.ToArray() };
             _trivia.Clear();
         }
+        _prev = t;
         return t;
     }
 
@@ -200,6 +202,13 @@ public sealed class Lexer
         if (c == ':')
         {
             if (Peek() == '=') { Advance(); Advance(); return Make(TokenType.Operator, start, line, col); }
+            // 'key':value (JSON_OBJECT) and (expr):value: a colon right after a string, quoted name or ')' is the key/value
+            // separator, never the start of a bind. Identifiers are excluded: INTO :x and RETURN :x are real binds.
+            if (_prev.Type is TokenType.String or TokenType.QuotedIdentifier || _prev is { Type: TokenType.Operator, Text: ")" })
+            {
+                Advance();
+                return Make(TokenType.Operator, start, line, col);
+            }
             Advance();
             if (Cur == '"') { /* :"name" */ Advance(); while (_i < _s.Length && Cur != '"') Advance(); if (_i < _s.Length) Advance(); }
             else while (char.IsLetterOrDigit(Cur) || Cur is '_' or '$' or '#') Advance();

@@ -548,7 +548,7 @@ public sealed partial class SqlParser
         }
         arg.Value = ParseExpr();
         if (AcceptKw("VALUE")) arg.MappedValue = ParseExpr();
-        else if (Cur.Type == TokenType.Bind && Cur.Text == ":") { Next(); arg.MappedValue = ParseExpr(); }
+        else if (Cur.Text == ":" && Cur.Type is TokenType.Operator or TokenType.Bind) { Next(); arg.MappedValue = ParseExpr(); } // 'key' : value
         if (IsKw("FORMAT") && IsKwAt(1, "JSON")) arg.Format = (FormatClause)ParseFunctionClause();
         if (IsKw("AS") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier) { Next(); arg.Alias = ParseIdentifier(); }
         return Fin(arg, a);

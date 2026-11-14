@@ -15,6 +15,7 @@ public class SmokeCorpusTests
     [InlineData("SELECT (SYSTIMESTAMP - SYSTIMESTAMP) DAY(9) TO SECOND, SYSTIMESTAMP + (SYSTIMESTAMP - SYSTIMESTAMP) DAY TO SECOND FROM dual")]
     [InlineData("SELECT (TIMESTAMP '2024-01-01 00:00:00' - TIMESTAMP '2020-01-01 00:00:00') DAY TO SECOND(3) FROM dual")]
     [InlineData("SELECT t.c.a[0].b, t.c.a[*].b, t.c.a[0 to 2].b, t.c.a[1,3].b FROM t")]
+    [InlineData("SELECT JSON_OBJECT('a':1, 'b' : 'x', 'c':1+2 NULL ON NULL) FROM dual")]
     [InlineData("select e.*, d.dname from emp e, dept d where e.deptno = d.deptno(+) and e.sal > :min_sal")]
     [InlineData("SELECT /*+ INDEX(e emp_ix) */ DISTINCT ename AS \"Name\", sal*12 annual FROM scott.emp e")]
     [InlineData("SELECT * FROM a LEFT OUTER JOIN b ON a.id = b.id INNER JOIN c USING (id) CROSS JOIN d NATURAL JOIN e")]

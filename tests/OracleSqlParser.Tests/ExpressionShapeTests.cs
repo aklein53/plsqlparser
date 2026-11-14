@@ -124,7 +124,39 @@ public class ExpressionShapeTests
     [InlineData("XMLQUERY('/a' PASSING BY VALUE x AS \"v\" RETURNING CONTENT NULL ON EMPTY)",
         "(FunctionCall name=[XMLQUERY] clauses=[(PassingClause byValue items=[(ExpressionSelectItem expression=X alias=\"v\")]) (ReturningClause content) (OnBehaviorClause behavior=Null event=Empty)] arguments=[(Argument value='/a')])")]
     [InlineData("TRANSLATE(x USING NCHAR_CS)", "(FunctionCall name=[TRANSLATE] clauses=[(UsingCharsetClause charset=NCHAR_CS)] arguments=[(Argument value=X)])")]
-    public void JsonXmlAndFunctionClauses(string sql, string expected) => Assert.Equal(expected, Shape.Expr(sql));
+    // 'key':value with no space: ':' right after a string key is the separator, not the start of a bind :1
+    [InlineData("JSON_OBJECT('a':1)", "(FunctionCall name=[JSON_OBJECT] arguments=[(Argument value='a' mappedValue=1)])")]
+    [InlineData("JSON_OBJECT('a':x)", "(FunctionCall name=[JSON_OBJECT] arguments=[(Argument value='a' mappedValue=X)])")]
+    [InlineData("JSON_OBJECT('a':1+2, 'b' : 'c')", "(FunctionCall name=[JSON_OBJECT] arguments=[(Argument value='a' mappedValue=(+ 1 2)) (Argument value='b' mappedValue='c')])")]
+    [InlineData("JSON_OBJECT(UPPER('a'):1)", "(FunctionCall name=[JSON_OBJECT] arguments=[(Argument value=(FunctionCall name=[UPPER] arguments=[(Argument value='a')]) mappedValue=1)])")]
+    public void JsonObjectColonSeparator(string sql, string expected) => Assert.Equal(expected, Shape.Expr(sql));
+
+    // Real binds keep lexing as binds everywhere else, including right after a string or a ')' in a non-key position.
+    [Theory]
+    [InlineData(":1", ":1")]
+    [InlineData("y = :1", "(= Y :1)")]
+    [InlineData("(:1, :2)", "(ExpressionList items=[:1 :2])")]
+    [InlineData("x = :name", "(= X :name)")]
+    public void BindsStillLexAsBinds(string sql, string expected) => Assert.Equal(expected, Shape.Expr(sql));
+
+    /// <summary>Token <paramref name="index"/> of the lexed input (EOF is included): ':' after a string key is an operator, elsewhere ':x' is a bind.</summary>
+    [Theory]
+    [InlineData("'a':1", 1, TokenType.Operator, ":")]
+    [InlineData("'a' :1", 1, TokenType.Operator, ":")]
+    [InlineData("'a' : 1", 1, TokenType.Operator, ":")]
+    [InlineData("'a':1", 2, TokenType.Number, "1")]
+    [InlineData("f(x):1", 4, TokenType.Operator, ":")]
+    [InlineData("'a' := 1", 1, TokenType.Operator, ":=")]
+    [InlineData("y = :1", 2, TokenType.Bind, ":1")]
+    [InlineData("(:1", 1, TokenType.Bind, ":1")]
+    [InlineData("INTO :x", 1, TokenType.Bind, ":x")]
+    [InlineData("x := :1", 2, TokenType.Bind, ":1")]
+    public void ColonLexing(string sql, int index, TokenType type, string text)
+    {
+        var t = Lexer.Tokenize(sql)[index];
+        Assert.Equal(type, t.Type);
+        Assert.Equal(text, t.Text);
+    }
 
     [Theory]
     [InlineData("x AT TIME ZONE 'UTC'", "(AtTimeZoneExpression value=X zone='UTC')")]
