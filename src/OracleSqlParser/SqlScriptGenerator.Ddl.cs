@@ -402,7 +402,9 @@ public sealed partial class SqlScriptGenerator
                 case AlterTableActionKind.Attributes:
                     Sep(a.Attributes, Attribute, " ");
                     break;
-                default: SyntaxList(a.Syntax); break;
+                default:
+                    if (!AlterPartitionAction(a)) SyntaxList(a.Syntax);
+                    break;
             }
         }
 

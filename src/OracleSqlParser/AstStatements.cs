@@ -553,7 +553,9 @@ public sealed partial class AlterTableStatement : Statement
 public enum AlterTableActionKind
 {
     AddColumns, AddConstraint, ModifyColumns, DropColumns, DropConstraint, DropPrimaryKey, DropUnique,
-    RenameColumn, RenameConstraint, RenameTo, ModifyConstraint, SetUnused, Attributes, Other,
+    RenameColumn, RenameConstraint, RenameTo, ModifyConstraint, SetUnused, Attributes,
+    AddPartition, DropPartition, TruncatePartition, SplitPartition, MergePartitions, ExchangePartition, MovePartition,
+    RenamePartition, ModifyPartitionValues, SetInterval, Other,
 }
 
 public sealed partial class AlterTableAction : SqlNode
@@ -566,6 +568,25 @@ public sealed partial class AlterTableAction : SqlNode
     public bool Cascade { get; set; }
     public bool Online { get; set; }
     public List<PhysicalAttribute> Attributes { get; set; } = [];
+    /// <summary>Partition or subpartition targets of partition maintenance (DROP, TRUNCATE, SPLIT, MERGE, EXCHANGE, MOVE, RENAME, MODIFY).</summary>
+    public List<PartitionReference> PartitionRefs { get; set; } = [];
+    /// <summary>Partitions defined by ADD PARTITION, SPLIT ... INTO (...) or MERGE ... INTO PARTITION.</summary>
+    public List<PartitionDefinition> Partitions { get; set; } = [];
+    /// <summary>Boundary values of SPLIT ... AT/VALUES (...), MODIFY PARTITION ... ADD/DROP VALUES (...), or SET INTERVAL (...).</summary>
+    public List<Expression> Values { get; set; } = [];
+    /// <summary>SPLIT PARTITION ... VALUES (...) rather than AT (...).</summary>
+    public bool SplitByValues { get; set; }
+    /// <summary>MODIFY PARTITION ... ADD VALUES (true) or DROP VALUES (false).</summary>
+    public bool? AddValues { get; set; }
+    /// <summary>SET INTERVAL (expr); null for the SET INTERVAL () form.</summary>
+    public Expression? Interval { get; set; }
+    /// <summary>UPDATE [GLOBAL] INDEXES clause on partition maintenance.</summary>
+    public bool UpdateIndexes { get; set; }
+    public bool GlobalIndexes { get; set; }
+    /// <summary>EXCHANGE PARTITION ... INCLUDING (true) or EXCLUDING (false) INDEXES.</summary>
+    public bool? IncludingIndexes { get; set; }
+    /// <summary>EXCHANGE PARTITION ... WITH (true) or WITHOUT (false) VALIDATION.</summary>
+    public bool? WithValidation { get; set; }
     /// <summary>Partition/other maintenance actions without a dedicated node, as a token tree.</summary>
     public List<SyntaxItem> Syntax { get; set; } = [];
 }

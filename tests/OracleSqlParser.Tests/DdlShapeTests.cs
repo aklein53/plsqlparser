@@ -146,8 +146,6 @@ public class DdlShapeTests
     [InlineData("ALTER TABLE t RENAME TO t_old", "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=RenameTo newName=T_OLD)])")]
     [InlineData("ALTER TABLE t ENABLE ROW MOVEMENT", "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=Attributes attributes=[(RowMovementAttribute enabled)])])")]
     [InlineData("ALTER TABLE t PCTFREE 5 NOLOGGING", "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=Attributes attributes=[(NumericAttribute kind=PctFree value=5) (LoggingAttribute)])])")]
-    [InlineData("ALTER TABLE t ADD PARTITION p3 VALUES LESS THAN (30)",
-        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=Other syntax=[(WordItem value=ADD) (WordItem value=PARTITION) (WordItem value=P3) (WordItem value=VALUES) (WordItem value=LESS) (WordItem value=THAN) (GroupItem items=[(LiteralItem kind=Number value=30)])])])")]
     [InlineData("ALTER TABLE IF EXISTS t ADD c NUMBER MODIFY d DATE DROP COLUMN e",
         "(AlterTableStatement name=[T] ifExists actions=[(AlterTableAction kind=AddColumns columns=[(ColumnDefinition name=C type=(DataType name=NUMBER))]) (AlterTableAction kind=ModifyColumns columns=[(ColumnDefinition name=D type=(DataType name=DATE))]) (AlterTableAction kind=DropColumns names=[E])])")]
     public void AlterTable(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
@@ -229,6 +227,43 @@ public class DdlShapeTests
         "(AlterMaterializedViewStatement name=[MV] refresh=(RefreshClause method=Fast) queryRewrite=true attributes=[(LoggingAttribute logging)])")]
     [InlineData("CREATE MATERIALIZED VIEW mv REFRESH FAST ON STATEMENT AS SELECT 1 FROM dual", "(CreateViewStatement materialized name=[MV] refresh=(RefreshClause method=Fast mode=OnStatement) query=" + SelDual + ")")]
     public void AlterMaterializedView(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("ALTER TABLE t ADD PARTITION p3 VALUES LESS THAN (30)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=AddPartition partitions=[(PartitionDefinition name=P3 lessThan values=[30])])])")]
+    [InlineData("ALTER TABLE t ADD PARTITION p4 VALUES (1, 2) TABLESPACE ts",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=AddPartition partitions=[(PartitionDefinition name=P4 values=[1 2] attributes=[(TablespaceAttribute name=TS)])])])")]
+    [InlineData("ALTER TABLE t DROP PARTITION p1, p2 UPDATE GLOBAL INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=DropPartition partitionRefs=[(PartitionReference name=P1) (PartitionReference name=P2)] updateIndexes globalIndexes)])")]
+    [InlineData("ALTER TABLE t DROP SUBPARTITION s1 UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=DropPartition partitionRefs=[(PartitionReference subpartition name=S1)] updateIndexes)])")]
+    [InlineData("ALTER TABLE t DROP PARTITION FOR (5)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=DropPartition partitionRefs=[(PartitionReference forValues=[5])])])")]
+    [InlineData("ALTER TABLE t TRUNCATE PARTITION p1 UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=TruncatePartition partitionRefs=[(PartitionReference name=P1)] updateIndexes)])")]
+    [InlineData("ALTER TABLE t SPLIT PARTITION p AT (10) INTO (PARTITION a TABLESPACE x, PARTITION b) UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=SplitPartition partitionRefs=[(PartitionReference name=P)] partitions=[(PartitionDefinition name=A attributes=[(TablespaceAttribute name=X)]) (PartitionDefinition name=B)] values=[10] updateIndexes)])")]
+    [InlineData("ALTER TABLE t SPLIT PARTITION p VALUES (1, 2)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=SplitPartition partitionRefs=[(PartitionReference name=P)] values=[1 2] splitByValues)])")]
+    [InlineData("ALTER TABLE t MERGE PARTITIONS a, b INTO PARTITION c UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=MergePartitions partitionRefs=[(PartitionReference name=A) (PartitionReference name=B)] partitions=[(PartitionDefinition name=C)] updateIndexes)])")]
+    [InlineData("ALTER TABLE t MERGE PARTITIONS a, b",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=MergePartitions partitionRefs=[(PartitionReference name=A) (PartitionReference name=B)])])")]
+    [InlineData("ALTER TABLE t EXCHANGE PARTITION p WITH TABLE u INCLUDING INDEXES WITHOUT VALIDATION",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=ExchangePartition names=[U] partitionRefs=[(PartitionReference name=P)] includingIndexes=true withValidation=false)])")]
+    [InlineData("ALTER TABLE t EXCHANGE PARTITION p WITH TABLE u EXCLUDING INDEXES WITH VALIDATION",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=ExchangePartition names=[U] partitionRefs=[(PartitionReference name=P)] includingIndexes=false withValidation=true)])")]
+    [InlineData("ALTER TABLE t MOVE PARTITION p TABLESPACE ts ONLINE UPDATE INDEXES",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=MovePartition online attributes=[(TablespaceAttribute name=TS)] partitionRefs=[(PartitionReference name=P)] updateIndexes)])")]
+    [InlineData("ALTER TABLE t RENAME PARTITION a TO b",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=RenamePartition newName=B partitionRefs=[(PartitionReference name=A)])])")]
+    [InlineData("ALTER TABLE t MODIFY PARTITION p ADD VALUES (3)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=ModifyPartitionValues partitionRefs=[(PartitionReference name=P)] values=[3] addValues=true)])")]
+    [InlineData("ALTER TABLE t MODIFY PARTITION p DROP VALUES (3)",
+        "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=ModifyPartitionValues partitionRefs=[(PartitionReference name=P)] values=[3] addValues=false)])")]
+    [InlineData("ALTER TABLE t SET INTERVAL (1)", "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=SetInterval interval=1)])")]
+    [InlineData("ALTER TABLE t SET INTERVAL ()", "(AlterTableStatement name=[T] actions=[(AlterTableAction kind=SetInterval)])")]
+    public void AlterTablePartitionMaintenance(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
     [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateObjectStatement kind=User name=[BOB] body=[(WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=PW)])")]

@@ -513,6 +513,10 @@ public partial class AlterTableAction
         if (Names is not null) foreach (var x in Names) yield return x;
         if (NewName is not null) yield return NewName;
         if (Attributes is not null) foreach (var x in Attributes) yield return x;
+        if (PartitionRefs is not null) foreach (var x in PartitionRefs) yield return x;
+        if (Partitions is not null) foreach (var x in Partitions) yield return x;
+        if (Values is not null) foreach (var x in Values) yield return x;
+        if (Interval is not null) yield return Interval;
         if (Syntax is not null) foreach (var x in Syntax) yield return x;
     }
 
@@ -524,6 +528,10 @@ public partial class AlterTableAction
         if (Names is not null) foreach (var x in Names) x.Accept(visitor);
         NewName?.Accept(visitor);
         if (Attributes is not null) foreach (var x in Attributes) x.Accept(visitor);
+        if (PartitionRefs is not null) foreach (var x in PartitionRefs) x.Accept(visitor);
+        if (Partitions is not null) foreach (var x in Partitions) x.Accept(visitor);
+        if (Values is not null) foreach (var x in Values) x.Accept(visitor);
+        Interval?.Accept(visitor);
         if (Syntax is not null) foreach (var x in Syntax) x.Accept(visitor);
     }
 
@@ -534,6 +542,10 @@ public partial class AlterTableAction
         SqlNodeRewriter.RewriteList(rewriter, Names, "AlterTableAction.Names");
         NewName = SqlNodeRewriter.RewriteOptional(rewriter, NewName, "AlterTableAction.NewName");
         SqlNodeRewriter.RewriteList(rewriter, Attributes, "AlterTableAction.Attributes");
+        SqlNodeRewriter.RewriteList(rewriter, PartitionRefs, "AlterTableAction.PartitionRefs");
+        SqlNodeRewriter.RewriteList(rewriter, Partitions, "AlterTableAction.Partitions");
+        SqlNodeRewriter.RewriteList(rewriter, Values, "AlterTableAction.Values");
+        Interval = SqlNodeRewriter.RewriteOptional(rewriter, Interval, "AlterTableAction.Interval");
         SqlNodeRewriter.RewriteList(rewriter, Syntax, "AlterTableAction.Syntax");
     }
 
@@ -554,6 +566,16 @@ public partial class AlterTableAction
         c.Cascade = Cascade;
         c.Online = Online;
         c.Attributes = CloneList(Attributes);
+        c.PartitionRefs = CloneList(PartitionRefs);
+        c.Partitions = CloneList(Partitions);
+        c.Values = CloneList(Values);
+        c.SplitByValues = SplitByValues;
+        c.AddValues = AddValues;
+        c.Interval = CloneChild(Interval);
+        c.UpdateIndexes = UpdateIndexes;
+        c.GlobalIndexes = GlobalIndexes;
+        c.IncludingIndexes = IncludingIndexes;
+        c.WithValidation = WithValidation;
         c.Syntax = CloneList(Syntax);
         return c;
     }
@@ -569,6 +591,16 @@ public partial class AlterTableAction
             && Cascade == o.Cascade
             && Online == o.Online
             && PairList(Attributes, o.Attributes, pending)
+            && PairList(PartitionRefs, o.PartitionRefs, pending)
+            && PairList(Partitions, o.Partitions, pending)
+            && PairList(Values, o.Values, pending)
+            && SplitByValues == o.SplitByValues
+            && AddValues == o.AddValues
+            && Pair(Interval, o.Interval, pending)
+            && UpdateIndexes == o.UpdateIndexes
+            && GlobalIndexes == o.GlobalIndexes
+            && IncludingIndexes == o.IncludingIndexes
+            && WithValidation == o.WithValidation
             && PairList(Syntax, o.Syntax, pending);
     }
 }
@@ -8110,6 +8142,52 @@ public partial class PartitionDefinition
             && PairList(Values, o.Values, pending)
             && PairList(Attributes, o.Attributes, pending)
             && PairList(Subpartitions, o.Subpartitions, pending);
+    }
+}
+
+public partial class PartitionReference
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (ForValues is not null) foreach (var x in ForValues) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (ForValues is not null) foreach (var x in ForValues) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteOptional(rewriter, Name, "PartitionReference.Name");
+        SqlNodeRewriter.RewriteList(rewriter, ForValues, "PartitionReference.ForValues");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new PartitionReference();
+        CopySpan(this, c);
+        c.Subpartition = Subpartition;
+        c.Name = CloneChild(Name);
+        c.ForValues = CloneList(ForValues);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (PartitionReference)other;
+        return Subpartition == o.Subpartition
+            && Pair(Name, o.Name, pending)
+            && PairList(ForValues, o.ForValues, pending);
     }
 }
 

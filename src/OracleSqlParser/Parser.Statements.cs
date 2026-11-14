@@ -957,6 +957,7 @@ public sealed partial class SqlParser
 
     private AlterTableAction ParseAlterTableAction()
     {
+        if (AtPartitionMaintenanceStart()) return ParsePartitionMaintenance();
         var s = Cur;
         var a = new AlterTableAction();
         if (IsKw("ADD") && !(IsKwAt(1, "PARTITION") || IsKwAt(1, "SUPPLEMENTAL") || IsKwAt(1, "PERIOD") || IsKwAt(1, "SUBPARTITION") || IsKwAt(1, "OVERFLOW") || IsKwAt(1, "ATTRIBUTE")))

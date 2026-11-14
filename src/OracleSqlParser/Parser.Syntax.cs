@@ -225,7 +225,7 @@ public sealed partial class SqlParser
         return m;
     }
 
-    private PartitionDefinition ParsePartitionDefinition()
+    private PartitionDefinition ParsePartitionDefinition(Func<bool>? attributeStop = null)
     {
         var s = Cur;
         if (!(IsKw("PARTITION") || IsKw("SUBPARTITION"))) throw Fail($"Expected PARTITION but found {Describe(Cur)}");
@@ -240,7 +240,7 @@ public sealed partial class SqlParser
             else do pd.Values.Add(ParseExpr()); while (AcceptOp(","));
             ExpectOp(")");
         }
-        pd.Attributes = ParsePhysicalAttributes(() => IsOp(",") || IsOp("("));
+        pd.Attributes = ParsePhysicalAttributes(attributeStop ?? (() => IsOp(",") || IsOp("(")));
         if (IsOp("("))
         {
             Next();

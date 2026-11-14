@@ -1578,6 +1578,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="PartitionReference"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(PartitionReference node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="PartitionReference"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(PartitionReference node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="PassingClause"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(PassingClause node) => Visit((SqlNode)node);
 

@@ -28,7 +28,7 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 | ALTER SEQUENCE (all options; RESTART as an option word) | `AlterSequenceStatement` | typed (shares `SequenceOption` with CREATE) | DdlShape, SmokeCorpus |
 | ALTER of PROCEDURE/FUNCTION/PACKAGE [BODY]/TYPE [BODY]/TRIGGER/LIBRARY/JAVA/VIEW/SYNONYM: COMPILE [DEBUG] [SPECIFICATION|BODY|PACKAGE] [REUSE SETTINGS] [param = v], EDITIONABLE/NONEDITIONABLE; ALTER TRIGGER ENABLE/DISABLE/RENAME TO; ALTER VIEW ADD/MODIFY/DROP CONSTRAINT, READ ONLY/WRITE | `AlterCompileStatement`, `AlterTriggerStatement`, `AlterViewStatement` | typed (other clauses stay `AlterObjectStatement`) | DdlShape, SmokeCorpus |
 | ALTER MATERIALIZED VIEW (REFRESH options, ENABLE/DISABLE QUERY REWRITE, COMPILE, CONSIDER FRESH, SHRINK SPACE, CACHE/LOGGING/PARALLEL) | `AlterMaterializedViewStatement` | typed (refresh reuses `RefreshClause`) | DdlShape, SmokeCorpus |
-| ALTER TABLE | `AlterTableStatement` | typed (partition/other maintenance actions: `Syntax` token tree) | DdlShape |
+| ALTER TABLE | `AlterTableStatement` | typed (ADD/DROP/TRUNCATE/SPLIT/MERGE/EXCHANGE/MOVE/RENAME PARTITION, MODIFY PARTITION ADD/DROP VALUES, SET INTERVAL; other maintenance actions: `Syntax` token tree) | DdlShape, SmokeCorpus |
 | DROP (any object kind) | `DropStatement` | typed | DdlShape |
 | CREATE PROCEDURE/FUNCTION/PACKAGE [BODY]/TRIGGER/TYPE [BODY]/LIBRARY/JAVA | `CreateProgramStatement` … | typed | PlsqlShape, DdlShape |
 | CREATE of any other object (USER, ROLE, PROFILE, TABLESPACE, DATABASE LINK, DIRECTORY, CLUSTER, CONTEXT, DIMENSION, DOMAIN, EDITION, OPERATOR, INDEXTYPE, OUTLINE, PROPERTY GRAPH, JSON DUALITY VIEW, MV LOG, ZONEMAP, ANALYTIC VIEW, ...) | `CreateObjectStatement` | header+tree |
