@@ -518,7 +518,7 @@ public sealed partial class LikeExpression : Expression
     public Expression? Escape { get; set; }
 }
 
-public enum IsTest { Null, Nan, Infinite, Empty, Present, ASet, Json, OfType, Dangling }
+public enum IsTest { Null, Nan, Infinite, Empty, Present, ASet, Json, OfType, Dangling, True, False }
 
 public sealed partial class IsOfType : SqlNode
 {

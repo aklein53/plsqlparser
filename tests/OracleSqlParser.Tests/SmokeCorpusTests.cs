@@ -11,6 +11,7 @@ public class SmokeCorpusTests
 {
     [Theory]
     [InlineData("SELECT 1 FROM dual")]
+    [InlineData("SELECT 1 FROM dual WHERE (1=1) IS TRUE AND (1=2) IS NOT FALSE")]
     [InlineData("select e.*, d.dname from emp e, dept d where e.deptno = d.deptno(+) and e.sal > :min_sal")]
     [InlineData("SELECT /*+ INDEX(e emp_ix) */ DISTINCT ename AS \"Name\", sal*12 annual FROM scott.emp e")]
     [InlineData("SELECT * FROM a LEFT OUTER JOIN b ON a.id = b.id INNER JOIN c USING (id) CROSS JOIN d NATURAL JOIN e")]

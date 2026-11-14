@@ -212,6 +212,8 @@ public sealed partial class SqlScriptGenerator
                 case IsTest.Present: Add("PRESENT"); break;
                 case IsTest.Dangling: Add("DANGLING"); break;
                 case IsTest.ASet: Add("A SET"); break;
+                case IsTest.True: Add("TRUE"); break;
+                case IsTest.False: Add("FALSE"); break;
                 case IsTest.Json: Add("JSON"); foreach (var c in x.JsonClauses) { Add(" "); Clause(c); } break;
                 case IsTest.OfType:
                     Add("OF (");

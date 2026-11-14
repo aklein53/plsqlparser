@@ -136,6 +136,8 @@ public sealed partial class SqlParser
         else if (AcceptKw("EMPTY")) ie.Test = IsTest.Empty;
         else if (AcceptKw("PRESENT")) ie.Test = IsTest.Present;
         else if (AcceptKw("DANGLING")) ie.Test = IsTest.Dangling;
+        else if (AcceptKw("TRUE")) ie.Test = IsTest.True; // Oracle 23ai boolean predicates
+        else if (AcceptKw("FALSE")) ie.Test = IsTest.False;
         else if (IsKw("A") && IsKwAt(1, "SET")) { Next(); Next(); ie.Test = IsTest.ASet; }
         else if (AcceptKw("JSON"))
         {
@@ -159,7 +161,7 @@ public sealed partial class SqlParser
             } while (AcceptOp(","));
             ExpectOp(")");
         }
-        else throw Fail($"Expected NULL, NAN, INFINITE, EMPTY, PRESENT, A SET, JSON, OF or DANGLING after IS but found {Describe(Cur)}");
+        else throw Fail($"Expected NULL, NAN, INFINITE, EMPTY, PRESENT, A SET, JSON, OF, DANGLING, TRUE or FALSE after IS but found {Describe(Cur)}");
         return Fin(ie, start);
     }
 
