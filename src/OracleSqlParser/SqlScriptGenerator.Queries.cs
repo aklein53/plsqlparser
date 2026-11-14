@@ -90,7 +90,9 @@ public sealed partial class SqlScriptGenerator
             if (s.Fetch != null)
             {
                 ClauseStart(_o.NewLineBeforeOrderByClause);
-                Add(s.Fetch.Next ? "FETCH NEXT" : "FETCH FIRST");
+                Add("FETCH ");
+                if (s.Fetch.Accuracy is { } accuracy) Add(accuracy == FetchAccuracy.Exact ? "EXACT " : "APPROXIMATE ");
+                Add(s.Fetch.Next ? "NEXT" : "FIRST");
                 if (s.Fetch.Count != null) { Add(" "); Child(s.Fetch.Count, 5); if (s.Fetch.Percent) Add(" PERCENT"); Add(" ROWS"); }
                 else Add(" ROW");
                 Add(s.Fetch.WithTies ? " WITH TIES" : " ONLY");

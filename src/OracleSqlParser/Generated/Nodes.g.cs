@@ -3642,6 +3642,7 @@ public partial class FetchClause
         c.Count = CloneChild(Count);
         c.Percent = Percent;
         c.WithTies = WithTies;
+        c.Accuracy = Accuracy;
         return c;
     }
 
@@ -3651,7 +3652,8 @@ public partial class FetchClause
         return Next == o.Next
             && Pair(Count, o.Count, pending)
             && Percent == o.Percent
-            && WithTies == o.WithTies;
+            && WithTies == o.WithTies
+            && Accuracy == o.Accuracy;
     }
 }
 

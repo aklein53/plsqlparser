@@ -292,7 +292,11 @@ public sealed partial class FetchClause : SqlNode
     public Expression? Count { get; set; }
     public bool Percent { get; set; }
     public bool WithTies { get; set; }
+    /// <summary>23ai vector search: EXACT, or APPROX / APPROXIMATE (synonyms). Null when the keyword is omitted.</summary>
+    public FetchAccuracy? Accuracy { get; set; }
 }
+
+public enum FetchAccuracy { Exact, Approximate }
 
 public sealed partial class ForUpdateClause : SqlNode
 {

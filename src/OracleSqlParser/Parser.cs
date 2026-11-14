@@ -363,7 +363,10 @@ public sealed partial class SqlParser
         if (IsKw("FETCH"))
         {
             var fs = Next();
-            var f = new FetchClause { Next = IsKw("NEXT") };
+            var f = new FetchClause();
+            if (AcceptKw("EXACT")) f.Accuracy = FetchAccuracy.Exact;
+            else if (AcceptKw("APPROX") || AcceptKw("APPROXIMATE")) f.Accuracy = FetchAccuracy.Approximate;
+            f.Next = IsKw("NEXT");
             if (!AcceptKw("FIRST") && !AcceptKw("NEXT")) throw Fail("Expected FIRST or NEXT after FETCH");
             if (!IsKw("ROW") && !IsKw("ROWS"))
             {
