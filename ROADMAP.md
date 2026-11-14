@@ -88,7 +88,7 @@ fuzz) and were re-verified by hand where cited.
 
 - `ParseError`: code, length, expected-token set, caret formatter; `TryParse`, `ParseSelect`.
 - Discovery helpers as a separate `SqlAnalysis` class (`GetTables`, `GetColumns`, `GetBinds`, `GetFunctions`).
-- Resolve the three-name problem before 1.0 (package `PlsqlParser`, assembly/namespace `OracleSqlParser`).
+- ~~Resolve the three-name problem before 1.0 (package `PlsqlParser`, assembly/namespace `OracleSqlParser`).~~ **Resolved:** packages renamed to `OracleSqlParser` and `OracleSqlParser.Guard` to match the namespace; the old `PlsqlParser` packages are to be deprecated on nuget.org pointing to the new IDs (manual owner step).
 - Absolute links in the NuGet README; fix ".NET 10, no dependencies" wording; CLI as a `dotnet tool`;
   XML docs on entry points; `IsPackable=false` on test projects.
 
@@ -98,7 +98,7 @@ fuzz) and were re-verified by hand where cited.
 showed to be false (output-only key filtering is bypassed by self-joins, scalar subqueries and `EXISTS`; CTE
 names are scoped globally; the default function policy is fail-open; `XMLTABLE`/`CURSOR`/flashback/`SAMPLE`
 read around the allowlist; hints pass through). Decision: move to a separate experimental package
-(`PlsqlParser.Guard`) or reduce to a sample, and remove the security claims from the README immediately.
+(now `OracleSqlParser.Guard`) or reduce to a sample, and remove the security claims from the README immediately.
 The security review's findings are the backlog for that package if it continues.
 
 ## Suggested order

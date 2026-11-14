@@ -1,7 +1,7 @@
-# PlsqlParser.Guard (EXPERIMENTAL)
+# OracleSqlParser.Guard (EXPERIMENTAL)
 
 Policy validation and access-restriction rewriting for user-supplied Oracle SELECT queries, built on
-[PlsqlParser](https://github.com/aklein53/plsqlparser) (namespace `OracleSqlParser.Guard`).
+[OracleSqlParser](https://github.com/aklein53/plsqlparser) (namespace `OracleSqlParser.Guard`).
 
 All public types are marked `[Experimental("PLSQLGUARD001")]`: using them is a compile error until you opt in with
 `<NoWarn>PLSQLGUARD001</NoWarn>` (or `#pragma warning disable PLSQLGUARD001`). The API may change or be removed.

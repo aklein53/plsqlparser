@@ -6,10 +6,16 @@ A hand-written lexer and recursive-descent parser for Oracle SQL that builds an 
 ## Installing
 
 ```
-dotnet add package PlsqlParser --prerelease
+dotnet add package OracleSqlParser --prerelease
 ```
 
-The NuGet package is `PlsqlParser`, while the C# namespace (and assembly) is `OracleSqlParser`.
+The NuGet package, the C# namespace and the assembly are all named `OracleSqlParser`.
+
+### Migrating from PlsqlParser
+
+The packages were renamed to match the namespace: `PlsqlParser` is now `OracleSqlParser`, and `PlsqlParser.Guard` is now
+`OracleSqlParser.Guard`. To migrate, replace the package reference (`dotnet remove package PlsqlParser`, then
+`dotnet add package OracleSqlParser --prerelease`). Namespaces are unchanged, so no `using` directives change.
 
 Targets `net8.0` and `net10.0`. Versions are published as pre-releases (`0.1.0-preview.N`) until the API stabilises.
 
@@ -75,7 +81,7 @@ corpus (`SmokeCorpusTests.cs`) that only checks inputs parse.
 
 ## Query guard (experimental, separate package)
 
-An experimental package, `PlsqlParser.Guard`, validates and rewrites user-supplied SELECT queries. It is **not a
+An experimental package, `OracleSqlParser.Guard`, validates and rewrites user-supplied SELECT queries. It is **not a
 security boundary**; read its [README](https://github.com/aklein53/plsqlparser/blob/main/src/OracleSqlParser.Guard/README.md) before using it.
 
 
