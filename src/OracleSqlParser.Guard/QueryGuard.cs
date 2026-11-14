@@ -34,9 +34,9 @@ public enum ViolationCode
     MissingRequiredColumn,
     /// <summary>The top-level select list exposes the same column name more than once.</summary>
     DuplicateColumnName,
-    /// <summary>A bind variable name in the query collides with a bind name the guard adds.</summary>
+    /// <summary>A bind variable name is used by both the user query and the access SQL.</summary>
     BindNameCollision,
-    /// <summary>The access restriction cannot be applied to this query shape.</summary>
+    /// <summary>The trusted <see cref="AccessFilter.AccessSql"/> is not a single valid <c>SELECT</c>.</summary>
     UnsupportedAccessSql,
 }
 
@@ -79,7 +79,7 @@ public sealed class QueryPolicy
     /// <summary>Columns the query's top-level select list must expose (by name or alias).</summary>
     public IReadOnlyList<string> RequiredColumns { get; init; } = [];
 
-    /// <summary>Allow SELECT * (required columns cannot then be verified statically).</summary>
+    /// <summary>True to allow <c>SELECT *</c>; required columns cannot then be verified statically, so the check is skipped.</summary>
     public bool AllowStar { get; init; }
 }
 
@@ -106,7 +106,7 @@ public sealed class AccessFilter
     /// <summary>How the access SQL is joined to the query; <see cref="AccessJoinStyle.InSubquery"/> by default.</summary>
     public AccessJoinStyle Style { get; init; } = AccessJoinStyle.InSubquery;
 
-    /// <summary>For InnerJoin style: the id column exposed by <see cref="AccessSql"/>. Ignored for InSubquery (first column is used).</summary>
+    /// <summary>For InnerJoin style: the id column exposed by <see cref="AccessSql"/>. Ignored for InSubquery, where <see cref="AccessSql"/> must select a single column.</summary>
     public string AccessIdColumn { get; init; } = "ID";
 }
 
