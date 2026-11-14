@@ -750,7 +750,9 @@ public sealed partial class SqlParser
     /// <summary>JSON { 'k' : value, ... } or JSON {*}; the JSON keyword is the current token.</summary>
     private Expression ParseJsonObject()
     {
-        var start = Next();
+        var start = Cur;
+        RequireVersion(OracleVersion.Oracle23, "JSON {} constructor", start);
+        Next();
         ExpectOp("{");
         var o = new JsonObjectConstructor();
         if (AcceptOp("*")) o.Wildcard = true;
@@ -785,7 +787,7 @@ public sealed partial class SqlParser
     private Expression ParseJsonArray(bool keyword)
     {
         var start = Cur;
-        if (keyword) Next();
+        if (keyword) { RequireVersion(OracleVersion.Oracle23, "JSON [] constructor", start); Next(); }
         ExpectOp("[");
         var a = new JsonArrayConstructor();
         if (IsKw("SELECT") || IsKw("WITH")) a.Query = ParseSelectStatement();

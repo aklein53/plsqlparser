@@ -560,6 +560,7 @@ public sealed partial class SqlParser
         }
         if (IsKw("FOR") && PeekTok().Type is TokenType.Identifier or TokenType.QuotedIdentifier && IsKwAt(2, "IN"))
         {
+            RequireVersion(OracleVersion.Oracle21, "qualified-expression FOR iterator", Cur);
             var fs = Next();
             var it = new IndexIterator { Variable = ParseIdentifier() };
             ExpectKw("IN");

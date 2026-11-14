@@ -28,6 +28,7 @@ public class OracleVersionTests
         ["BEGIN FOR i NUMBER IN 1..3 LOOP NULL; END LOOP; END;", "typed FOR iterand", OracleVersion.Oracle21],
         ["BEGIN FOR i MUTABLE IN 1..3 LOOP NULL; END LOOP; END;", "MUTABLE FOR iterand", OracleVersion.Oracle21],
         ["BEGIN FOR r IN (EXECUTE IMMEDIATE 'SELECT 1 FROM dual') LOOP NULL; END LOOP; END;", "FOR loop EXECUTE IMMEDIATE", OracleVersion.Oracle21],
+        ["DECLARE TYPE t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; v t := t(FOR i IN 1..3 => i); BEGIN NULL; END;", "qualified-expression FOR iterator", OracleVersion.Oracle21],
 
         // ---- Oracle 23ai ----
         ["SELECT 1 FROM dual WHERE (1 = 1) IS TRUE", "IS TRUE/FALSE", OracleVersion.Oracle23],
@@ -51,6 +52,13 @@ public class OracleVersionTests
         ["CREATE TABLE t (v VECTOR(3))", "VECTOR data type", OracleVersion.Oracle23],
         ["CREATE MLE MODULE m LANGUAGE JAVASCRIPT AS export function f() {}", "CREATE MLE MODULE", OracleVersion.Oracle23],
         ["CREATE MLE ENV e", "CREATE MLE ENV", OracleVersion.Oracle23],
+        ["SELECT JSON {'a' : 1} FROM dual", "JSON {} constructor", OracleVersion.Oracle23],
+        ["SELECT JSON ['a', 1] FROM dual", "JSON [] constructor", OracleVersion.Oracle23],
+        ["CREATE TABLE t (c NUMBER DEFAULT ON NULL FOR INSERT ONLY 5)", "DEFAULT ON NULL FOR", OracleVersion.Oracle23],
+        ["CREATE TABLE t (c NUMBER DEFAULT ON NULL FOR INSERT AND UPDATE 5)", "DEFAULT ON NULL FOR", OracleVersion.Oracle23],
+        ["ALTER USER u READ ONLY", "user READ ONLY/READ WRITE", OracleVersion.Oracle23],
+        ["SELECT * FROM t FETCH APPROX FIRST 10 ROWS ONLY", "FETCH APPROX", OracleVersion.Oracle23],
+        ["SELECT * FROM t FETCH FIRST 10 ROWS ONLY WITH TARGET ACCURACY 90 PERCENT", "WITH TARGET ACCURACY", OracleVersion.Oracle23],
     };
 
     [Theory]
@@ -116,6 +124,11 @@ public class OracleVersionTests
     [InlineData("DECLARE TYPE t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; v t; BEGIN FORALL i IN INDICES OF v INSERT INTO t VALUES (v(i)); END;")]
     [InlineData("DECLARE b BOOLEAN := TRUE; BEGIN IF b = TRUE THEN NULL; END IF; END;")]
     [InlineData("CREATE PROCEDURE p (b BOOLEAN) AS BEGIN NULL; END;")]
+    [InlineData("DECLARE TYPE t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; v t := t(1 => 10, 2 => 20); BEGIN NULL; END;")]
+    [InlineData("DECLARE TYPE t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; v t := t(OTHERS => 0); BEGIN NULL; END;")]
+    [InlineData("BEGIN x := rec_t(a => 1, b => 2); END;")]
+    [InlineData("CREATE TABLE t (c NUMBER DEFAULT ON NULL 5 NOT NULL)")]
+    [InlineData("ALTER USER u IDENTIFIED BY x ACCOUNT UNLOCK")]
     [InlineData("EXEC p(TRUE)")]
     [InlineData("EXEC dbms_stats.gather_table_stats(user, 'T', cascade => TRUE)")]
     [InlineData("CREATE PACKAGE p AS g BOOLEAN := TRUE; FUNCTION f RETURN BOOLEAN; END;")]
@@ -131,6 +144,14 @@ public class OracleVersionTests
     {
         var r = SqlParser.Parse(sql, new ParseOptions { OracleVersion = OracleVersion.Oracle19 });
         Assert.True(r.Success, string.Join("; ", r.Errors));
+    }
+
+    /// <summary>ANNOTATIONS is gated in the shared clause parser, so a DOMAIN also reports the DOMAIN diagnostic.</summary>
+    [Fact]
+    public void Annotations_AreGatedInTheSharedClause()
+    {
+        var r = SqlParser.Parse("CREATE DOMAIN d AS NUMBER ANNOTATIONS (label 'Name')", new ParseOptions { OracleVersion = OracleVersion.Oracle19 });
+        Assert.Contains(r.Errors, e => e.Message.StartsWith("'ANNOTATIONS' requires Oracle 23"));
     }
 
     /// <summary>The convenience APIs throw on a version diagnostic, as they do for any other error.</summary>

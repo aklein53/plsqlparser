@@ -445,7 +445,12 @@ public sealed partial class SqlParser
             var fs = Next();
             var f = new FetchClause();
             if (AcceptKw("EXACT")) f.Accuracy = FetchAccuracy.Exact;
-            else if (AcceptKw("APPROX") || AcceptKw("APPROXIMATE")) f.Accuracy = FetchAccuracy.Approximate;
+            else if (IsKw("APPROX") || IsKw("APPROXIMATE"))
+            {
+                RequireVersion(OracleVersion.Oracle23, "FETCH APPROX", Cur);
+                Next();
+                f.Accuracy = FetchAccuracy.Approximate;
+            }
             f.Next = IsKw("NEXT");
             if (!AcceptKw("FIRST") && !AcceptKw("NEXT")) throw Fail("Expected FIRST or NEXT after FETCH");
             if (!IsKw("ROW") && !IsKw("ROWS"))
@@ -456,7 +461,11 @@ public sealed partial class SqlParser
             if (!AcceptKw("ROWS")) ExpectKw("ROW");
             if (AcceptKw("ONLY"))
             {
-                if (IsKw("WITH") && IsKwAt(1, "TARGET")) { Next(); Next(); ExpectKw("ACCURACY"); f.TargetAccuracy = ParseAdditive(); ExpectKw("PERCENT"); }
+                if (IsKw("WITH") && IsKwAt(1, "TARGET"))
+                {
+                    RequireVersion(OracleVersion.Oracle23, "WITH TARGET ACCURACY", Cur);
+                    Next(); Next(); ExpectKw("ACCURACY"); f.TargetAccuracy = ParseAdditive(); ExpectKw("PERCENT");
+                }
             }
             else { ExpectKw("WITH"); ExpectKw("TIES"); f.WithTies = true; }
             stmt.Fetch = Fin(f, fs);

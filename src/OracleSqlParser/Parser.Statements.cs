@@ -495,6 +495,7 @@ public sealed partial class SqlParser
         else if (IsKw("DISABLE") && IsKwAt(1, "EDITIONS")) { Next(); Next(); c.Kind = UserClauseKind.DisableEditions; }
         else if (IsKw("READ") && (IsKwAt(1, "ONLY") || IsKwAt(1, "WRITE")))
         {
+            RequireVersion(OracleVersion.Oracle23, "user READ ONLY/READ WRITE", Cur);
             Next();
             c.Kind = Next().Value == "ONLY" ? UserClauseKind.ReadOnly : UserClauseKind.ReadWrite;
         }
@@ -1281,6 +1282,8 @@ public sealed partial class SqlParser
                     if (AcceptKw("FOR"))
                     {
                         ExpectKw("INSERT");
+                        // Plain DEFAULT ON NULL is 12c; only the FOR INSERT ... qualifiers are 23ai.
+                        RequireVersion(OracleVersion.Oracle23, "DEFAULT ON NULL FOR", Prev);
                         if (AcceptKw("AND")) { ExpectKw("UPDATE"); cd.DefaultOnNullFor = OnNullScope.InsertAndUpdate; }
                         else { AcceptKw("ONLY"); cd.DefaultOnNullFor = OnNullScope.InsertOnly; }
                     }
@@ -1573,6 +1576,8 @@ public sealed partial class SqlParser
     /// <summary>ANNOTATIONS ( item [, item]... ); the keyword has been consumed.</summary>
     private AnnotationsClause ParseAnnotations(bool allowDrop)
     {
+        // Shared by every use site (domains, tables, columns, views, indexes, duality views): gated here once.
+        RequireVersion(OracleVersion.Oracle23, "ANNOTATIONS", Prev);
         var c = new AnnotationsClause();
         ExpectOp("(");
         do c.Items.Add(ParseAnnotationItem(allowDrop)); while (AcceptOp(","));
