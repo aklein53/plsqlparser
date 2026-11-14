@@ -906,7 +906,10 @@ public sealed partial class SqlParser
         else cast.Value = ParseExpr();
         ExpectKw("AS");
         if (cast.Kind == CastKind.Treat) cast.Ref = AcceptKw("REF");
+        int versionMark = _versionErrors.Count;
         cast.Type = ParseDataType();
+        // TREAT(... AS JSON) is not gated: its release is not confirmed, so a 19c target must not see a false error.
+        if (cast.Kind == CastKind.Treat) _versionErrors.RemoveRange(versionMark, _versionErrors.Count - versionMark);
         int prog119 = -1;
         while (!IsOp(")") && Cur.Type != TokenType.EOF && Progress(ref prog119))
         {
