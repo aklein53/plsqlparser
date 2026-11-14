@@ -11,7 +11,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>oraclesqlparser</ToolCommandName>
     <PackageId>OracleSqlParser.Cli</PackageId>
-    <Version>0.4.0-preview.1</Version>
+    <Version>0.5.0-preview.1</Version>
     <Authors>aklein53</Authors>
     <Description>Command-line tool for OracleSqlParser: parses Oracle SQL and PL/SQL and prints the AST as JSON or as a compact tree.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
