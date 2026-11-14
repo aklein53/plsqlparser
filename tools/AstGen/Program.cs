@@ -60,7 +60,12 @@ static string FindRepoRoot()
 static void CopyDir(string from, string to)
 {
     Directory.CreateDirectory(to);
-    foreach (var f in Directory.GetFiles(from)) File.Copy(f, Path.Combine(to, Path.GetFileName(f)));
+    foreach (var f in Directory.GetFiles(from))
+    {
+        // Files that consume the generated visitor cannot compile without Generated/, and declare no nodes.
+        if (Path.GetFileName(f) is "SqlAnalysis.cs") continue;
+        File.Copy(f, Path.Combine(to, Path.GetFileName(f)));
+    }
     foreach (var d in Directory.GetDirectories(from))
     {
         var name = Path.GetFileName(d);
