@@ -216,6 +216,36 @@ WHERE (x = 1) AND (o.active = 1)
 - `SourceEdits.AndWhere(query, predicate)` adds a condition with AND. An existing WHERE is wrapped in parentheses, so an `OR`
   stays grouped: `WHERE x = 1 OR z = 3` becomes `WHERE (x = 1 OR z = 3) AND (predicate)`. Without a WHERE, the condition is inserted after the FROM clause.
 
+## Analysing a tree
+
+`SqlAnalysis` answers the usual discovery questions about a parsed tree: the tables and views a statement touches (and
+whether it reads or writes them), which column references belong to which FROM item, the bind variables and the function
+calls. Each result carries its node and its source span, and results are in source order.
+
+```csharp
+var script = SqlParser.Parse(
+    "WITH recent AS (SELECT e.id, e.dept_id FROM hr.employees e WHERE e.hired > :since) " +
+    "SELECT r.id, d.name FROM recent r JOIN departments@hrlink d ON d.id = r.dept_id").Script;
+
+foreach (var t in SqlAnalysis.GetTables(script))
+    Console.WriteLine($"{t.Access} {(t.IsCteReference ? "[CTE] " : "")}{string.Join(".", t.NameParts.Select(p => p.Value))}{(t.DbLink is null ? "" : "@" + t.DbLink)}");
+// Read HR.EMPLOYEES
+// Read [CTE] RECENT
+// Read DEPARTMENTS@HRLINK
+
+foreach (var b in SqlAnalysis.GetBinds(script))
+    Console.WriteLine($"bind :{b.Name} at {b.Start}");
+// bind :since at 75
+```
+
+- `GetColumns` binds each column reference to the FROM item it belongs to (`Source`) only when the tree decides it. A
+  qualifier must match an alias, or the table name when there is no alias. An unqualified name binds when its query has
+  exactly one FROM item. Otherwise the result is `Ambiguous` or `Unresolved`, never a guess.
+- `GetFunctions` reports calls with their qualified name parts and `OVER` usage. The parser has no catalogue of built-in
+  functions, so built-in and user-defined calls are not told apart.
+- Not analysed: SQL inside string literals (`EXECUTE IMMEDIATE`, `OPEN ... FOR`), INTO targets as columns, and column
+  references in DDL outside a query. The `SqlAnalysis` remarks list the details.
+
 ## Tokens and comments
 
 Modelled on ScriptDom's `ScriptTokenStream`: the parse result keeps every token, and every node knows which tokens it covers.
