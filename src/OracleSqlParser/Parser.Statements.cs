@@ -438,6 +438,15 @@ public sealed partial class SqlParser
         if (kind == ObjectKind.Session) return ParseAlterSession(start);
         if (kind == ObjectKind.Index) return ParseAlterIndex(start);
         if (kind == ObjectKind.Sequence && !pub) return ParseAlterSequence(start);
+        if (!pub && IsAlterUnitKind(kind) && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier)
+        {
+            // rewind when the clause after the name is not one of the modeled forms; it stays a generic AlterObjectStatement
+            int save = _p;
+            var name = ParseDottedName();
+            var unit = ParseAlterUnit(start, kind, name);
+            if (unit != null) return unit;
+            _p = save;
+        }
         var st = new AlterObjectStatement { Kind = kind, Public = pub };
         st.IfExists = TryIfExists();
         if (ObjectKindHasName(kind) && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) st.Name = ParseDottedName();

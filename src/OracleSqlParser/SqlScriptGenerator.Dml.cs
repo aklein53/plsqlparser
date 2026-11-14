@@ -26,6 +26,9 @@ public sealed partial class SqlScriptGenerator
                 // generic and typed DDL
                 case AlterIndexStatement ai: AlterIndex(ai); break;
                 case AlterSequenceStatement asq: AlterSequence(asq); break;
+                case AlterCompileStatement acs: AlterCompile(acs); break;
+                case AlterTriggerStatement ats: AlterTrigger(ats); break;
+                case AlterViewStatement avs: AlterView(avs); break;
                 case CreateObjectStatement or AlterObjectStatement or DropStatement or CreateTableStatement or CreateIndexStatement
                     or CreateViewStatement or CreateSequenceStatement or CreateSynonymStatement or AlterTableStatement
                     or CreateJavaStatement or CreateLibraryStatement:

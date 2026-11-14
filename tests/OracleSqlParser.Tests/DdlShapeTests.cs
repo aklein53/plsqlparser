@@ -185,6 +185,34 @@ public class DdlShapeTests
     public void AlterSequence(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
+    [InlineData("ALTER PROCEDURE p COMPILE", "(AlterCompileStatement kind=Procedure name=[P] compile)")]
+    [InlineData("ALTER FUNCTION f COMPILE DEBUG REUSE SETTINGS", "(AlterCompileStatement kind=Function name=[F] compile debug reuseSettings)")]
+    [InlineData("ALTER PACKAGE pk COMPILE DEBUG SPECIFICATION REUSE SETTINGS PLSQL_OPTIMIZE_LEVEL = 2",
+        "(AlterCompileStatement kind=Package name=[PK] compile debug part=Specification reuseSettings parameters=[(SessionSetting name=[PLSQL_OPTIMIZE_LEVEL] value=2)])")]
+    [InlineData("ALTER PACKAGE pk COMPILE BODY", "(AlterCompileStatement kind=Package name=[PK] compile part=Body)")]
+    [InlineData("ALTER PACKAGE pk COMPILE PACKAGE", "(AlterCompileStatement kind=Package name=[PK] compile part=Package)")]
+    [InlineData("ALTER TYPE ty COMPILE BODY", "(AlterCompileStatement kind=Type name=[TY] compile part=Body)")]
+    [InlineData("ALTER TRIGGER tr COMPILE", "(AlterCompileStatement kind=Trigger name=[TR] compile)")]
+    [InlineData("ALTER LIBRARY lib COMPILE", "(AlterCompileStatement kind=Library name=[LIB] compile)")]
+    [InlineData("ALTER JAVA SOURCE js COMPILE", "(AlterCompileStatement kind=JavaSource name=[JS] compile)")]
+    [InlineData("ALTER SYNONYM syn COMPILE", "(AlterCompileStatement kind=Synonym name=[SYN] compile)")]
+    [InlineData("ALTER FUNCTION f EDITIONABLE", "(AlterCompileStatement kind=Function name=[F] editionable=Editionable)")]
+    [InlineData("ALTER PROCEDURE p NONEDITIONABLE", "(AlterCompileStatement kind=Procedure name=[P] editionable=NonEditionable)")]
+    [InlineData("ALTER VIEW v COMPILE", "(AlterCompileStatement kind=View name=[V] compile)")]
+    [InlineData("ALTER TRIGGER tr ENABLE", "(AlterTriggerStatement name=[TR] enable=true)")]
+    [InlineData("ALTER TRIGGER tr DISABLE", "(AlterTriggerStatement name=[TR] enable=false)")]
+    [InlineData("ALTER TRIGGER tr RENAME TO tr2", "(AlterTriggerStatement name=[TR] renameTo=TR2)")]
+    [InlineData("ALTER VIEW v DROP CONSTRAINT c", "(AlterViewStatement name=[V] actions=[(AlterTableAction kind=DropConstraint names=[C])])")]
+    [InlineData("ALTER VIEW v DROP PRIMARY KEY", "(AlterViewStatement name=[V] actions=[(AlterTableAction kind=DropPrimaryKey)])")]
+    [InlineData("ALTER VIEW v DROP UNIQUE (a, b)", "(AlterViewStatement name=[V] actions=[(AlterTableAction kind=DropUnique names=[A B])])")]
+    [InlineData("ALTER VIEW v ADD CONSTRAINT pk PRIMARY KEY (id) RELY DISABLE",
+        "(AlterViewStatement name=[V] actions=[(AlterTableAction kind=AddConstraint constraints=[(TableConstraint name=PK kind=PrimaryKey columns=[ID] state=(ConstraintState enable=false rely=true))])])")]
+    [InlineData("ALTER VIEW v MODIFY CONSTRAINT pk RELY", "(AlterViewStatement name=[V] actions=[(AlterTableAction kind=ModifyConstraint constraints=[(TableConstraint name=PK state=(ConstraintState rely=true))])])")]
+    [InlineData("ALTER VIEW v READ ONLY", "(AlterViewStatement name=[V] readOnly=true)")]
+    [InlineData("ALTER VIEW v READ WRITE", "(AlterViewStatement name=[V] readOnly=false)")]
+    public void AlterCompileAndUnits(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
     [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateObjectStatement kind=User name=[BOB] body=[(WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=PW)])")]
     [InlineData("CREATE ROLE r", "(CreateObjectStatement kind=Role name=[R])")]
     [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'",
@@ -198,7 +226,6 @@ public class DdlShapeTests
     [InlineData("CREATE MATERIALIZED VIEW LOG ON t WITH PRIMARY KEY", "(CreateObjectStatement kind=MaterializedViewLog body=[(WordItem value=ON) (WordItem value=T) (WordItem value=WITH) (WordItem value=PRIMARY) (WordItem value=KEY)])")]
     [InlineData("ALTER SYSTEM FLUSH SHARED_POOL", "(AlterObjectStatement kind=System body=[(WordItem value=FLUSH) (WordItem value=SHARED_POOL)])")]
     [InlineData("ALTER USER u ACCOUNT LOCK", "(AlterObjectStatement kind=User name=[U] body=[(WordItem value=ACCOUNT) (WordItem value=LOCK)])")]
-    [InlineData("ALTER PROCEDURE p COMPILE", "(AlterObjectStatement kind=Procedure name=[P] body=[(WordItem value=COMPILE)])")]
     public void GenericObjectDdl(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Fact]

@@ -22,6 +22,13 @@ public abstract partial class SqlNodeRewriter
         return node;
     }
 
+    /// <summary>Rewrites a <see cref="AlterCompileStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(AlterCompileStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
     /// <summary>Rewrites a <see cref="AlterIndexAction"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(AlterIndexAction node)
     {
@@ -66,6 +73,20 @@ public abstract partial class SqlNodeRewriter
 
     /// <summary>Rewrites a <see cref="AlterTableStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(AlterTableStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="AlterTriggerStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(AlterTriggerStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="AlterViewStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(AlterViewStatement node)
     {
         node.RewriteChildren(this);
         return node;

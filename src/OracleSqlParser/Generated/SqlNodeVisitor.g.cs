@@ -28,6 +28,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="AlterCompileStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterCompileStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterCompileStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterCompileStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="AlterIndexAction"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(AlterIndexAction node) => Visit((SqlNode)node);
 
@@ -93,6 +103,26 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="AlterTableStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(AlterTableStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AlterTriggerStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterTriggerStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterTriggerStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterTriggerStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="AlterViewStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterViewStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterViewStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterViewStatement node)
     {
         Visit(node);
         node.AcceptChildren(this);
