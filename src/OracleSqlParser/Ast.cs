@@ -295,7 +295,7 @@ public sealed partial class QuerySpecification : QueryExpression
     public List<Expression> GroupBy { get; set; } = [];
     /// <summary>The <c>HAVING</c> condition, or null when absent.</summary>
     public Expression? Having { get; set; }
-    /// <summary>PL/SQL SELECT ... INTO targets.</summary>
+    /// <summary>The PL/SQL variables of <c>SELECT ... INTO</c>; empty when absent.</summary>
     public List<Expression> Into { get; set; } = [];
     /// <summary>True when <c>BULK COLLECT INTO</c> is written in a PL/SQL query.</summary>
     public bool IntoBulkCollect { get; set; }
@@ -357,7 +357,7 @@ public sealed partial class ExpressionSelectItem : SelectItem
     public Identifier? Alias { get; set; }
 }
 
-/// <summary>`*` or `qualifier.*`.</summary>
+/// <summary><c>*</c> or <c>qualifier.*</c> in a <c>SELECT</c> list.</summary>
 public sealed partial class StarSelectItem : SelectItem
 {
     /// <summary>The name parts before <c>.*</c>; empty for a plain <c>*</c>.</summary>
@@ -453,7 +453,7 @@ public sealed partial class UpdateStatement : DmlStatement
     public Expression? Where { get; set; }
 }
 
-/// <summary>`col = expr` or `(c1, c2) = (subquery)`.</summary>
+/// <summary>One assignment of a <c>SET</c> clause: <c>col = expr</c> or <c>(c1, c2) = (subquery)</c>.</summary>
 public sealed partial class SetClause : SqlNode
 {
     /// <summary>PL/SQL: SET ROW = record (Columns is empty).</summary>
@@ -575,9 +575,9 @@ public sealed partial class JoinTable : TableReference
     public Expression? On { get; set; }
     /// <summary>The columns of a <c>USING</c> clause; empty when absent.</summary>
     public List<Identifier> Using { get; set; } = [];
-    /// <summary>Partitioned outer join: PARTITION BY (...) on the left operand (only one side may be partitioned).</summary>
+    /// <summary>Partitioned outer join: the <c>PARTITION BY (...)</c> expressions written before the join keyword on the left operand; empty when absent.</summary>
     public List<Expression> LeftPartitionBy { get; set; } = [];
-    /// <summary>Partitioned outer join: PARTITION BY (...) on the right operand.</summary>
+    /// <summary>Partitioned outer join: the <c>PARTITION BY (...)</c> expressions written after the join keyword, on the right operand; empty when absent.</summary>
     public List<Expression> RightPartitionBy { get; set; } = [];
 }
 
@@ -754,7 +754,6 @@ public sealed partial class BinaryExpression : Expression
     public required Expression Right { get; set; }
 }
 
-/// <summary>Comparison against a quantified set, e.g. x = ANY (subquery).</summary>
 /// <summary>The quantifier of a quantified comparison, such as <c>= ANY (...)</c>.</summary>
 public enum ComparisonQuantifier
 {
@@ -782,7 +781,7 @@ public sealed partial class QuantifiedComparison : Expression
 /// <summary>A prefix operator applied to one operand, such as <c>NOT a</c>, <c>-a</c> or <c>PRIOR a</c>.</summary>
 public sealed partial class UnaryExpression : Expression
 {
-    /// <summary>+, -, NOT, PRIOR, CONNECT_BY_ROOT, DISTINCT</summary>
+    /// <summary>Upper-cased prefix operator: + - NOT PRIOR CONNECT_BY_ROOT DISTINCT.</summary>
     public string Operator { get; set; } = "";
     /// <summary>The operand.</summary>
     public required Expression Operand { get; set; }
@@ -1056,7 +1055,7 @@ public sealed partial class ForIterationSubscript : Expression
     public Expression? From { get; set; }
     /// <summary>The end of a range, or null when absent.</summary>
     public Expression? To { get; set; }
-    /// <summary>The <c>BY</c> step of a range, or null when absent.</summary>
+    /// <summary>The <c>INCREMENT</c> or <c>DECREMENT</c> step of a range, or null when absent.</summary>
     public Expression? Step { get; set; }
     /// <summary>True for <c>DECREMENT</c>: the range runs downward.</summary>
     public bool Decrement { get; set; }
@@ -1116,13 +1115,13 @@ public sealed partial class FunctionCall : Expression
     public bool IgnoreNulls { get; set; }
     /// <summary>True for <c>RESPECT NULLS</c>.</summary>
     public bool RespectNulls { get; set; }
-    /// <summary>LISTAGG etc. WITHIN GROUP (ORDER BY ...)</summary>
+    /// <summary>The ordering items of <c>WITHIN GROUP (ORDER BY ...)</c>, as in <c>LISTAGG</c>; empty when absent.</summary>
     public List<OrderByItem> WithinGroup { get; set; } = [];
     /// <summary>KEEP (DENSE_RANK FIRST|LAST ORDER BY ...)</summary>
     public KeepClause? Keep { get; set; }
     /// <summary>The <c>OVER</c> window of an analytic call, or null when absent.</summary>
     public WindowSpec? Over { get; set; }
-    /// <summary>Arguments in ORDER BY inside the call (e.g. XMLAGG(... ORDER BY ...)).</summary>
+    /// <summary>The <c>ORDER BY</c> items written inside the call, such as <c>XMLAGG(x ORDER BY y)</c>; empty when absent.</summary>
     public List<OrderByItem> OrderBy { get; set; } = [];
 }
 
@@ -1150,9 +1149,9 @@ public sealed partial class Argument : SqlNode
     public ArgumentKeyword? Keyword { get; set; }
     /// <summary>The argument value.</summary>
     public required Expression Value { get; set; }
-    /// <summary>JSON_OBJECT-style value in `KEY k VALUE v` / `k : v`.</summary>
+    /// <summary>The value of a JSON_OBJECT pair written after <c>VALUE</c> or <c>:</c>; <see cref="Value"/> then holds the key. Null otherwise.</summary>
     public Expression? MappedValue { get; set; }
-    /// <summary>AS alias (XMLATTRIBUTES, XMLFOREST, XMLSERIALIZE's target excluded).</summary>
+    /// <summary>The <c>AS</c> alias of an <c>XMLATTRIBUTES</c> or <c>XMLFOREST</c> item, or null when absent.</summary>
     public Identifier? Alias { get; set; }
     /// <summary>The <c>FORMAT JSON</c> clause on the argument, or null when absent.</summary>
     public FormatClause? Format { get; set; }
@@ -1172,7 +1171,7 @@ public sealed partial class KeepClause : SqlNode
 /// <summary>An <c>OVER</c> window specification, such as <c>(PARTITION BY d ORDER BY s ROWS UNBOUNDED PRECEDING)</c>.</summary>
 public sealed partial class WindowSpec : SqlNode
 {
-    /// <summary>OVER window_name form.</summary>
+    /// <summary>The named window of <c>OVER window_name</c>, or null when the window is written inline.</summary>
     public Identifier? Name { get; set; }
     /// <summary>The <c>PARTITION BY</c> expressions; empty when absent.</summary>
     public List<Expression> PartitionBy { get; set; } = [];
