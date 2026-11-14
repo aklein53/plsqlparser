@@ -60,6 +60,18 @@ public sealed partial class SqlScriptGenerator
                     if (ao.Body.Count > 0) { Sp(); SyntaxList(ao.Body); }
                     break;
                 case DropStatement dr: Drop(dr); break;
+                case CreateUserStatement cu:
+                    Add("CREATE USER");
+                    if (cu.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cu.Name);
+                    foreach (var c in cu.Clauses) { Sp(); UserClauseText(c); }
+                    break;
+                case AlterUserStatement au:
+                    Add("ALTER USER");
+                    if (au.IfExists) Add(" IF EXISTS");
+                    Sp(); Id(au.Name);
+                    foreach (var c in au.Clauses) { Sp(); UserClauseText(c); }
+                    break;
                 case CreateTableStatement ct: CreateTable(ct); break;
                 case CreateIndexStatement ci: CreateIndex(ci); break;
                 case CreateViewStatement cv: CreateView(cv); break;
@@ -100,6 +112,75 @@ public sealed partial class SqlScriptGenerator
                     break;
                 default: throw Unsupported(st);
             }
+        }
+
+        // ---------- CREATE / ALTER USER ----------
+
+        /// <summary>Printed as typed, not through IdentifierCasing: passwords are case-sensitive even when unquoted.</summary>
+        private void Verbatim(Identifier i) => Raw(i.Quoted ? "\"" + i.Value.Replace("\"", "\"\"") + "\"" : i.Text ?? i.Value);
+
+        private void UserClauseText(UserClause c)
+        {
+            switch (c.Kind)
+            {
+                case UserClauseKind.IdentifiedBy:
+                    Add("IDENTIFIED BY "); Verbatim(c.Password!);
+                    if (c.ReplacePassword != null) { Add(" REPLACE "); Verbatim(c.ReplacePassword); }
+                    break;
+                case UserClauseKind.IdentifiedExternally: Add("IDENTIFIED EXTERNALLY"); ExternalNameText(c); break;
+                case UserClauseKind.IdentifiedGlobally: Add("IDENTIFIED GLOBALLY"); ExternalNameText(c); break;
+                case UserClauseKind.NoAuthentication: Add("NO AUTHENTICATION"); break;
+                case UserClauseKind.DefaultTablespace: Add("DEFAULT TABLESPACE "); Id(c.Tablespace!); break;
+                case UserClauseKind.TemporaryTablespace:
+                    if (c.Local) Add("LOCAL ");
+                    Add("TEMPORARY TABLESPACE "); Id(c.Tablespace!);
+                    break;
+                case UserClauseKind.Quota:
+                    Add("QUOTA ");
+                    if (c.Unlimited) Add("UNLIMITED"); else Expr(c.Quota!);
+                    Add(" ON "); Id(c.Tablespace!);
+                    break;
+                case UserClauseKind.Profile: Add("PROFILE "); Id(c.Profile!); break;
+                case UserClauseKind.PasswordExpire: Add("PASSWORD EXPIRE"); break;
+                case UserClauseKind.AccountLock: Add("ACCOUNT LOCK"); break;
+                case UserClauseKind.AccountUnlock: Add("ACCOUNT UNLOCK"); break;
+                case UserClauseKind.DefaultRole: Add("DEFAULT ROLE "); RoleSetText(c); break;
+                case UserClauseKind.Container: Add("CONTAINER = " + (c.Container == GrantContainer.All ? "ALL" : "CURRENT")); break;
+                case UserClauseKind.EnableEditions: Add("ENABLE EDITIONS"); if (c.Force) Add(" FORCE"); break;
+                case UserClauseKind.DisableEditions: Add("DISABLE EDITIONS"); break;
+                case UserClauseKind.ReadOnly: Add("READ ONLY"); break;
+                case UserClauseKind.ReadWrite: Add("READ WRITE"); break;
+                case UserClauseKind.GrantConnectThrough: Add("GRANT CONNECT THROUGH "); ProxyText(c, true); break;
+                case UserClauseKind.RevokeConnectThrough: Add("REVOKE CONNECT THROUGH "); ProxyText(c, false); break;
+                default: SyntaxList(c.Syntax); break;
+            }
+        }
+
+        private void ExternalNameText(UserClause c)
+        {
+            if (c.ExternalName != null) { Add(" AS "); Expr(c.ExternalName); }
+        }
+
+        private void RoleSetText(UserClause c)
+        {
+            switch (c.RoleSet)
+            {
+                case RoleSetKind.All:
+                    Add("ALL");
+                    if (c.ExceptRoles.Count > 0) { Add(" EXCEPT "); IdList(c.ExceptRoles); }
+                    break;
+                case RoleSetKind.None: Add("NONE"); break;
+                default: IdList(c.Roles); break;
+            }
+        }
+
+        private void ProxyText(UserClause c, bool grant)
+        {
+            if (c.EnterpriseUsers) Add("ENTERPRISE USERS"); else Id(c.Proxy!);
+            if (!grant) return;
+            if (c.RoleSet == RoleSetKind.None) Add(" WITH NO ROLES");
+            else if (c.RoleSet != null) { Add(" WITH ROLE "); RoleSetText(c); }
+            if (c.AuthenticationRequired) Add(" AUTHENTICATION REQUIRED");
         }
 
         private void Drop(DropStatement d)

@@ -402,6 +402,127 @@ public sealed partial class SqlParser
     private bool TryIfNotExists() { if (IsKw("IF") && IsKwAt(1, "NOT") && IsKwAt(2, "EXISTS")) { Next(); Next(); Next(); return true; } return false; }
     private bool TryIfExists() { if (IsKw("IF") && IsKwAt(1, "EXISTS")) { Next(); Next(); return true; } return false; }
 
+    // ---- CREATE / ALTER USER ----
+
+    private bool IsNameAt(int n) => PeekTok(n).Type is TokenType.Identifier or TokenType.QuotedIdentifier;
+
+    private Statement ParseCreateUser(Token start, bool orReplace, bool pub)
+    {
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE USER");
+        var st = new CreateUserStatement { IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        st.Clauses = ParseUserClauses();
+        return Fin(st, start);
+    }
+
+    private Statement ParseAlterUser(Token start, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to ALTER USER");
+        var st = new AlterUserStatement { IfExists = TryIfExists() };
+        st.Name = ParseIdentifier();
+        st.Clauses = ParseUserClauses();
+        return Fin(st, start);
+    }
+
+    private List<UserClause> ParseUserClauses()
+    {
+        var list = new List<UserClause>();
+        int prog = -1;
+        while (!AtStatementEnd() && Progress(ref prog)) list.Add(ParseUserClause());
+        return list;
+    }
+
+    private UserClause ParseUserClause()
+    {
+        var s = Cur;
+        var c = new UserClause();
+        if (IsKw("IDENTIFIED") && IsKwAt(1, "BY") && IsNameAt(2) && !IsKwAt(2, "VALUES"))
+        {
+            Next(); Next();
+            c.Kind = UserClauseKind.IdentifiedBy;
+            c.Password = ParseIdentifier();
+            if (AcceptKw("REPLACE")) c.ReplacePassword = ParseIdentifier();
+        }
+        else if (IsKw("IDENTIFIED") && (IsKwAt(1, "EXTERNALLY") || IsKwAt(1, "GLOBALLY")))
+        {
+            Next();
+            c.Kind = Next().Value == "EXTERNALLY" ? UserClauseKind.IdentifiedExternally : UserClauseKind.IdentifiedGlobally;
+            if (AcceptKw("AS")) c.ExternalName = ParseAdditive();
+        }
+        else if (IsKw("NO") && IsKwAt(1, "AUTHENTICATION")) { Next(); Next(); c.Kind = UserClauseKind.NoAuthentication; }
+        else if (IsKw("DEFAULT") && IsKwAt(1, "TABLESPACE")) { Next(); Next(); c.Kind = UserClauseKind.DefaultTablespace; c.Tablespace = ParseIdentifier(); }
+        else if (IsKw("DEFAULT") && IsKwAt(1, "ROLE")) { Next(); Next(); c.Kind = UserClauseKind.DefaultRole; ParseRoleSet(c); }
+        else if ((IsKw("TEMPORARY") && IsKwAt(1, "TABLESPACE")) || (IsKw("LOCAL") && IsKwAt(1, "TEMPORARY") && IsKwAt(2, "TABLESPACE")))
+        {
+            c.Local = AcceptKw("LOCAL");
+            Next(); Next();
+            c.Kind = UserClauseKind.TemporaryTablespace;
+            c.Tablespace = ParseIdentifier();
+        }
+        else if (AcceptKw("QUOTA"))
+        {
+            c.Kind = UserClauseKind.Quota;
+            if (AcceptKw("UNLIMITED")) c.Unlimited = true; else c.Quota = ParseAdditive();
+            ExpectKw("ON");
+            c.Tablespace = ParseIdentifier();
+        }
+        else if (AcceptKw("PROFILE")) { c.Kind = UserClauseKind.Profile; c.Profile = ParseIdentifier(); }
+        else if (IsKw("PASSWORD") && IsKwAt(1, "EXPIRE")) { Next(); Next(); c.Kind = UserClauseKind.PasswordExpire; }
+        else if (IsKw("ACCOUNT") && (IsKwAt(1, "LOCK") || IsKwAt(1, "UNLOCK")))
+        {
+            Next();
+            c.Kind = Next().Value == "LOCK" ? UserClauseKind.AccountLock : UserClauseKind.AccountUnlock;
+        }
+        else if (IsKw("ENABLE") && IsKwAt(1, "EDITIONS")) { Next(); Next(); c.Kind = UserClauseKind.EnableEditions; c.Force = AcceptKw("FORCE"); }
+        else if (IsKw("DISABLE") && IsKwAt(1, "EDITIONS")) { Next(); Next(); c.Kind = UserClauseKind.DisableEditions; }
+        else if (IsKw("READ") && (IsKwAt(1, "ONLY") || IsKwAt(1, "WRITE")))
+        {
+            Next();
+            c.Kind = Next().Value == "ONLY" ? UserClauseKind.ReadOnly : UserClauseKind.ReadWrite;
+        }
+        else if (IsKw("CONTAINER") && IsOpAt(1, "="))
+        {
+            Next(); Next();
+            c.Kind = UserClauseKind.Container;
+            if (AcceptKw("ALL")) c.Container = GrantContainer.All;
+            else { ExpectKw("CURRENT"); c.Container = GrantContainer.Current; }
+        }
+        else if ((IsKw("GRANT") || IsKw("REVOKE")) && IsKwAt(1, "CONNECT") && IsKwAt(2, "THROUGH"))
+        {
+            bool grant = Next().Value == "GRANT";
+            Next(); Next();
+            c.Kind = grant ? UserClauseKind.GrantConnectThrough : UserClauseKind.RevokeConnectThrough;
+            if (AcceptKw("ENTERPRISE")) { ExpectKw("USERS"); c.EnterpriseUsers = true; }
+            else c.Proxy = ParseIdentifier();
+            if (grant)
+            {
+                if (IsKw("WITH") && IsKwAt(1, "NO") && IsKwAt(2, "ROLES")) { Next(); Next(); Next(); c.RoleSet = RoleSetKind.None; }
+                else if (AcceptKw("WITH")) { ExpectKw("ROLE"); ParseRoleSet(c); }
+                if (AcceptKw("AUTHENTICATION")) { ExpectKw("REQUIRED"); c.AuthenticationRequired = true; }
+            }
+        }
+        else
+        {
+            // Not modelled: keep one token so the clause order survives a round trip.
+            c.Kind = UserClauseKind.Other;
+            c.Syntax.Add(ParseSyntaxItem());
+        }
+        return Fin(c, s);
+    }
+
+    /// <summary>NONE | ALL [EXCEPT list] | list, as used by DEFAULT ROLE and WITH ROLE.</summary>
+    private void ParseRoleSet(UserClause c)
+    {
+        if (AcceptKw("NONE")) c.RoleSet = RoleSetKind.None;
+        else if (AcceptKw("ALL"))
+        {
+            c.RoleSet = RoleSetKind.All;
+            if (AcceptKw("EXCEPT")) c.ExceptRoles = ParseIdentifierList();
+        }
+        else { c.RoleSet = RoleSetKind.Roles; c.Roles = ParseIdentifierList(); }
+    }
+
     // ---- DROP / ALTER (generic) ----
 
     private Statement ParseDrop()
@@ -436,6 +557,7 @@ public sealed partial class SqlParser
         if (!TryParseObjectKind(out var kind)) kind = ObjectKind.Other;
         if (kind == ObjectKind.Table) return ParseAlterTable(start);
         if (kind == ObjectKind.Session) return ParseAlterSession(start);
+        if (kind == ObjectKind.User) return ParseAlterUser(start, pub);
         var st = new AlterObjectStatement { Kind = kind, Public = pub };
         st.IfExists = TryIfExists();
         if (ObjectKindHasName(kind) && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) st.Name = ParseDottedName();
@@ -530,6 +652,7 @@ public sealed partial class SqlParser
         TryParseObjectKind(out var kind);
         switch (kind)
         {
+            case ObjectKind.User: return ParseCreateUser(start, orReplace, pub);
             case ObjectKind.Table: return ParseCreateTable(start, orReplace, gtt, ptt, dup, imm, blk);
             case ObjectKind.Index: return ParseCreateIndex(start, unique, bitmap);
             case ObjectKind.View: return ParseCreateView(start, orReplace, force, noForce, editioning, false);

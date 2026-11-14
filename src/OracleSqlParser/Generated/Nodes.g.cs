@@ -332,6 +332,54 @@ public partial class AlterTableStatement
     }
 }
 
+public partial class AlterUserStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Clauses is not null) foreach (var x in Clauses) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Clauses is not null) foreach (var x in Clauses) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "AlterUserStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Clauses, "AlterUserStatement.Clauses");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterUserStatement();
+        CopySpan(this, c);
+        c.IfExists = IfExists;
+        c.Name = CloneChild(Name)!;
+        c.Clauses = CloneList(Clauses);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterUserStatement)other;
+        return IfExists == o.IfExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Clauses, o.Clauses, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class Argument
 {
     /// <inheritdoc/>
@@ -2791,6 +2839,54 @@ public partial class CreateTypeStatement
             && Pair(ElementType, o.ElementType, pending)
             && Pair(Limit, o.Limit, pending)
             && PairList(SuperType, o.SuperType, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateUserStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Clauses is not null) foreach (var x in Clauses) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        if (Clauses is not null) foreach (var x in Clauses) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateUserStatement.Name");
+        SqlNodeRewriter.RewriteList(rewriter, Clauses, "CreateUserStatement.Clauses");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateUserStatement();
+        CopySpan(this, c);
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Clauses = CloneList(Clauses);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateUserStatement)other;
+        return IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && PairList(Clauses, o.Clauses, pending)
             && SameStrings(Labels, o.Labels);
     }
 }
@@ -11208,6 +11304,106 @@ public partial class UpdateStatement
             && PairList(ReturningInto, o.ReturningInto, pending)
             && Pair(ErrorLogging, o.ErrorLogging, pending)
             && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class UserClause
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Password is not null) yield return Password;
+        if (ReplacePassword is not null) yield return ReplacePassword;
+        if (ExternalName is not null) yield return ExternalName;
+        if (Tablespace is not null) yield return Tablespace;
+        if (Quota is not null) yield return Quota;
+        if (Profile is not null) yield return Profile;
+        if (Proxy is not null) yield return Proxy;
+        if (Roles is not null) foreach (var x in Roles) yield return x;
+        if (ExceptRoles is not null) foreach (var x in ExceptRoles) yield return x;
+        if (Syntax is not null) foreach (var x in Syntax) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Password?.Accept(visitor);
+        ReplacePassword?.Accept(visitor);
+        ExternalName?.Accept(visitor);
+        Tablespace?.Accept(visitor);
+        Quota?.Accept(visitor);
+        Profile?.Accept(visitor);
+        Proxy?.Accept(visitor);
+        if (Roles is not null) foreach (var x in Roles) x.Accept(visitor);
+        if (ExceptRoles is not null) foreach (var x in ExceptRoles) x.Accept(visitor);
+        if (Syntax is not null) foreach (var x in Syntax) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Password = SqlNodeRewriter.RewriteOptional(rewriter, Password, "UserClause.Password");
+        ReplacePassword = SqlNodeRewriter.RewriteOptional(rewriter, ReplacePassword, "UserClause.ReplacePassword");
+        ExternalName = SqlNodeRewriter.RewriteOptional(rewriter, ExternalName, "UserClause.ExternalName");
+        Tablespace = SqlNodeRewriter.RewriteOptional(rewriter, Tablespace, "UserClause.Tablespace");
+        Quota = SqlNodeRewriter.RewriteOptional(rewriter, Quota, "UserClause.Quota");
+        Profile = SqlNodeRewriter.RewriteOptional(rewriter, Profile, "UserClause.Profile");
+        Proxy = SqlNodeRewriter.RewriteOptional(rewriter, Proxy, "UserClause.Proxy");
+        SqlNodeRewriter.RewriteList(rewriter, Roles, "UserClause.Roles");
+        SqlNodeRewriter.RewriteList(rewriter, ExceptRoles, "UserClause.ExceptRoles");
+        SqlNodeRewriter.RewriteList(rewriter, Syntax, "UserClause.Syntax");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new UserClause();
+        CopySpan(this, c);
+        c.Kind = Kind;
+        c.Password = CloneChild(Password);
+        c.ReplacePassword = CloneChild(ReplacePassword);
+        c.ExternalName = CloneChild(ExternalName);
+        c.Local = Local;
+        c.Tablespace = CloneChild(Tablespace);
+        c.Quota = CloneChild(Quota);
+        c.Unlimited = Unlimited;
+        c.Profile = CloneChild(Profile);
+        c.Proxy = CloneChild(Proxy);
+        c.EnterpriseUsers = EnterpriseUsers;
+        c.RoleSet = RoleSet;
+        c.Roles = CloneList(Roles);
+        c.ExceptRoles = CloneList(ExceptRoles);
+        c.AuthenticationRequired = AuthenticationRequired;
+        c.Container = Container;
+        c.Force = Force;
+        c.Syntax = CloneList(Syntax);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (UserClause)other;
+        return Kind == o.Kind
+            && Pair(Password, o.Password, pending)
+            && Pair(ReplacePassword, o.ReplacePassword, pending)
+            && Pair(ExternalName, o.ExternalName, pending)
+            && Local == o.Local
+            && Pair(Tablespace, o.Tablespace, pending)
+            && Pair(Quota, o.Quota, pending)
+            && Unlimited == o.Unlimited
+            && Pair(Profile, o.Profile, pending)
+            && Pair(Proxy, o.Proxy, pending)
+            && EnterpriseUsers == o.EnterpriseUsers
+            && RoleSet == o.RoleSet
+            && PairList(Roles, o.Roles, pending)
+            && PairList(ExceptRoles, o.ExceptRoles, pending)
+            && AuthenticationRequired == o.AuthenticationRequired
+            && Container == o.Container
+            && Force == o.Force
+            && PairList(Syntax, o.Syntax, pending);
     }
 }
 

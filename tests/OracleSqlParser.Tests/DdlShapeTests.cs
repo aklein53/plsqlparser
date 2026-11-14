@@ -153,7 +153,7 @@ public class DdlShapeTests
     public void AlterTable(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Theory]
-    [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateObjectStatement kind=User name=[BOB] body=[(WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=PW)])")]
+    [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateUserStatement name=BOB clauses=[(UserClause kind=IdentifiedBy password=PW)])")]
     [InlineData("CREATE ROLE r", "(CreateObjectStatement kind=Role name=[R])")]
     [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'",
         "(CreateObjectStatement kind=DatabaseLink name=[L] body=[(WordItem value=CONNECT) (WordItem value=TO) (WordItem value=U) (WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=P) (WordItem value=USING) (LiteralItem kind=String value=tns)])")]
@@ -166,10 +166,28 @@ public class DdlShapeTests
     [InlineData("CREATE MATERIALIZED VIEW LOG ON t WITH PRIMARY KEY", "(CreateObjectStatement kind=MaterializedViewLog body=[(WordItem value=ON) (WordItem value=T) (WordItem value=WITH) (WordItem value=PRIMARY) (WordItem value=KEY)])")]
     [InlineData("ALTER SYSTEM FLUSH SHARED_POOL", "(AlterObjectStatement kind=System body=[(WordItem value=FLUSH) (WordItem value=SHARED_POOL)])")]
     [InlineData("ALTER INDEX ix REBUILD", "(AlterObjectStatement kind=Index name=[IX] body=[(WordItem value=REBUILD)])")]
-    [InlineData("ALTER USER u ACCOUNT LOCK", "(AlterObjectStatement kind=User name=[U] body=[(WordItem value=ACCOUNT) (WordItem value=LOCK)])")]
     [InlineData("ALTER PROCEDURE p COMPILE", "(AlterObjectStatement kind=Procedure name=[P] body=[(WordItem value=COMPILE)])")]
     [InlineData("ALTER SEQUENCE s INCREMENT BY 5", "(AlterObjectStatement kind=Sequence name=[S] body=[(WordItem value=INCREMENT) (WordItem value=BY) (LiteralItem kind=Number value=5)])")]
     public void GenericObjectDdl(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("CREATE USER IF NOT EXISTS app IDENTIFIED BY \"Pw 1\" DEFAULT TABLESPACE users TEMPORARY TABLESPACE temp QUOTA UNLIMITED ON users PROFILE p PASSWORD EXPIRE ACCOUNT UNLOCK CONTAINER = ALL",
+        "(CreateUserStatement ifNotExists name=APP clauses=[(UserClause kind=IdentifiedBy password=\"Pw 1\") (UserClause kind=DefaultTablespace tablespace=USERS) (UserClause kind=TemporaryTablespace tablespace=TEMP) (UserClause kind=Quota tablespace=USERS unlimited) (UserClause kind=Profile profile=P) (UserClause kind=PasswordExpire) (UserClause kind=AccountUnlock) (UserClause kind=Container container=All)])")]
+    [InlineData("ALTER USER u IDENTIFIED BY pw QUOTA 100M ON data DEFAULT ROLE r1, r2 ENABLE EDITIONS FORCE",
+        "(AlterUserStatement name=U clauses=[(UserClause kind=IdentifiedBy password=PW) (UserClause kind=Quota tablespace=DATA quota=100M) (UserClause kind=DefaultRole roleSet=Roles roles=[R1 R2]) (UserClause kind=EnableEditions force)])")]
+    [InlineData("ALTER USER u DEFAULT ROLE ALL EXCEPT r1 TEMPORARY TABLESPACE temp",
+        "(AlterUserStatement name=U clauses=[(UserClause kind=DefaultRole roleSet=All exceptRoles=[R1]) (UserClause kind=TemporaryTablespace tablespace=TEMP)])")]
+    [InlineData("ALTER USER u GRANT CONNECT THROUGH sh WITH ROLE warehouse_user AUTHENTICATION REQUIRED",
+        "(AlterUserStatement name=U clauses=[(UserClause kind=GrantConnectThrough proxy=SH roleSet=Roles roles=[WAREHOUSE_USER] authenticationRequired)])")]
+    [InlineData("ALTER USER u GRANT CONNECT THROUGH sh WITH NO ROLES",
+        "(AlterUserStatement name=U clauses=[(UserClause kind=GrantConnectThrough proxy=SH roleSet=None)])")]
+    [InlineData("ALTER USER u REVOKE CONNECT THROUGH ENTERPRISE USERS",
+        "(AlterUserStatement name=U clauses=[(UserClause kind=RevokeConnectThrough enterpriseUsers)])")]
+    [InlineData("CREATE USER x IDENTIFIED EXTERNALLY AS 'CN=x'",
+        "(CreateUserStatement name=X clauses=[(UserClause kind=IdentifiedExternally externalName='CN=x')])")]
+    [InlineData("ALTER USER u ACCOUNT LOCK", "(AlterUserStatement name=U clauses=[(UserClause kind=AccountLock)])")]
+    [InlineData("ALTER USER u READ ONLY", "(AlterUserStatement name=U clauses=[(UserClause kind=ReadOnly)])")]
+    public void CreateAlterUser(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Fact]
     public void CreateJava_Source()

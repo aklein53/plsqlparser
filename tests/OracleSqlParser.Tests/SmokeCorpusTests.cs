@@ -124,6 +124,7 @@ public class SmokeCorpusTests
     [InlineData("AUDIT SELECT ON emp")]
     [InlineData("ALTER SYSTEM FLUSH SHARED_POOL")]
     [InlineData("CREATE USER bob IDENTIFIED BY pw")]
+    [InlineData("CREATE USER scratch_u IDENTIFIED BY \"Scratch_pw_2\" DEFAULT TABLESPACE users TEMPORARY TABLESPACE temp QUOTA 10M ON users PROFILE default PASSWORD EXPIRE")]
     [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'")]
     [InlineData("FLASHBACK TABLE t TO BEFORE DROP")]
     [InlineData("PURGE RECYCLEBIN")]

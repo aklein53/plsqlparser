@@ -333,9 +333,18 @@ public class SqlScriptGeneratorTests
     [Fact]
     public void TokenTreeWords_FollowIdentifierCasing()
     {
-        const string sql = "alter user Bob account lock";
-        Assert.Equal("ALTER USER Bob account lock", Gen(sql));
-        Assert.Equal("ALTER USER BOB ACCOUNT LOCK", Gen(sql, new() { IdentifierCasing = IdentifierCasing.Uppercase }));
+        const string sql = "alter index Ix rebuild";
+        Assert.Equal("ALTER INDEX Ix rebuild", Gen(sql));
+        Assert.Equal("ALTER INDEX IX REBUILD", Gen(sql, new() { IdentifierCasing = IdentifierCasing.Uppercase }));
+    }
+
+    [Fact]
+    public void AlterUser_PasswordIsNeverRecased()
+    {
+        // Passwords are case-sensitive even when unquoted, so the uppercase option must not touch them.
+        const string sql = "alter user Bob identified by Pw account lock";
+        Assert.Equal("ALTER USER Bob IDENTIFIED BY Pw ACCOUNT LOCK", Gen(sql));
+        Assert.Equal("ALTER USER BOB IDENTIFIED BY Pw ACCOUNT LOCK", Gen(sql, new() { IdentifierCasing = IdentifierCasing.Uppercase }));
     }
 
     [Fact]

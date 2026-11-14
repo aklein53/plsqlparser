@@ -212,6 +212,69 @@ public sealed partial class SqlPlusCommand : Statement
     public List<SyntaxItem> Arguments { get; set; } = [];
 }
 
+// ---------- CREATE / ALTER USER ----------
+
+public enum UserClauseKind
+{
+    IdentifiedBy, IdentifiedExternally, IdentifiedGlobally, NoAuthentication, DefaultTablespace, TemporaryTablespace,
+    Quota, Profile, PasswordExpire, AccountLock, AccountUnlock, DefaultRole, Container, EnableEditions, DisableEditions,
+    ReadOnly, ReadWrite, GrantConnectThrough, RevokeConnectThrough, Other,
+}
+
+/// <summary>Role-list keyword form: an explicit list, ALL [EXCEPT list], or NONE.</summary>
+public enum RoleSetKind { Roles, All, None }
+
+/// <summary>
+/// One clause of CREATE USER / ALTER USER, in source order. Clauses without a dedicated kind are kept as
+/// <see cref="UserClauseKind.Other"/> with their single token (<see cref="Syntax"/>) so the statement still round-trips.
+/// </summary>
+public sealed partial class UserClause : SqlNode
+{
+    public UserClauseKind Kind { get; set; }
+    /// <summary>IDENTIFIED BY password. Printed as typed (passwords are case-sensitive even when unquoted).</summary>
+    public Identifier? Password { get; set; }
+    /// <summary>IDENTIFIED BY password REPLACE old_password.</summary>
+    public Identifier? ReplacePassword { get; set; }
+    /// <summary>IDENTIFIED EXTERNALLY/GLOBALLY AS 'name'.</summary>
+    public Expression? ExternalName { get; set; }
+    /// <summary>LOCAL TEMPORARY TABLESPACE.</summary>
+    public bool Local { get; set; }
+    /// <summary>Tablespace of DEFAULT/TEMPORARY TABLESPACE and QUOTA ... ON.</summary>
+    public Identifier? Tablespace { get; set; }
+    /// <summary>QUOTA size, e.g. 100M (sizes lex as one number token).</summary>
+    public Expression? Quota { get; set; }
+    public bool Unlimited { get; set; }
+    public Identifier? Profile { get; set; }
+    /// <summary>Proxy user for GRANT/REVOKE CONNECT THROUGH.</summary>
+    public Identifier? Proxy { get; set; }
+    public bool EnterpriseUsers { get; set; }
+    /// <summary>DEFAULT ROLE list, or WITH ROLE / WITH NO ROLES of a GRANT CONNECT THROUGH.</summary>
+    public RoleSetKind? RoleSet { get; set; }
+    public List<Identifier> Roles { get; set; } = [];
+    public List<Identifier> ExceptRoles { get; set; } = [];
+    public bool AuthenticationRequired { get; set; }
+    /// <summary>CONTAINER = CURRENT | ALL.</summary>
+    public GrantContainer? Container { get; set; }
+    /// <summary>ENABLE EDITIONS FORCE.</summary>
+    public bool Force { get; set; }
+    /// <summary>The unmodelled token of an <see cref="UserClauseKind.Other"/> clause.</summary>
+    public List<SyntaxItem> Syntax { get; set; } = [];
+}
+
+public sealed partial class CreateUserStatement : Statement
+{
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<UserClause> Clauses { get; set; } = [];
+}
+
+public sealed partial class AlterUserStatement : Statement
+{
+    public bool IfExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public List<UserClause> Clauses { get; set; } = [];
+}
+
 // ---------- Generic object DDL (typed header + token-tree body) ----------
 
 public enum ObjectKind
