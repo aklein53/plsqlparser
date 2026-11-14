@@ -55,6 +55,7 @@ public class CorpusAcceptanceTests(OracleFixture db, ITestOutputHelper output)
     /// <summary>Multi-statement scripts cannot be sent as one command.</summary>
     public static readonly Dictionary<string, string> NotExecutable = new()
     {
+        ["GRANT SELECT ANY TABLE ON SCHEMA hr TO app_user"] = "23ai schema-level grant on schema hr, which a fresh scratch schema does not have",
         ["SELECT 1 FROM dual; SELECT 2 FROM dual;\n/\nSELECT 3 FROM dual"] = "SQL*Plus-style multi-statement script (';' and '/' separators); not a single Oracle statement",
         ["AUDIT POLICY scratch_pol BY scratch_u WHENEVER NOT SUCCESSFUL"] = "refers to an audit policy that a fresh scratch schema does not have",
         ["CREATE TEMPORARY TABLESPACE scratch_tmp TEMPFILE 'scratch_tmp.dbf' SIZE 5M AUTOEXTEND ON NEXT 1M MAXSIZE UNLIMITED"] = "creates a tempfile on the database server filesystem; not run as part of the scratch-schema corpus",

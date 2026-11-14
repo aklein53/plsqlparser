@@ -52,6 +52,7 @@ public class OracleVersionTests
         ["CREATE TABLE t (v VECTOR(3))", "VECTOR data type", OracleVersion.Oracle23],
         ["CREATE MLE MODULE m LANGUAGE JAVASCRIPT AS export function f() {}", "CREATE MLE MODULE", OracleVersion.Oracle23],
         ["CREATE MLE ENV e", "CREATE MLE ENV", OracleVersion.Oracle23],
+        ["GRANT SELECT ANY TABLE ON SCHEMA hr TO u", "schema-level privilege", OracleVersion.Oracle23],
         ["SELECT JSON {'a' : 1} FROM dual", "JSON {} constructor", OracleVersion.Oracle23],
         ["SELECT JSON ['a', 1] FROM dual", "JSON [] constructor", OracleVersion.Oracle23],
         ["CREATE TABLE t (c NUMBER DEFAULT ON NULL FOR INSERT ONLY 5)", "DEFAULT ON NULL FOR", OracleVersion.Oracle23],
@@ -66,7 +67,7 @@ public class OracleVersionTests
     public void Gated_ParsesCleanlyAtDefaultVersion(string sql, string feature, OracleVersion min)
     {
         var r = SqlParser.Parse(sql, new ParseOptions());
-        Assert.True(r.Success, $"{feature}: {string.Join("; ", r.Errors)}");
+        Assert.True(r.Success, $"{feature} (requires Oracle {(int)min}): {string.Join("; ", r.Errors)}");
     }
 
     [Theory]
@@ -90,7 +91,7 @@ public class OracleVersionTests
         var at23 = SqlParser.Parse(sql, new ParseOptions { OracleVersion = OracleVersion.Oracle23 });
         Assert.Equal(at23.Script.Statements.Count, at19.Script.Statements.Count);
         for (int i = 0; i < at23.Script.Statements.Count; i++)
-            Assert.True(SqlNodeComparer.StructurallyEqual(at23.Script.Statements[i], at19.Script.Statements[i]), feature);
+            Assert.True(SqlNodeComparer.StructurallyEqual(at23.Script.Statements[i], at19.Script.Statements[i]), $"{feature} (requires Oracle {(int)min})");
     }
 
     [Theory]

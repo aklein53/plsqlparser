@@ -118,6 +118,7 @@ public class SmokeCorpusTests
     [InlineData("TRUNCATE TABLE s.t DROP STORAGE")]
     [InlineData("COMMENT ON COLUMN t.c IS 'it''s'")]
     [InlineData("GRANT SELECT, INSERT ON hr.emp TO scott, PUBLIC WITH GRANT OPTION")]
+    [InlineData("GRANT SELECT ANY TABLE ON SCHEMA hr TO app_user")]
     [InlineData("GRANT CREATE SESSION TO app_user")]
     [InlineData("REVOKE SELECT ON emp FROM scott")]
     [InlineData("ANALYZE TABLE emp COMPUTE STATISTICS")]

@@ -134,6 +134,9 @@ public class DmlAndSessionShapeTests
     [InlineData("GRANT ALL PRIVILEGES TO u", "(GrantStatement allPrivileges grantees=[(Grantee name=U)])")]
     [InlineData("GRANT CREATE ANY TABLE, dba TO u WITH ADMIN OPTION", "(GrantStatement privileges=[(GrantPrivilege name=CREATE ANY TABLE) (GrantPrivilege name=DBA)] grantees=[(Grantee name=U)] withAdminOption)")]
     [InlineData("GRANT READ ON DIRECTORY d TO u", "(GrantStatement privileges=[(GrantPrivilege name=READ)] objectKind=Directory object=[D] grantees=[(Grantee name=U)])")]
+    [InlineData("GRANT SELECT ANY TABLE ON SCHEMA hr TO u", "(GrantStatement privileges=[(GrantPrivilege name=SELECT ANY TABLE)] objectKind=Schema object=[HR] grantees=[(Grantee name=U)])")]
+    [InlineData("REVOKE CREATE ANY TABLE ON SCHEMA hr FROM u", "(GrantStatement revoke privileges=[(GrantPrivilege name=CREATE ANY TABLE)] objectKind=Schema object=[HR] grantees=[(Grantee name=U)])")]
+    [InlineData("GRANT SELECT ON schema.t TO u", "(GrantStatement privileges=[(GrantPrivilege name=SELECT)] object=[SCHEMA T] grantees=[(Grantee name=U)])")]
     [InlineData("REVOKE SELECT ON emp FROM scott CASCADE CONSTRAINTS", "(GrantStatement revoke privileges=[(GrantPrivilege name=SELECT)] object=[EMP] grantees=[(Grantee name=SCOTT)] cascadeConstraints)")]
     [InlineData("GRANT SELECT ON t TO u CONTAINER = ALL", "(GrantStatement privileges=[(GrantPrivilege name=SELECT)] object=[T] grantees=[(Grantee name=U)] container=All)")]
     public void Grants(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));

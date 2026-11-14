@@ -213,7 +213,7 @@ public sealed partial class SqlScriptGenerator
                     {
                         GrantObjectKind.Directory => "DIRECTORY ", GrantObjectKind.Edition => "EDITION ", GrantObjectKind.MiningModel => "MINING MODEL ",
                         GrantObjectKind.JavaSource => "JAVA SOURCE ", GrantObjectKind.JavaResource => "JAVA RESOURCE ",
-                        GrantObjectKind.SqlTranslationProfile => "SQL TRANSLATION PROFILE ", _ => "USER ",
+                        GrantObjectKind.SqlTranslationProfile => "SQL TRANSLATION PROFILE ", GrantObjectKind.Schema => "SCHEMA ", _ => "USER ",
                     });
                 Name(g.Object);
             }

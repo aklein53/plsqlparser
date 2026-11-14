@@ -147,7 +147,7 @@ public sealed partial class Grantee : SqlNode
     public bool Public { get; set; }
 }
 
-public enum GrantObjectKind { Directory, Edition, MiningModel, JavaSource, JavaResource, SqlTranslationProfile, User }
+public enum GrantObjectKind { Directory, Edition, MiningModel, JavaSource, JavaResource, SqlTranslationProfile, User, Schema }
 public enum GrantContainer { Current, All }
 
 public sealed partial class GrantStatement : Statement

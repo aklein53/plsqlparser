@@ -326,6 +326,13 @@ public sealed partial class SqlParser
             if (AcceptKw("DIRECTORY")) st.ObjectKind = GrantObjectKind.Directory;
             else if (AcceptKw("EDITION")) st.ObjectKind = GrantObjectKind.Edition;
             else if (AcceptKw("USER")) st.ObjectKind = GrantObjectKind.User;
+            else if (IsKw("SCHEMA") && !IsOpAt(1, "."))
+            {
+                // ON SCHEMA is a 23ai schema-level grant target; ON schema.table names a table in schema "schema".
+                RequireVersion(OracleVersion.Oracle23, "schema-level privilege", Cur);
+                Next();
+                st.ObjectKind = GrantObjectKind.Schema;
+            }
             else if (IsKw("MINING")) { Next(); ExpectKw("MODEL"); st.ObjectKind = GrantObjectKind.MiningModel; }
             else if (IsKw("JAVA") && IsKwAt(1, "SOURCE")) { Next(); Next(); st.ObjectKind = GrantObjectKind.JavaSource; }
             else if (IsKw("JAVA") && IsKwAt(1, "RESOURCE")) { Next(); Next(); st.ObjectKind = GrantObjectKind.JavaResource; }
