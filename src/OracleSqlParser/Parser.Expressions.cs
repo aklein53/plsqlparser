@@ -382,6 +382,8 @@ public sealed partial class SqlParser
     private Expression ParseNameOrFunction()
     {
         var start = Cur;
+        if (Cur.Type == TokenType.Identifier && Cur.Value.StartsWith("$$", StringComparison.Ordinal))
+            return Fin(new InquiryDirective { Name = ParseIdentifier() }, start);
         var parts = new List<Identifier> { ParseIdentifier() };
         int prog113 = -1;
         while (IsOp(".") && Progress(ref prog113))

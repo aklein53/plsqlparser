@@ -7,20 +7,22 @@ public sealed partial class SqlScriptGenerator
         /// <summary>Separator before the next PL/SQL element: a new indented line in MultilinePlsql mode, else a space.</summary>
         private void PlLine() { if (_o.MultilinePlsql) NewLine(); else Sp(); }
 
-        /// <summary>Statements one level deeper, each followed by ';'.</summary>
+        /// <summary>Statements one level deeper, each followed by ';' (conditional-compilation directives end with $END instead).</summary>
         private void StatementList(IEnumerable<Statement> stmts)
         {
             _indent++;
-            foreach (var s in stmts) { PlLine(); Statement(s); Add(";"); }
+            foreach (var s in stmts) { PlLine(); Statement(s); if (!IsDirective(s)) Add(";"); }
             _indent--;
         }
 
         private void DeclList(IEnumerable<Declaration> decls)
         {
             _indent++;
-            foreach (var d in decls) { PlLine(); Declaration(d); Add(";"); }
+            foreach (var d in decls) { PlLine(); Declaration(d); if (!IsDirective(d)) Add(";"); }
             _indent--;
         }
+
+        private static bool IsDirective(SqlNode n) => n is ConditionalStatement or CompilationErrorStatement or ConditionalDeclaration or CompilationErrorDeclaration;
 
         // ---------- blocks ----------
 
@@ -88,6 +90,18 @@ public sealed partial class SqlScriptGenerator
             {
                 case VariableDeclaration v: VarDecl(v); break;
                 case ExceptionDeclaration e: Id(e.Name); Add(" EXCEPTION"); break;
+                case ConditionalDeclaration cd:
+                    Add("$IF "); Expr(cd.Condition); Add(" $THEN");
+                    DeclList(cd.ThenDeclarations);
+                    foreach (var b in cd.ElsifBranches)
+                    {
+                        PlLine(); Add("$ELSIF "); Expr(b.Condition); Add(" $THEN");
+                        DeclList(b.Declarations);
+                    }
+                    if (cd.ElseDeclarations != null) { PlLine(); Add("$ELSE"); DeclList(cd.ElseDeclarations); }
+                    PlLine(); Add("$END");
+                    break;
+                case CompilationErrorDeclaration ced: Add("$ERROR "); Expr(ced.Message); Add(" $END"); break;
                 case PragmaDeclaration p:
                     Add("PRAGMA "); Id(p.Name);
                     if (p.Arguments.Count > 0) { Add("("); Sep(p.Arguments, a => Expr(a)); Add(")"); }
@@ -426,6 +440,18 @@ public sealed partial class SqlScriptGenerator
                 case NullStatement: Add("NULL"); break;
                 case AssignmentStatement a: Expr(a.Target); Add(" := "); Expr(a.Value); break;
                 case ProcedureCallStatement pc: Expr(pc.Call); break;
+                case ConditionalStatement cs:
+                    Add("$IF "); Expr(cs.Condition); Add(" $THEN");
+                    StatementList(cs.ThenStatements);
+                    foreach (var b in cs.ElsifBranches)
+                    {
+                        PlLine(); Add("$ELSIF "); Expr(b.Condition); Add(" $THEN");
+                        StatementList(b.Statements);
+                    }
+                    if (cs.ElseStatements != null) { PlLine(); Add("$ELSE"); StatementList(cs.ElseStatements); }
+                    PlLine(); Add("$END");
+                    break;
+                case CompilationErrorStatement ce: Add("$ERROR "); Expr(ce.Message); Add(" $END"); break;
                 case IfStatement i:
                     Add("IF "); Expr(i.Condition); Add(" THEN");
                     StatementList(i.ThenStatements);

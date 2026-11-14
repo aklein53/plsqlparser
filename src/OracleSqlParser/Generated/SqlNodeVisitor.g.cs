@@ -298,11 +298,71 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="CompilationErrorDeclaration"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(CompilationErrorDeclaration node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="CompilationErrorDeclaration"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(CompilationErrorDeclaration node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="CompilationErrorStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(CompilationErrorStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="CompilationErrorStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(CompilationErrorStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="CompressAttribute"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(CompressAttribute node) => Visit((SqlNode)node);
 
     /// <summary>Entry point for a <see cref="CompressAttribute"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(CompressAttribute node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="ConditionalDeclaration"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(ConditionalDeclaration node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="ConditionalDeclaration"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(ConditionalDeclaration node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="ConditionalDeclarationBranch"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(ConditionalDeclarationBranch node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="ConditionalDeclarationBranch"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(ConditionalDeclarationBranch node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="ConditionalStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(ConditionalStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="ConditionalStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(ConditionalStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="ConditionalStatementBranch"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(ConditionalStatementBranch node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="ConditionalStatementBranch"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(ConditionalStatementBranch node)
     {
         Visit(node);
         node.AcceptChildren(this);
@@ -973,6 +1033,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="IndicesOfControl"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(IndicesOfControl node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="InquiryDirective"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(InquiryDirective node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="InquiryDirective"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(InquiryDirective node)
     {
         Visit(node);
         node.AcceptChildren(this);

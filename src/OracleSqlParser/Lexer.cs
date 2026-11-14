@@ -206,6 +206,25 @@ public sealed class Lexer
             return Make(TokenType.Bind, start, line, col);
         }
 
+        // PL/SQL conditional compilation: $IF/$THEN/$ELSIF/$ELSE/$END/$ERROR directives, and $$name inquiry directives
+        if (c == '$' && Peek() == '$' && (char.IsLetter(Peek(2)) || Peek(2) == '_'))
+        {
+            Advance(); Advance();
+            while (char.IsLetterOrDigit(Cur) || Cur is '_' or '$' or '#') Advance();
+            return Make(TokenType.Identifier, start, line, col, _s.Substring(start, _i - start).ToUpperInvariant());
+        }
+        if (c == '$' && char.IsLetter(Peek()))
+        {
+            int e = start + 1;
+            while (e < _s.Length && char.IsLetterOrDigit(_s[e])) e++;
+            var word = _s.Substring(start + 1, e - start - 1).ToUpperInvariant();
+            if (word is "IF" or "THEN" or "ELSIF" or "ELSE" or "END" or "ERROR")
+            {
+                while (_i < e) Advance();
+                return Make(TokenType.Identifier, start, line, col, "$" + word);
+            }
+        }
+
         string[] two = ["||", "**", "<>", "!=", "^=", "~=", "<=", ">=", "=>", "..", "->", "<<", ">>"];
         foreach (var op in two)
             if (c == op[0] && Peek() == op[1]) { Advance(); Advance(); return Make(TokenType.Operator, start, line, col); }

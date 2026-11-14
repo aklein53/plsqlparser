@@ -18,6 +18,56 @@ public sealed partial class ExceptionHandler : SqlNode
     public List<Statement> Statements { get; set; } = [];
 }
 
+// ---------- Conditional compilation ($IF, $ERROR, $$inquiry directives) ----------
+
+/// <summary>$IF cond $THEN ... [$ELSIF cond $THEN ...] [$ELSE ...] $END where the branches hold statements.</summary>
+public sealed partial class ConditionalStatement : Statement
+{
+    public Expression Condition { get; set; } = null!;
+    public List<Statement> ThenStatements { get; set; } = [];
+    public List<ConditionalStatementBranch> ElsifBranches { get; set; } = [];
+    public List<Statement>? ElseStatements { get; set; }
+}
+
+public sealed partial class ConditionalStatementBranch : SqlNode
+{
+    public Expression Condition { get; set; } = null!;
+    public List<Statement> Statements { get; set; } = [];
+}
+
+/// <summary>$ERROR 'message' $END in a statement list: a compile-time error, raised when its branch is selected.</summary>
+public sealed partial class CompilationErrorStatement : Statement
+{
+    public Expression Message { get; set; } = null!;
+}
+
+/// <summary>$IF cond $THEN ... [$ELSIF cond $THEN ...] [$ELSE ...] $END where the branches hold declarations.</summary>
+public sealed partial class ConditionalDeclaration : Declaration
+{
+    public Expression Condition { get; set; } = null!;
+    public List<Declaration> ThenDeclarations { get; set; } = [];
+    public List<ConditionalDeclarationBranch> ElsifBranches { get; set; } = [];
+    public List<Declaration>? ElseDeclarations { get; set; }
+}
+
+public sealed partial class ConditionalDeclarationBranch : SqlNode
+{
+    public Expression Condition { get; set; } = null!;
+    public List<Declaration> Declarations { get; set; } = [];
+}
+
+/// <summary>$ERROR 'message' $END in a declaration list: a compile-time error, raised when its branch is selected.</summary>
+public sealed partial class CompilationErrorDeclaration : Declaration
+{
+    public Expression Message { get; set; } = null!;
+}
+
+/// <summary>Inquiry directive such as $$PLSQL_UNIT or a $$flag set with PLSQL_CCFLAGS.</summary>
+public sealed partial class InquiryDirective : Expression
+{
+    public Identifier Name { get; set; } = null!;
+}
+
 // ---------- Declarations ----------
 
 public abstract partial class Declaration : SqlNode { }

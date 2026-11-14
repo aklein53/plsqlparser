@@ -211,8 +211,50 @@ public abstract partial class SqlNodeRewriter
         return node;
     }
 
+    /// <summary>Rewrites a <see cref="CompilationErrorDeclaration"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(CompilationErrorDeclaration node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="CompilationErrorStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(CompilationErrorStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
     /// <summary>Rewrites a <see cref="CompressAttribute"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(CompressAttribute node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="ConditionalDeclaration"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(ConditionalDeclaration node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="ConditionalDeclarationBranch"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(ConditionalDeclarationBranch node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="ConditionalStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(ConditionalStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="ConditionalStatementBranch"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(ConditionalStatementBranch node)
     {
         node.RewriteChildren(this);
         return node;
@@ -682,6 +724,13 @@ public abstract partial class SqlNodeRewriter
 
     /// <summary>Rewrites a <see cref="IndicesOfControl"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(IndicesOfControl node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
+    /// <summary>Rewrites a <see cref="InquiryDirective"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(InquiryDirective node)
     {
         node.RewriteChildren(this);
         return node;

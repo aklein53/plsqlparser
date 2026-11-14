@@ -33,7 +33,7 @@ public sealed partial class SqlScriptGenerator
                     or CreateTypeStatement or CreateTypeBodyStatement or NullStatement or AssignmentStatement or ProcedureCallStatement
                     or IfStatement or PlsqlCaseStatement or LoopStatement or ExitStatement or ContinueStatement or GotoStatement
                     or ReturnStatement or RaiseStatement or OpenStatement or FetchStatement or CloseStatement
-                    or ExecuteImmediateStatement or ForallStatement or PipeRowStatement:
+                    or ExecuteImmediateStatement or ForallStatement or PipeRowStatement or ConditionalStatement or CompilationErrorStatement:
                     Plsql(st); break;
                 default: throw Unsupported(st);
             }

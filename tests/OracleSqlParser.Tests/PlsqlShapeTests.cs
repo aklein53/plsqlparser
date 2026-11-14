@@ -43,6 +43,48 @@ BEGIN NULL; END;");
     }
 
     [Fact]
+    public void ConditionalCompilation_InStatements()
+    {
+        Assert.Equal(
+            "[(ConditionalStatement condition=(= (InquiryDirective name=$$FLAG) 1) thenStatements=[(AssignmentStatement target=X value=1)] " +
+            "elsifBranches=[(ConditionalStatementBranch condition=(= (InquiryDirective name=$$FLAG) 2) statements=[(NullStatement)])] " +
+            "elseStatements=[(CompilationErrorStatement message='bad')]) (NullStatement)]",
+            Stmts("$IF $$flag = 1 $THEN x := 1; $ELSIF $$flag = 2 $THEN NULL; $ELSE $ERROR 'bad' $END $END NULL;"));
+        Assert.Equal(
+            "[(ConditionalStatement condition=(= (InquiryDirective name=$$FLAG) 1) thenStatements=[(NullStatement)])]",
+            Stmts("$IF $$flag = 1 $THEN NULL; $END"));
+    }
+
+    [Fact]
+    public void ConditionalCompilation_NestedInControlFlow()
+    {
+        Assert.Equal(
+            "[(IfStatement condition=A thenStatements=[(ConditionalStatement condition=(= (InquiryDirective name=$$FLAG) 1) thenStatements=[(NullStatement)])])]",
+            Stmts("IF a THEN $IF $$flag = 1 $THEN NULL; $END END IF;"));
+    }
+
+    [Fact]
+    public void ConditionalCompilation_InDeclarations()
+    {
+        var b = FirstBlock("DECLARE $IF $$flag = 1 $THEN v NUMBER := 1; $ELSIF $$flag = 2 $THEN v NUMBER := 3; $ELSE v NUMBER := 2; $END BEGIN NULL; END;");
+        Assert.Equal(
+            "[(ConditionalDeclaration condition=(= (InquiryDirective name=$$FLAG) 1) thenDeclarations=[(VariableDeclaration name=V type=(DataType name=NUMBER) default=1)] " +
+            "elsifBranches=[(ConditionalDeclarationBranch condition=(= (InquiryDirective name=$$FLAG) 2) declarations=[(VariableDeclaration name=V type=(DataType name=NUMBER) default=3)])] " +
+            "elseDeclarations=[(VariableDeclaration name=V type=(DataType name=NUMBER) default=2)])]",
+            AstPrinter.Print(b.Declarations));
+
+        var e = FirstBlock("DECLARE $IF $$flag = 1 $THEN $ERROR 'x' $END $END BEGIN NULL; END;");
+        Assert.Equal("[(ConditionalDeclaration condition=(= (InquiryDirective name=$$FLAG) 1) thenDeclarations=[(CompilationErrorDeclaration message='x')])]",
+            AstPrinter.Print(e.Declarations));
+    }
+
+    [Fact]
+    public void InquiryDirective_IsAnExpression()
+    {
+        Assert.Equal("(InquiryDirective name=$$PLSQL_UNIT)", Shape.Expr("$$plsql_unit"));
+    }
+
+    [Fact]
     public void NestedSubprograms_InDeclarations()
     {
         var b = FirstBlock("DECLARE PROCEDURE p(x IN OUT NOCOPY NUMBER) IS BEGIN x := 1; END p; FUNCTION f RETURN NUMBER; BEGIN NULL; END;");

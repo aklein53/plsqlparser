@@ -1423,6 +1423,86 @@ public partial class CommonTableExpression
     }
 }
 
+public partial class CompilationErrorDeclaration
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Message is not null) yield return Message;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Message?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Message = SqlNodeRewriter.RewriteRequired(rewriter, Message, "CompilationErrorDeclaration.Message");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CompilationErrorDeclaration();
+        CopySpan(this, c);
+        c.Message = CloneChild(Message)!;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CompilationErrorDeclaration)other;
+        return Pair(Message, o.Message, pending);
+    }
+}
+
+public partial class CompilationErrorStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Message is not null) yield return Message;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Message?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Message = SqlNodeRewriter.RewriteRequired(rewriter, Message, "CompilationErrorStatement.Message");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CompilationErrorStatement();
+        CopySpan(this, c);
+        c.Message = CloneChild(Message)!;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CompilationErrorStatement)other;
+        return Pair(Message, o.Message, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class CompressAttribute
 {
     /// <inheritdoc/>
@@ -1466,6 +1546,204 @@ public partial class CompressAttribute
         return Compress == o.Compress
             && Pair(PrefixLength, o.PrefixLength, pending)
             && PairList(Method, o.Method, pending);
+    }
+}
+
+public partial class ConditionalDeclaration
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Condition is not null) yield return Condition;
+        if (ThenDeclarations is not null) foreach (var x in ThenDeclarations) yield return x;
+        if (ElsifBranches is not null) foreach (var x in ElsifBranches) yield return x;
+        if (ElseDeclarations is not null) foreach (var x in ElseDeclarations) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Condition?.Accept(visitor);
+        if (ThenDeclarations is not null) foreach (var x in ThenDeclarations) x.Accept(visitor);
+        if (ElsifBranches is not null) foreach (var x in ElsifBranches) x.Accept(visitor);
+        if (ElseDeclarations is not null) foreach (var x in ElseDeclarations) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Condition = SqlNodeRewriter.RewriteRequired(rewriter, Condition, "ConditionalDeclaration.Condition");
+        SqlNodeRewriter.RewriteList(rewriter, ThenDeclarations, "ConditionalDeclaration.ThenDeclarations");
+        SqlNodeRewriter.RewriteList(rewriter, ElsifBranches, "ConditionalDeclaration.ElsifBranches");
+        SqlNodeRewriter.RewriteList(rewriter, ElseDeclarations, "ConditionalDeclaration.ElseDeclarations");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ConditionalDeclaration();
+        CopySpan(this, c);
+        c.Condition = CloneChild(Condition)!;
+        c.ThenDeclarations = CloneList(ThenDeclarations);
+        c.ElsifBranches = CloneList(ElsifBranches);
+        c.ElseDeclarations = CloneList(ElseDeclarations);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ConditionalDeclaration)other;
+        return Pair(Condition, o.Condition, pending)
+            && PairList(ThenDeclarations, o.ThenDeclarations, pending)
+            && PairList(ElsifBranches, o.ElsifBranches, pending)
+            && PairList(ElseDeclarations, o.ElseDeclarations, pending);
+    }
+}
+
+public partial class ConditionalDeclarationBranch
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Condition is not null) yield return Condition;
+        if (Declarations is not null) foreach (var x in Declarations) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Condition?.Accept(visitor);
+        if (Declarations is not null) foreach (var x in Declarations) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Condition = SqlNodeRewriter.RewriteRequired(rewriter, Condition, "ConditionalDeclarationBranch.Condition");
+        SqlNodeRewriter.RewriteList(rewriter, Declarations, "ConditionalDeclarationBranch.Declarations");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ConditionalDeclarationBranch();
+        CopySpan(this, c);
+        c.Condition = CloneChild(Condition)!;
+        c.Declarations = CloneList(Declarations);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ConditionalDeclarationBranch)other;
+        return Pair(Condition, o.Condition, pending)
+            && PairList(Declarations, o.Declarations, pending);
+    }
+}
+
+public partial class ConditionalStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Condition is not null) yield return Condition;
+        if (ThenStatements is not null) foreach (var x in ThenStatements) yield return x;
+        if (ElsifBranches is not null) foreach (var x in ElsifBranches) yield return x;
+        if (ElseStatements is not null) foreach (var x in ElseStatements) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Condition?.Accept(visitor);
+        if (ThenStatements is not null) foreach (var x in ThenStatements) x.Accept(visitor);
+        if (ElsifBranches is not null) foreach (var x in ElsifBranches) x.Accept(visitor);
+        if (ElseStatements is not null) foreach (var x in ElseStatements) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Condition = SqlNodeRewriter.RewriteRequired(rewriter, Condition, "ConditionalStatement.Condition");
+        SqlNodeRewriter.RewriteList(rewriter, ThenStatements, "ConditionalStatement.ThenStatements");
+        SqlNodeRewriter.RewriteList(rewriter, ElsifBranches, "ConditionalStatement.ElsifBranches");
+        SqlNodeRewriter.RewriteList(rewriter, ElseStatements, "ConditionalStatement.ElseStatements");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ConditionalStatement();
+        CopySpan(this, c);
+        c.Condition = CloneChild(Condition)!;
+        c.ThenStatements = CloneList(ThenStatements);
+        c.ElsifBranches = CloneList(ElsifBranches);
+        c.ElseStatements = CloneList(ElseStatements);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ConditionalStatement)other;
+        return Pair(Condition, o.Condition, pending)
+            && PairList(ThenStatements, o.ThenStatements, pending)
+            && PairList(ElsifBranches, o.ElsifBranches, pending)
+            && PairList(ElseStatements, o.ElseStatements, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class ConditionalStatementBranch
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Condition is not null) yield return Condition;
+        if (Statements is not null) foreach (var x in Statements) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Condition?.Accept(visitor);
+        if (Statements is not null) foreach (var x in Statements) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Condition = SqlNodeRewriter.RewriteRequired(rewriter, Condition, "ConditionalStatementBranch.Condition");
+        SqlNodeRewriter.RewriteList(rewriter, Statements, "ConditionalStatementBranch.Statements");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new ConditionalStatementBranch();
+        CopySpan(this, c);
+        c.Condition = CloneChild(Condition)!;
+        c.Statements = CloneList(Statements);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (ConditionalStatementBranch)other;
+        return Pair(Condition, o.Condition, pending)
+            && PairList(Statements, o.Statements, pending);
     }
 }
 
@@ -5064,6 +5342,45 @@ public partial class IndicesOfControl
         return Pair(Collection, o.Collection, pending)
             && Pair(While, o.While, pending)
             && Pair(When, o.When, pending);
+    }
+}
+
+public partial class InquiryDirective
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "InquiryDirective.Name");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new InquiryDirective();
+        CopySpan(this, c);
+        c.Name = CloneChild(Name)!;
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (InquiryDirective)other;
+        return Pair(Name, o.Name, pending);
     }
 }
 

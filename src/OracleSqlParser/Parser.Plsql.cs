@@ -5,8 +5,11 @@ public sealed partial class SqlParser
     // ---- blocks ----
 
     private bool AtBlockEnd() =>
-        Cur.Type == TokenType.EOF ||
+        Cur.Type == TokenType.EOF || AtDirectiveEnd() ||
         (Cur.Type == TokenType.Identifier && Cur.Value is "END" or "ELSE" or "ELSIF" or "EXCEPTION" or "WHEN");
+
+    /// <summary>The $ELSIF, $ELSE or $END of a conditional-compilation block (these never start a statement or declaration).</summary>
+    private bool AtDirectiveEnd() => IsKw("$ELSIF") || IsKw("$ELSE") || IsKw("$END");
 
     private List<string> ParseLabels()
     {
@@ -99,8 +102,10 @@ public sealed partial class SqlParser
         int prog30 = -1;
         while (!stop() && Progress(ref prog30))
         {
+            // Conditional-compilation directives end with $END, not ';'
+            bool directive = IsKw("$IF") || IsKw("$ERROR");
             list.Add(ParsePlsqlStatement());
-            ExpectOp(";");
+            if (!directive) ExpectOp(";");
         }
         return list;
     }
@@ -119,7 +124,7 @@ public sealed partial class SqlParser
     {
         var list = new List<Declaration>();
         int prog134 = -1;
-        while (!stop() && !IsKw("END") && Cur.Type != TokenType.EOF && Progress(ref prog134))
+        while (!stop() && !IsKw("END") && !AtDirectiveEnd() && Cur.Type != TokenType.EOF && Progress(ref prog134))
             list.Add(ParseDeclaration());
         return list;
     }
@@ -132,6 +137,8 @@ public sealed partial class SqlParser
         Declaration d;
         switch (Cur.Type == TokenType.Identifier ? Cur.Value : "")
         {
+            case "$IF": return ParseConditionalDeclaration();
+            case "$ERROR": return ParseCompilationErrorDeclaration();
             case "CURSOR": d = ParseCursorDeclaration(); break;
             case "TYPE": d = ParseTypeDeclaration(); break;
             case "SUBTYPE": d = ParseSubtypeDeclaration(); break;
@@ -741,6 +748,8 @@ public sealed partial class SqlParser
             {
                 case "NULL" when IsOpAt(1, ";"): Next(); return Fin(new NullStatement(), start);
                 case "IF": return ParseIf();
+                case "$IF": return ParseConditionalStatement();
+                case "$ERROR": return ParseCompilationErrorStatement();
                 case "CASE": return ParseCaseStatement();
                 case "LOOP": case "WHILE": case "FOR": return ParseLoop();
                 case "EXIT": case "CONTINUE": return ParseExitContinue();
@@ -805,6 +814,62 @@ public sealed partial class SqlParser
         if (AcceptKw("ELSE")) st.ElseStatements = ParseStatements(AtBlockEnd);
         ExpectKw("END"); ExpectKw("IF");
         return Fin(st, start);
+    }
+
+    private Statement ParseConditionalStatement()
+    {
+        var start = Next();
+        var st = new ConditionalStatement { Condition = ParseExpr() };
+        ExpectKw("$THEN");
+        st.ThenStatements = ParseStatements(AtBlockEnd);
+        int prog = -1;
+        while (IsKw("$ELSIF") && Progress(ref prog))
+        {
+            var bs = Next();
+            var br = new ConditionalStatementBranch { Condition = ParseExpr() };
+            ExpectKw("$THEN");
+            br.Statements = ParseStatements(AtBlockEnd);
+            st.ElsifBranches.Add(Fin(br, bs));
+        }
+        if (AcceptKw("$ELSE")) st.ElseStatements = ParseStatements(AtBlockEnd);
+        ExpectKw("$END");
+        return Fin(st, start);
+    }
+
+    private Statement ParseCompilationErrorStatement()
+    {
+        var start = Next();
+        var st = new CompilationErrorStatement { Message = ParseExpr() };
+        ExpectKw("$END");
+        return Fin(st, start);
+    }
+
+    private Declaration ParseConditionalDeclaration()
+    {
+        var start = Next();
+        var cd = new ConditionalDeclaration { Condition = ParseExpr() };
+        ExpectKw("$THEN");
+        cd.ThenDeclarations = ParseDeclarations(() => false);
+        int prog = -1;
+        while (IsKw("$ELSIF") && Progress(ref prog))
+        {
+            var bs = Next();
+            var br = new ConditionalDeclarationBranch { Condition = ParseExpr() };
+            ExpectKw("$THEN");
+            br.Declarations = ParseDeclarations(() => false);
+            cd.ElsifBranches.Add(Fin(br, bs));
+        }
+        if (AcceptKw("$ELSE")) cd.ElseDeclarations = ParseDeclarations(() => false);
+        ExpectKw("$END");
+        return Fin(cd, start);
+    }
+
+    private Declaration ParseCompilationErrorDeclaration()
+    {
+        var start = Next();
+        var d = new CompilationErrorDeclaration { Message = ParseExpr() };
+        ExpectKw("$END");
+        return Fin(d, start);
     }
 
     private Statement ParseCaseStatement()

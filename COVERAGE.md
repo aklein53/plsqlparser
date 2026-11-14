@@ -43,6 +43,10 @@ FOR loops with Oracle 21c+ iteration controls: `ForIterand` (name, type, MUTABLE
 `IterationControl`s (`RangeControl` with REVERSE/BY, `ExpressionControl`, `RepeatControl`, `ValuesOfControl`,
 `IndicesOfControl`, `PairsOfControl`, `CursorControl` for `(SELECT ...)`, `DynamicSqlControl`), each with optional
 WHILE/WHEN. A bare cursor or collection name is an `ExpressionControl`. IMMUTABLE is accepted and not recorded.
+Conditional compilation: `$IF`/`$ELSIF`/`$ELSE`/`$END` blocks in statement lists (`ConditionalStatement`) and
+declaration lists (`ConditionalDeclaration`), with every branch parsed as typed nodes; `$ERROR 'msg' $END`
+(`CompilationErrorStatement`/`CompilationErrorDeclaration`); inquiry directives `$$name` (`InquiryDirective`).
+Conditional blocks are not accepted in parameter lists.
 
 ## Script level
 
@@ -54,7 +58,6 @@ Error recovery resyncs at `;`, or for PL/SQL units at a `/` alone on its line (e
 
 - `RETURNING OLD/NEW` (23ai) — syntax not verified against the docs, not implemented.
 - `JSON_TRANSFORM` `NESTED PATH` and `CASE` operations.
-- PL/SQL conditional compilation (`$IF ... $THEN ... $END`, `$$inquiry_directives`).
 - Qualified expressions (`t_rec(a => 1)` parses as a function call), `DELETE ... FROM` join form.
 - `IN (subquery, expr)` mixed lists, `CREATE ... SHARDED/DUPLICATED` modifiers beyond those listed.
 - Every node can be generated back to SQL by `SqlScriptGenerator` (comments excepted; token-tree bodies print as space-separated tokens). The `AstPrinter` text is for assertions, not SQL.
