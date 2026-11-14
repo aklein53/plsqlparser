@@ -27,20 +27,6 @@ public readonly record struct Token(TokenType Type, string Text, int Start, int 
     internal int TokenIndex { get; init; } = -1;
 }
 
-public sealed class ParseError(string message, int offset, int line, int column)
-{
-    public string Message { get; } = message;
-    public int Offset { get; } = offset;
-    public int Line { get; } = line;
-    public int Column { get; } = column;
-    public override string ToString() => $"({Line}:{Column}) {Message}";
-}
-
-public sealed class ParseException(ParseError error) : Exception(error.ToString())
-{
-    public ParseError Error { get; } = error;
-}
-
 /// <summary>
 /// Tokenizer for Oracle SQL. Comments are skipped except optimizer hints (/*+ ... */).
 /// Lexical errors (unterminated string, quoted identifier, comment) are recorded in <see cref="Errors"/> and
@@ -90,7 +76,8 @@ public sealed class Lexer
     private char Cur => _i < _s.Length ? _s[_i] : '\0';
     private char Peek(int n = 1) => _i + n < _s.Length ? _s[_i + n] : '\0';
 
-    private void Error(string msg, int at, int line, int col) => Errors.Add(new ParseError(msg, at, line, col));
+    private void Error(string msg, int at, int line, int col) =>
+        Errors.Add(new ParseError(msg, at, line, col, Math.Max(0, _i - at), ParseErrorCodes.UnterminatedLiteral));
 
     private void Advance()
     {

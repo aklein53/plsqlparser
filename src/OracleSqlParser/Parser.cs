@@ -128,9 +128,9 @@ public sealed partial class SqlParser
     /// <summary>Enters one nesting level; throws when the configured maximum depth is exceeded. Pair with <see cref="Leave"/>.</summary>
     private void Enter()
     {
-        if (++_depth > _maxDepth) throw Fail($"nesting depth exceeds {_maxDepth}");
+        if (++_depth > _maxDepth) throw Fail($"nesting depth exceeds {_maxDepth}", ParseErrorCodes.NestingTooDeep);
         if (!System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
-            throw Fail($"nesting depth exceeds {_depth - 1} (insufficient stack space)");
+            throw Fail($"nesting depth exceeds {_depth - 1} (insufficient stack space)", ParseErrorCodes.NestingTooDeep);
     }
 
     private void Leave() => _depth--;
@@ -179,7 +179,7 @@ public sealed partial class SqlParser
     /// </summary>
     private bool Progress(ref int mark)
     {
-        if (_p == mark) throw Fail($"parser made no progress at {Describe(Cur)}");
+        if (_p == mark) throw Fail($"parser made no progress at {Describe(Cur)}", ParseErrorCodes.InternalError);
         mark = _p;
         return true;
     }
@@ -191,7 +191,7 @@ public sealed partial class SqlParser
     {
         // Every recursion consumes tokens, so this is a universal last line of defence against stack exhaustion.
         if (!System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
-            throw Fail($"nesting depth exceeds {_depth} (insufficient stack space)");
+            throw Fail($"nesting depth exceeds {_depth} (insufficient stack space)", ParseErrorCodes.NestingTooDeep);
         var t = Cur;
         if (_p < _t.Count - 1) _p++;
         return t;
@@ -204,12 +204,18 @@ public sealed partial class SqlParser
     private bool AcceptKw(string kw) { if (IsKw(kw)) { Next(); return true; } return false; }
     private bool AcceptOp(string op) { if (IsOp(op)) { Next(); return true; } return false; }
 
-    private void ExpectKw(string kw) { if (!AcceptKw(kw)) throw Fail($"Expected {kw} but found {Describe(Cur)}"); }
-    private void ExpectOp(string op) { if (!AcceptOp(op)) throw Fail($"Expected '{op}' but found {Describe(Cur)}"); }
+    private void ExpectKw(string kw) { if (!AcceptKw(kw)) throw FailExpected($"Expected {kw} but found {Describe(Cur)}", kw); }
+    private void ExpectOp(string op) { if (!AcceptOp(op)) throw FailExpected($"Expected '{op}' but found {Describe(Cur)}", op); }
 
     private static string Describe(Token t) => t.Type == TokenType.EOF ? "end of input" : $"'{t.Text}'";
 
-    private ParseException Fail(string msg) => new(new ParseError(msg, Cur.Start, Cur.Line, Cur.Column));
+    /// <summary>Builds a fatal diagnostic at the current token. The span is the token's length (zero at end of input).</summary>
+    private ParseException Fail(string msg, string code = ParseErrorCodes.UnexpectedToken) =>
+        new(new ParseError(msg, Cur.Start, Cur.Line, Cur.Column, Cur.End - Cur.Start, code));
+
+    /// <summary>Builds a fatal ParseErrorCodes.ExpectedToken diagnostic at the current token, listing what was expected.</summary>
+    private ParseException FailExpected(string msg, params string[] expected) =>
+        new(new ParseError(msg, Cur.Start, Cur.Line, Cur.Column, Cur.End - Cur.Start, ParseErrorCodes.ExpectedToken, expected));
 
     /// <summary>
     /// Records a version diagnostic when <paramref name="feature"/> needs a release newer than the target. It never
@@ -221,7 +227,7 @@ public sealed partial class SqlParser
         if (_version >= min) return;
         var message = $"'{feature}' requires Oracle {(int)min} or later (targeting Oracle {(int)_version})";
         if (_versionErrors.Any(e => e.Offset == at.Start && e.Message == message)) return;
-        _versionErrors.Add(new ParseError(message, at.Start, at.Line, at.Column));
+        _versionErrors.Add(new ParseError(message, at.Start, at.Line, at.Column, at.End - at.Start, ParseErrorCodes.VersionGated));
     }
 
     /// <summary>Accepts the keyword, recording a version diagnostic when the target predates <paramref name="min"/>.</summary>
@@ -312,7 +318,7 @@ public sealed partial class SqlParser
             }
             else if (failure != null)
             {
-                errors.Add(new ParseError($"internal parser error: {failure.GetType().Name}", Cur.Start, Cur.Line, Cur.Column));
+                errors.Add(new ParseError($"internal parser error: {failure.GetType().Name}", Cur.Start, Cur.Line, Cur.Column, Cur.End - Cur.Start, ParseErrorCodes.InternalError));
                 Resync(startIdx);
             }
             if (_p == startIdx && Cur.Type != TokenType.EOF) Next();
@@ -452,7 +458,7 @@ public sealed partial class SqlParser
                 f.Accuracy = FetchAccuracy.Approximate;
             }
             f.Next = IsKw("NEXT");
-            if (!AcceptKw("FIRST") && !AcceptKw("NEXT")) throw Fail("Expected FIRST or NEXT after FETCH");
+            if (!AcceptKw("FIRST") && !AcceptKw("NEXT")) throw FailExpected("Expected FIRST or NEXT after FETCH", "FIRST", "NEXT");
             if (!IsKw("ROW") && !IsKw("ROWS"))
             {
                 f.Count = ParseAdditive();
@@ -680,8 +686,8 @@ public sealed partial class SqlParser
                 Next(); AcceptKw("OUTER"); ExpectKw("JOIN");
             }
             else if (IsKw("JOIN")) { Next(); kind = JoinKind.Inner; }
-            else if (natural) throw Fail("Expected JOIN after NATURAL");
-            else if (leftPartition.Count > 0) throw Fail("Expected an outer join after PARTITION BY");
+            else if (natural) throw FailExpected("Expected JOIN after NATURAL", "JOIN");
+            else if (leftPartition.Count > 0) throw FailExpected("Expected an outer join after PARTITION BY", "an outer join");
             else break;
 
             var join = new JoinTable { Left = left, Kind = kind, Natural = natural, LeftPartitionBy = leftPartition };
@@ -690,8 +696,8 @@ public sealed partial class SqlParser
             // Oracle: a partitioned outer join is a LEFT or RIGHT join (never FULL), natural or not, on one side only.
             if (join.LeftPartitionBy.Count > 0 || join.RightPartitionBy.Count > 0)
             {
-                if (natural || kind is not (JoinKind.Left or JoinKind.Right)) throw Fail("PARTITION BY needs a LEFT or RIGHT outer join");
-                if (join.LeftPartitionBy.Count > 0 && join.RightPartitionBy.Count > 0) throw Fail("PARTITION BY may name one side of an outer join only");
+                if (natural || kind is not (JoinKind.Left or JoinKind.Right)) throw Fail("PARTITION BY needs a LEFT or RIGHT outer join", ParseErrorCodes.InvalidCombination);
+                if (join.LeftPartitionBy.Count > 0 && join.RightPartitionBy.Count > 0) throw Fail("PARTITION BY may name one side of an outer join only", ParseErrorCodes.InvalidCombination);
             }
             if (kind is JoinKind.Inner or JoinKind.Left or JoinKind.Right or JoinKind.Full && !natural)
             {
@@ -700,7 +706,7 @@ public sealed partial class SqlParser
                 {
                     ExpectOp("("); join.Using = ParseIdentifierList(); ExpectOp(")");
                 }
-                else throw Fail($"Expected ON or USING but found {Describe(Cur)}");
+                else throw FailExpected($"Expected ON or USING but found {Describe(Cur)}", "ON", "USING");
             }
             left = Fin(join, start);
         }
@@ -821,7 +827,7 @@ public sealed partial class SqlParser
             }
         }
         else if (IsKw("SELECT") || IsKw("WITH") || IsOp("(")) st.Query = ParseSelectStatement();
-        else throw Fail($"Expected VALUES or SELECT but found {Describe(Cur)}");
+        else throw FailExpected($"Expected VALUES or SELECT but found {Describe(Cur)}", "VALUES", "SELECT");
         ParseDmlTail(st);
         return Fin(st, start);
     }
@@ -985,10 +991,10 @@ public sealed partial class SqlParser
                 ExpectOp(")");
                 if (AcceptKw("WHERE")) mc.InsertWhere = ParseExpr();
             }
-            else throw Fail($"Expected UPDATE, DELETE or INSERT but found {Describe(Cur)}");
+            else throw FailExpected($"Expected UPDATE, DELETE or INSERT but found {Describe(Cur)}", "UPDATE", "DELETE", "INSERT");
             st.Clauses.Add(Fin(mc, cs));
         }
-        if (st.Clauses.Count == 0) throw Fail("Expected WHEN clause in MERGE");
+        if (st.Clauses.Count == 0) throw FailExpected("Expected WHEN clause in MERGE", "WHEN clause in MERGE");
         ParseErrorLogging(st);
         return Fin(st, start);
     }
@@ -999,7 +1005,7 @@ public sealed partial class SqlParser
     {
         var t = Cur;
         if (t.Type is not (TokenType.Identifier or TokenType.QuotedIdentifier))
-            throw Fail($"Expected identifier but found {Describe(t)}");
+            throw FailExpected($"Expected identifier but found {Describe(t)}", "identifier");
         Next();
         return Fin(new Identifier { Value = t.Value, Quoted = t.Type == TokenType.QuotedIdentifier, Text = t.Type == TokenType.QuotedIdentifier ? t.Value : t.Text }, t);
     }

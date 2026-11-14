@@ -95,7 +95,7 @@ public sealed partial class SqlParser
         if (IsKw("PERIOD")) { Next(); ExpectKw("FOR"); fb.Unit = FlashbackUnit.Period; fb.Period = ParseIdentifier(); }
         else if (AcceptKw("SCN")) fb.Unit = FlashbackUnit.Scn;
         else if (AcceptKw("TIMESTAMP")) fb.Unit = FlashbackUnit.Timestamp;
-        else throw Fail($"Expected SCN or TIMESTAMP but found {Describe(Cur)}");
+        else throw FailExpected($"Expected SCN or TIMESTAMP but found {Describe(Cur)}", "SCN", "TIMESTAMP");
         fb.Value = ParseAdditive();
         if (fb.Mode == FlashbackMode.VersionsBetween) { ExpectKw("AND"); fb.ToValue = ParseAdditive(); }
         return Fin(fb, s);
@@ -249,7 +249,7 @@ public sealed partial class SqlParser
         int prog123 = -1;
         while (!IsOp("|") && !IsOp(")") && !IsOp(",") && !(IsOp("-") && IsOpAt(1, "}")) && Cur.Type != TokenType.EOF && Progress(ref prog123))
             items.Add(ParsePatternQuantified());
-        if (items.Count == 0) throw Fail("Expected pattern element");
+        if (items.Count == 0) throw FailExpected("Expected pattern element", "pattern element");
         return items.Count == 1 ? items[0] : Fin(new PatternConcat { Items = items }, start);
     }
 
@@ -420,7 +420,7 @@ public sealed partial class SqlParser
         var sp = new GraphSubpatternElement { Path = ParseGraphPathPattern() };
         ExpectOp(")");
         // Oracle rejects a bare parenthesised sub-path (ORA-40951): it must repeat.
-        sp.Quantifier = ParseGraphQuantifier() ?? throw Fail("A parenthesised GRAPH_TABLE path pattern needs a quantifier");
+        sp.Quantifier = ParseGraphQuantifier() ?? throw Fail("A parenthesised GRAPH_TABLE path pattern needs a quantifier", ParseErrorCodes.InvalidCombination);
         return Fin(sp, s);
     }
 
@@ -480,17 +480,17 @@ public sealed partial class SqlParser
     private GraphQuantifier? ParseGraphQuantifier()
     {
         var s = Cur;
-        if (IsOp("*") || IsOp("+")) throw Fail($"Unsupported quantifier {Cur.Value} in GRAPH_TABLE (use {{n}}, {{n,m}} or {{,m}})");
+        if (IsOp("*") || IsOp("+")) throw Fail($"Unsupported quantifier {Cur.Value} in GRAPH_TABLE (use {{n}}, {{n,m}} or {{,m}})", ParseErrorCodes.UnsupportedForm);
         if (!AcceptOp("{")) return null;
         var q = new GraphQuantifier { Kind = GraphQuantifierKind.Exact };
         if (!IsOp(",")) q.Min = ParseExpr();
         if (AcceptOp(","))
         {
             q.Kind = GraphQuantifierKind.Range;
-            if (IsOp("}")) throw Fail("A GRAPH_TABLE quantifier with no upper bound ({n,}) is not supported");
+            if (IsOp("}")) throw Fail("A GRAPH_TABLE quantifier with no upper bound ({n,}) is not supported", ParseErrorCodes.UnsupportedForm);
             q.Max = ParseExpr();
         }
-        else if (q.Min == null) throw Fail($"Expected a quantifier bound but found {Describe(Cur)}");
+        else if (q.Min == null) throw FailExpected($"Expected a quantifier bound but found {Describe(Cur)}", "a quantifier bound");
         ExpectOp("}");
         return Fin(q, s);
     }
@@ -569,7 +569,7 @@ public sealed partial class SqlParser
         mc.Nav = nav; mc.Uniqueness = uniq;
         if (AcceptKw("RETURN"))
         {
-            mc.Return = AcceptKw("UPDATED") ? ModelReturn.UpdatedRows : (AcceptKw("ALL") ? ModelReturn.AllRows : throw Fail("Expected UPDATED or ALL"));
+            mc.Return = AcceptKw("UPDATED") ? ModelReturn.UpdatedRows : (AcceptKw("ALL") ? ModelReturn.AllRows : throw FailExpected("Expected UPDATED or ALL", "UPDATED", "ALL"));
             ExpectKw("ROWS");
         }
         int prog126 = -1;
@@ -726,7 +726,7 @@ public sealed partial class SqlParser
     private List<InsertIntoClause> ParseInsertIntos()
     {
         var list = new List<InsertIntoClause>();
-        if (!IsKw("INTO")) throw Fail($"Expected INTO but found {Describe(Cur)}");
+        if (!IsKw("INTO")) throw FailExpected($"Expected INTO but found {Describe(Cur)}", "INTO");
         int prog128 = -1;
         while (IsKw("INTO") && Progress(ref prog128))
         {
@@ -773,7 +773,7 @@ public sealed partial class SqlParser
         }
         else
         {
-            if (Cur.Text != ":") throw Fail($"Expected ':' in a JSON member but found {Describe(Cur)}");
+            if (Cur.Text != ":") throw FailExpected($"Expected ':' in a JSON member but found {Describe(Cur)}", "':' in a JSON member");
             Next();
             m.Value = IsOp("[") ? ParseJsonArray(keyword: false) : ParseExpr();
         }

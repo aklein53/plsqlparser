@@ -278,7 +278,7 @@ public sealed partial class SqlParser
         if (AcceptKw("TABLE")) ct.Kind = CollectionKind.Table;
         else if (AcceptKw("VARRAY")) ct.Kind = CollectionKind.Varray;
         else if (IsKw("VARYING")) { Next(); ExpectKw("ARRAY"); ct.Kind = CollectionKind.Varray; }
-        else throw Fail($"Expected RECORD, TABLE, VARRAY or REF CURSOR but found {Describe(Cur)}");
+        else throw FailExpected($"Expected RECORD, TABLE, VARRAY or REF CURSOR but found {Describe(Cur)}", "RECORD", "TABLE", "VARRAY", "REF CURSOR");
         if (ct.Kind == CollectionKind.Varray) { ExpectOp("("); ct.Limit = ParseExpr(); ExpectOp(")"); }
         ExpectKw("OF");
         ct.ElementType = ParseDataType();
@@ -330,7 +330,7 @@ public sealed partial class SqlParser
         var start = Cur;
         var sp = new SubprogramDeclaration { Modifiers = ParseMemberModifiers() };
         if (IsKw("FUNCTION")) sp.IsFunction = true;
-        else if (!IsKw("PROCEDURE")) throw Fail($"Expected FUNCTION or PROCEDURE but found {Describe(Cur)}");
+        else if (!IsKw("PROCEDURE")) throw FailExpected($"Expected FUNCTION or PROCEDURE but found {Describe(Cur)}", "FUNCTION", "PROCEDURE");
         Next();
         sp.Name = ParseDottedName();
         if (IsOp("(")) sp.Parameters = ParseParameters();
@@ -362,7 +362,7 @@ public sealed partial class SqlParser
             {
                 case "AUTHID":
                     Next();
-                    po.Authid = AcceptKw("CURRENT_USER") ? AuthidKind.CurrentUser : (AcceptKw("DEFINER") ? AuthidKind.Definer : throw Fail("Expected CURRENT_USER or DEFINER"));
+                    po.Authid = AcceptKw("CURRENT_USER") ? AuthidKind.CurrentUser : (AcceptKw("DEFINER") ? AuthidKind.Definer : throw FailExpected("Expected CURRENT_USER or DEFINER", "CURRENT_USER", "DEFINER"));
                     break;
                 case "SHARING" when IsOpAt(1, "="): po.Sharing = TryParseSharing(); break;
                 case "DETERMINISTIC": Next(); po.Deterministic = true; break;
@@ -390,7 +390,7 @@ public sealed partial class SqlParser
                     if (IsOp("(") && IsKwAt(1, "TYPE"))
                     {
                         Next(); Next(); ExpectOp("=");
-                        po.SqlMacro = AcceptKw("TABLE") ? MacroKind.Table : (AcceptKw("SCALAR") ? MacroKind.Scalar : throw Fail("Expected TABLE or SCALAR"));
+                        po.SqlMacro = AcceptKw("TABLE") ? MacroKind.Table : (AcceptKw("SCALAR") ? MacroKind.Scalar : throw FailExpected("Expected TABLE or SCALAR", "TABLE", "SCALAR"));
                         ExpectOp(")");
                     }
                     break;
@@ -588,7 +588,7 @@ public sealed partial class SqlParser
             ev.Kind = DdlTriggerEvents.Contains(Cur.Value) ? TriggerEventKind.Ddl : TriggerEventKind.Database;
             ev.EventName = Next().Value;
         }
-        else throw Fail($"Expected trigger event but found {Describe(Cur)}");
+        else throw FailExpected($"Expected trigger event but found {Describe(Cur)}", "trigger event");
         return Fin(ev, s);
     }
 
@@ -602,7 +602,7 @@ public sealed partial class SqlParser
         else if (AcceptKw("BEFORE")) tr.Timing = TriggerTiming.Before;
         else if (AcceptKw("AFTER")) tr.Timing = TriggerTiming.After;
         else if (AcceptKw("FOR")) tr.Timing = TriggerTiming.For;
-        else throw Fail($"Expected BEFORE, AFTER, INSTEAD OF or FOR but found {Describe(Cur)}");
+        else throw FailExpected($"Expected BEFORE, AFTER, INSTEAD OF or FOR but found {Describe(Cur)}", "BEFORE", "AFTER", "INSTEAD OF", "FOR");
         do tr.Events.Add(ParseTriggerEvent()); while (AcceptKw("OR"));
         ExpectKw("ON");
         if (AcceptKw("DATABASE")) tr.TargetKind = TriggerTargetKind.Database;
@@ -750,7 +750,7 @@ public sealed partial class SqlParser
                 ExpectKw("OF");
                 ts.ElementType = ParseDataType();
             }
-            else throw Fail($"Expected OBJECT, TABLE or VARRAY but found {Describe(Cur)}");
+            else throw FailExpected($"Expected OBJECT, TABLE or VARRAY but found {Describe(Cur)}", "OBJECT", "TABLE", "VARRAY");
         }
         int prog37 = -1;
         while (!AtStatementEnd() && Progress(ref prog37))
@@ -999,7 +999,7 @@ public sealed partial class SqlParser
             c = dc;
         }
         else if (IsKw("EXECUTE") && IsKwAt(1, "IMMEDIATE"))
-            throw Fail("EXECUTE IMMEDIATE in a FOR loop must be parenthesised: FOR r IN (EXECUTE IMMEDIATE ...)");
+            throw Fail("EXECUTE IMMEDIATE in a FOR loop must be parenthesised: FOR r IN (EXECUTE IMMEDIATE ...)", ParseErrorCodes.InvalidCombination);
         else if (IsOp("(") && LooksLikeQuery())
         {
             Next();
@@ -1019,7 +1019,7 @@ public sealed partial class SqlParser
             }
             else
             {
-                if (reverse) throw Fail("REVERSE must be followed by a range (lower..upper)");
+                if (reverse) throw Fail("REVERSE must be followed by a range (lower..upper)", ParseErrorCodes.InvalidCombination);
                 c = new ExpressionControl { Value = e };
             }
         }
