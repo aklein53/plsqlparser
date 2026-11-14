@@ -53,6 +53,9 @@ public sealed class TableUse
     public required int Start { get; init; }
     /// <summary>End offset of the reported name.</summary>
     public required int End { get; init; }
+
+    /// <summary>A short diagnostic description, e.g. for debugging and logs.</summary>
+    public override string ToString() => $"{(Schema != null ? Schema + "." : "")}{Name}{(DbLink != null ? "@" + DbLink : "")}{(Alias != null ? " " + Alias : "")} {Access}{(IsCteReference ? " (CTE)" : "")} [{Start}..{End})";
 }
 
 /// <summary>How a column reference is classified by <see cref="SqlAnalysis.GetColumns"/>.</summary>
@@ -117,6 +120,9 @@ public sealed class ColumnUse
     public required int Start { get; init; }
     /// <summary>End offset of the reference.</summary>
     public required int End { get; init; }
+
+    /// <summary>A short diagnostic description, e.g. for debugging and logs.</summary>
+    public override string ToString() => $"{(Qualifier != null ? Qualifier + "." : "")}{Name} {Kind} {Resolution}{(SourceName != null ? " -> " + SourceName : "")}{(IsWriteTarget ? " (write)" : "")} [{Start}..{End})";
 }
 
 /// <summary>A bind variable found by <see cref="SqlAnalysis.GetBinds"/>.</summary>
@@ -132,6 +138,9 @@ public sealed class BindUse
     public required int Start { get; init; }
     /// <summary>End offset of the bind.</summary>
     public required int End { get; init; }
+
+    /// <summary>A short diagnostic description, e.g. for debugging and logs.</summary>
+    public override string ToString() => $":{(Quoted ? "\"" + Name + "\"" : Name)} [{Start}..{End})";
 }
 
 /// <summary>What a call is, as far as the syntax shows.</summary>
@@ -166,6 +175,9 @@ public sealed class FunctionUse
     public required int Start { get; init; }
     /// <summary>End offset of the name parts.</summary>
     public required int End { get; init; }
+
+    /// <summary>A short diagnostic description, e.g. for debugging and logs.</summary>
+    public override string ToString() => $"{(Qualifier != null ? Qualifier + "." : "")}{Name} {Kind}{(IsAnalytic ? " OVER" : "")} [{Start}..{End})";
 }
 
 /// <summary>
