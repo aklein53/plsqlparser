@@ -60,6 +60,20 @@ public sealed partial class SqlScriptGenerator
                     if (ao.Body.Count > 0) { Sp(); SyntaxList(ao.Body); }
                     break;
                 case DropStatement dr: Drop(dr); break;
+                case CreateRoleStatement cr:
+                    Add("CREATE ROLE");
+                    if (cr.IfNotExists) Add(" IF NOT EXISTS");
+                    Sp(); Id(cr.Name);
+                    RoleIdentificationText(cr.Authentication, cr.Password, cr.Package);
+                    ContainerClause(cr.Container);
+                    break;
+                case AlterRoleStatement ar:
+                    Add("ALTER ROLE");
+                    if (ar.IfExists) Add(" IF EXISTS");
+                    Sp(); Id(ar.Name);
+                    RoleIdentificationText(ar.Authentication, ar.Password, ar.Package);
+                    ContainerClause(ar.Container);
+                    break;
                 case CreateUserStatement cu:
                     Add("CREATE USER");
                     if (cu.IfNotExists) Add(" IF NOT EXISTS");
@@ -112,6 +126,25 @@ public sealed partial class SqlScriptGenerator
                     break;
                 default: throw Unsupported(st);
             }
+        }
+
+        // ---------- CREATE / ALTER ROLE ----------
+
+        private void RoleIdentificationText(RoleAuthentication? a, Identifier? password, List<Identifier> package)
+        {
+            switch (a)
+            {
+                case RoleAuthentication.NotIdentified: Add(" NOT IDENTIFIED"); break;
+                case RoleAuthentication.Password: Add(" IDENTIFIED BY "); Verbatim(password!); break;
+                case RoleAuthentication.Package: Add(" IDENTIFIED USING "); Name(package); break;
+                case RoleAuthentication.External: Add(" IDENTIFIED EXTERNALLY"); break;
+                case RoleAuthentication.Global: Add(" IDENTIFIED GLOBALLY"); break;
+            }
+        }
+
+        private void ContainerClause(GrantContainer? c)
+        {
+            if (c != null) Add(" CONTAINER = " + (c == GrantContainer.All ? "ALL" : "CURRENT"));
         }
 
         // ---------- CREATE / ALTER USER ----------

@@ -339,6 +339,14 @@ public class SqlScriptGeneratorTests
     }
 
     [Fact]
+    public void CreateRole_RoundTripsIdentificationAndContainer()
+    {
+        const string sql = "create role Ops identified by Secret container = all";
+        Assert.Equal("CREATE ROLE Ops IDENTIFIED BY Secret CONTAINER = ALL", Gen(sql));
+        Assert.Equal("CREATE ROLE OPS IDENTIFIED BY Secret CONTAINER = ALL", Gen(sql, new() { IdentifierCasing = IdentifierCasing.Uppercase }));
+    }
+
+    [Fact]
     public void AlterUser_PasswordIsNeverRecased()
     {
         // Passwords are case-sensitive even when unquoted, so the uppercase option must not touch them.

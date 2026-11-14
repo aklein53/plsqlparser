@@ -523,6 +523,57 @@ public sealed partial class SqlParser
         else { c.RoleSet = RoleSetKind.Roles; c.Roles = ParseIdentifierList(); }
     }
 
+    // ---- CREATE / ALTER ROLE ----
+
+    private Statement ParseCreateRole(Token start, bool orReplace, bool pub)
+    {
+        if (orReplace || pub) throw Fail("OR REPLACE and PUBLIC do not apply to CREATE ROLE");
+        var st = new CreateRoleStatement { IfNotExists = TryIfNotExists() };
+        st.Name = ParseIdentifier();
+        if (!st.IfNotExists) st.IfNotExists = TryIfNotExists();
+        st.Authentication = ParseRoleIdentification(out var password, out var package);
+        st.Password = password;
+        st.Package = package;
+        st.Container = TryParseContainer();
+        return Fin(st, start);
+    }
+
+    private Statement ParseAlterRole(Token start, bool pub)
+    {
+        if (pub) throw Fail("PUBLIC does not apply to ALTER ROLE");
+        var st = new AlterRoleStatement { IfExists = TryIfExists() };
+        st.Name = ParseIdentifier();
+        st.Authentication = ParseRoleIdentification(out var password, out var package);
+        st.Password = password;
+        st.Package = package;
+        st.Container = TryParseContainer();
+        return Fin(st, start);
+    }
+
+    /// <summary>NOT IDENTIFIED | IDENTIFIED BY pw | IDENTIFIED USING pkg | IDENTIFIED EXTERNALLY | IDENTIFIED GLOBALLY.</summary>
+    private RoleAuthentication? ParseRoleIdentification(out Identifier? password, out List<Identifier> package)
+    {
+        password = null;
+        package = [];
+        if (IsKw("NOT") && IsKwAt(1, "IDENTIFIED")) { Next(); Next(); return RoleAuthentication.NotIdentified; }
+        if (!AcceptKw("IDENTIFIED")) return null;
+        if (AcceptKw("BY")) { password = ParseIdentifier(); return RoleAuthentication.Password; }
+        if (AcceptKw("USING")) { package = ParseDottedName(); return RoleAuthentication.Package; }
+        if (AcceptKw("EXTERNALLY")) return RoleAuthentication.External;
+        ExpectKw("GLOBALLY");
+        return RoleAuthentication.Global;
+    }
+
+    /// <summary>CONTAINER = CURRENT | ALL, when present.</summary>
+    private GrantContainer? TryParseContainer()
+    {
+        if (!(IsKw("CONTAINER") && IsOpAt(1, "="))) return null;
+        Next(); Next();
+        if (AcceptKw("ALL")) return GrantContainer.All;
+        ExpectKw("CURRENT");
+        return GrantContainer.Current;
+    }
+
     // ---- DROP / ALTER (generic) ----
 
     private Statement ParseDrop()
@@ -558,6 +609,7 @@ public sealed partial class SqlParser
         if (kind == ObjectKind.Table) return ParseAlterTable(start);
         if (kind == ObjectKind.Session) return ParseAlterSession(start);
         if (kind == ObjectKind.User) return ParseAlterUser(start, pub);
+        if (kind == ObjectKind.Role) return ParseAlterRole(start, pub);
         var st = new AlterObjectStatement { Kind = kind, Public = pub };
         st.IfExists = TryIfExists();
         if (ObjectKindHasName(kind) && Cur.Type is TokenType.Identifier or TokenType.QuotedIdentifier) st.Name = ParseDottedName();
@@ -652,6 +704,7 @@ public sealed partial class SqlParser
         TryParseObjectKind(out var kind);
         switch (kind)
         {
+            case ObjectKind.Role: return ParseCreateRole(start, orReplace, pub);
             case ObjectKind.User: return ParseCreateUser(start, orReplace, pub);
             case ObjectKind.Table: return ParseCreateTable(start, orReplace, gtt, ptt, dup, imm, blk);
             case ObjectKind.Index: return ParseCreateIndex(start, unique, bitmap);

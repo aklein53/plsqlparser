@@ -38,6 +38,16 @@ public abstract partial class SqlNodeVisitor
         node.AcceptChildren(this);
     }
 
+    /// <summary>Called for a <see cref="AlterRoleStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(AlterRoleStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="AlterRoleStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(AlterRoleStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
     /// <summary>Called for a <see cref="AlterSessionStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
     public virtual void Visit(AlterSessionStatement node) => Visit((SqlNode)node);
 
@@ -473,6 +483,16 @@ public abstract partial class SqlNodeVisitor
 
     /// <summary>Entry point for a <see cref="CreateProgramStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
     public virtual void ExplicitVisit(CreateProgramStatement node)
+    {
+        Visit(node);
+        node.AcceptChildren(this);
+    }
+
+    /// <summary>Called for a <see cref="CreateRoleStatement"/>. The default forwards to <see cref="Visit(SqlNode)"/>.</summary>
+    public virtual void Visit(CreateRoleStatement node) => Visit((SqlNode)node);
+
+    /// <summary>Entry point for a <see cref="CreateRoleStatement"/>. The default calls <c>Visit(node)</c> and then visits the children.</summary>
+    public virtual void ExplicitVisit(CreateRoleStatement node)
     {
         Visit(node);
         node.AcceptChildren(this);

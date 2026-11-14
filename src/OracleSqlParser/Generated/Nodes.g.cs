@@ -142,6 +142,63 @@ public partial class AlterObjectStatement
     }
 }
 
+public partial class AlterRoleStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Password is not null) yield return Password;
+        if (Package is not null) foreach (var x in Package) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        Password?.Accept(visitor);
+        if (Package is not null) foreach (var x in Package) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "AlterRoleStatement.Name");
+        Password = SqlNodeRewriter.RewriteOptional(rewriter, Password, "AlterRoleStatement.Password");
+        SqlNodeRewriter.RewriteList(rewriter, Package, "AlterRoleStatement.Package");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AlterRoleStatement();
+        CopySpan(this, c);
+        c.IfExists = IfExists;
+        c.Name = CloneChild(Name)!;
+        c.Authentication = Authentication;
+        c.Password = CloneChild(Password);
+        c.Package = CloneList(Package);
+        c.Container = Container;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AlterRoleStatement)other;
+        return IfExists == o.IfExists
+            && Pair(Name, o.Name, pending)
+            && Authentication == o.Authentication
+            && Pair(Password, o.Password, pending)
+            && PairList(Package, o.Package, pending)
+            && Container == o.Container
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class AlterSessionStatement
 {
     /// <inheritdoc/>
@@ -2397,6 +2454,63 @@ public partial class CreateProgramStatement
         return OrReplace == o.OrReplace
             && Editionable == o.Editionable
             && Pair(Subprogram, o.Subprogram, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
+public partial class CreateRoleStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) yield return Name;
+        if (Password is not null) yield return Password;
+        if (Package is not null) foreach (var x in Package) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        Name?.Accept(visitor);
+        Password?.Accept(visitor);
+        if (Package is not null) foreach (var x in Package) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        Name = SqlNodeRewriter.RewriteRequired(rewriter, Name, "CreateRoleStatement.Name");
+        Password = SqlNodeRewriter.RewriteOptional(rewriter, Password, "CreateRoleStatement.Password");
+        SqlNodeRewriter.RewriteList(rewriter, Package, "CreateRoleStatement.Package");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new CreateRoleStatement();
+        CopySpan(this, c);
+        c.IfNotExists = IfNotExists;
+        c.Name = CloneChild(Name)!;
+        c.Authentication = Authentication;
+        c.Password = CloneChild(Password);
+        c.Package = CloneList(Package);
+        c.Container = Container;
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (CreateRoleStatement)other;
+        return IfNotExists == o.IfNotExists
+            && Pair(Name, o.Name, pending)
+            && Authentication == o.Authentication
+            && Pair(Password, o.Password, pending)
+            && PairList(Package, o.Package, pending)
+            && Container == o.Container
             && SameStrings(Labels, o.Labels);
     }
 }

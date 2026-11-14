@@ -154,7 +154,7 @@ public class DdlShapeTests
 
     [Theory]
     [InlineData("CREATE USER bob IDENTIFIED BY pw", "(CreateUserStatement name=BOB clauses=[(UserClause kind=IdentifiedBy password=PW)])")]
-    [InlineData("CREATE ROLE r", "(CreateObjectStatement kind=Role name=[R])")]
+    [InlineData("CREATE ROLE r", "(CreateRoleStatement name=R)")]
     [InlineData("CREATE DATABASE LINK l CONNECT TO u IDENTIFIED BY p USING 'tns'",
         "(CreateObjectStatement kind=DatabaseLink name=[L] body=[(WordItem value=CONNECT) (WordItem value=TO) (WordItem value=U) (WordItem value=IDENTIFIED) (WordItem value=BY) (WordItem value=P) (WordItem value=USING) (LiteralItem kind=String value=tns)])")]
     [InlineData("CREATE OR REPLACE PUBLIC DATABASE LINK l USING 'x'", "(CreateObjectStatement kind=DatabaseLink orReplace public name=[L] body=[(WordItem value=USING) (LiteralItem kind=String value=x)])")]
@@ -188,6 +188,14 @@ public class DdlShapeTests
     [InlineData("ALTER USER u ACCOUNT LOCK", "(AlterUserStatement name=U clauses=[(UserClause kind=AccountLock)])")]
     [InlineData("ALTER USER u READ ONLY", "(AlterUserStatement name=U clauses=[(UserClause kind=ReadOnly)])")]
     public void CreateAlterUser(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
+
+    [Theory]
+    [InlineData("CREATE ROLE IF NOT EXISTS r NOT IDENTIFIED CONTAINER = ALL", "(CreateRoleStatement ifNotExists name=R authentication=NotIdentified container=All)")]
+    [InlineData("CREATE ROLE r IDENTIFIED BY \"Pw\"", "(CreateRoleStatement name=R authentication=Password password=\"Pw\")")]
+    [InlineData("ALTER ROLE r IDENTIFIED USING sec.pkg", "(AlterRoleStatement name=R authentication=Package package=[SEC PKG])")]
+    [InlineData("ALTER ROLE r IDENTIFIED EXTERNALLY", "(AlterRoleStatement name=R authentication=External)")]
+    [InlineData("ALTER ROLE r IDENTIFIED GLOBALLY CONTAINER = CURRENT", "(AlterRoleStatement name=R authentication=Global container=Current)")]
+    public void CreateAlterRole(string sql, string expected) => Assert.Equal(expected, Shape.Of(sql));
 
     [Fact]
     public void CreateJava_Source()

@@ -275,6 +275,33 @@ public sealed partial class AlterUserStatement : Statement
     public List<UserClause> Clauses { get; set; } = [];
 }
 
+// ---------- CREATE / ALTER ROLE ----------
+
+public enum RoleAuthentication { NotIdentified, Password, Package, External, Global }
+
+public sealed partial class CreateRoleStatement : Statement
+{
+    public bool IfNotExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    /// <summary>NOT IDENTIFIED, IDENTIFIED BY/USING/EXTERNALLY/GLOBALLY, or null when absent.</summary>
+    public RoleAuthentication? Authentication { get; set; }
+    /// <summary>IDENTIFIED BY password. Printed as typed (passwords are case-sensitive even when unquoted).</summary>
+    public Identifier? Password { get; set; }
+    /// <summary>IDENTIFIED USING [schema.]package.</summary>
+    public List<Identifier> Package { get; set; } = [];
+    public GrantContainer? Container { get; set; }
+}
+
+public sealed partial class AlterRoleStatement : Statement
+{
+    public bool IfExists { get; set; }
+    public Identifier Name { get; set; } = null!;
+    public RoleAuthentication? Authentication { get; set; }
+    public Identifier? Password { get; set; }
+    public List<Identifier> Package { get; set; } = [];
+    public GrantContainer? Container { get; set; }
+}
+
 // ---------- Generic object DDL (typed header + token-tree body) ----------
 
 public enum ObjectKind
