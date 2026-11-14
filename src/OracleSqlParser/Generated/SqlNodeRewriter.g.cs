@@ -99,6 +99,13 @@ public abstract partial class SqlNodeRewriter
         return node;
     }
 
+    /// <summary>Rewrites a <see cref="AnalyzeStatement"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
+    public virtual SqlNode? Rewrite(AnalyzeStatement node)
+    {
+        node.RewriteChildren(this);
+        return node;
+    }
+
     /// <summary>Rewrites a <see cref="Argument"/>: by default rewrites its children and returns it. Return another node to replace it, or null to remove it.</summary>
     public virtual SqlNode? Rewrite(Argument node)
     {

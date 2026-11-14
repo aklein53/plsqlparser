@@ -18,6 +18,7 @@ public sealed partial class SqlScriptGenerator
                 case DeleteStatement d: Delete(d); break;
                 case MergeStatement m: Merge(m); break;
                 // transaction / session / admin
+                case AnalyzeStatement an: Analyze(an); break;
                 case CommitStatement or RollbackStatement or SavepointStatement or SetTransactionStatement or SetConstraintsStatement
                     or SetRoleStatement or AlterSessionStatement or CallStatement or ExplainPlanStatement or LockTableStatement
                     or TruncateStatement or CommentStatement or GrantStatement or RenameStatement or PurgeStatement

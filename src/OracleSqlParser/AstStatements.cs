@@ -246,7 +246,7 @@ public sealed partial class AlterObjectStatement : Statement
     public List<SyntaxItem> Body { get; set; } = [];
 }
 
-/// <summary>Statements such as ANALYZE, AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT (token-tree body).</summary>
+/// <summary>Statements such as AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT (token-tree body).</summary>
 public sealed partial class AdminStatement : Statement
 {
     public string Verb { get; set; } = "";

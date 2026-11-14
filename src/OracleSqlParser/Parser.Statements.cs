@@ -39,7 +39,8 @@ public sealed partial class SqlParser
             case "RENAME" when !SqlPlusCommands.Contains("RENAME"): return ParseRename();
             case "PURGE": return ParsePurge();
             case "FLASHBACK" when IsKwAt(1, "TABLE"): return ParseFlashbackTable();
-            case "ANALYZE": case "AUDIT": case "NOAUDIT": case "ASSOCIATE": case "DISASSOCIATE": case "ADMINISTER": case "FLASHBACK":
+            case "ANALYZE": return ParseAnalyze(start);
+            case "AUDIT": case "NOAUDIT": case "ASSOCIATE": case "DISASSOCIATE": case "ADMINISTER": case "FLASHBACK":
             {
                 var verb = Next().Value;
                 var body = ParseSyntaxItems(AtStatementEnd);

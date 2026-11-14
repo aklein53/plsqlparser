@@ -749,6 +749,79 @@ public partial class AlterViewStatement
     }
 }
 
+public partial class AnalyzeStatement
+{
+    /// <inheritdoc/>
+    public override IEnumerable<SqlNode> GetChildren()
+    {
+        if (Name is not null) foreach (var x in Name) yield return x;
+        if (Partition is not null) yield return Partition;
+        if (Sample is not null) yield return Sample;
+        if (IntoTable is not null) foreach (var x in IntoTable) yield return x;
+        if (OtherClauses is not null) foreach (var x in OtherClauses) yield return x;
+    }
+
+    /// <inheritdoc/>
+    public override void AcceptChildren(SqlNodeVisitor visitor)
+    {
+        if (Name is not null) foreach (var x in Name) x.Accept(visitor);
+        Partition?.Accept(visitor);
+        Sample?.Accept(visitor);
+        if (IntoTable is not null) foreach (var x in IntoTable) x.Accept(visitor);
+        if (OtherClauses is not null) foreach (var x in OtherClauses) x.Accept(visitor);
+    }
+
+    internal override void RewriteChildren(SqlNodeRewriter rewriter)
+    {
+        SqlNodeRewriter.RewriteList(rewriter, Name, "AnalyzeStatement.Name");
+        Partition = SqlNodeRewriter.RewriteOptional(rewriter, Partition, "AnalyzeStatement.Partition");
+        Sample = SqlNodeRewriter.RewriteOptional(rewriter, Sample, "AnalyzeStatement.Sample");
+        SqlNodeRewriter.RewriteList(rewriter, IntoTable, "AnalyzeStatement.IntoTable");
+        SqlNodeRewriter.RewriteList(rewriter, OtherClauses, "AnalyzeStatement.OtherClauses");
+    }
+
+    /// <inheritdoc/>
+    public override void Accept(SqlNodeVisitor visitor) => visitor.ExplicitVisit(this);
+
+    internal override SqlNode? AcceptRewriter(SqlNodeRewriter rewriter) => rewriter.Rewrite(this);
+
+    internal override SqlNode CloneCore()
+    {
+        var c = new AnalyzeStatement();
+        CopySpan(this, c);
+        c.Target = Target;
+        c.Name = CloneList(Name);
+        c.Partition = CloneChild(Partition);
+        c.Action = Action;
+        c.SystemStatistics = SystemStatistics;
+        c.Sample = CloneChild(Sample);
+        c.SamplePercent = SamplePercent;
+        c.Cascade = Cascade;
+        c.Online = Online;
+        c.IntoTable = CloneList(IntoTable);
+        c.OtherClauses = CloneList(OtherClauses);
+        c.Labels = CloneStrings(Labels);
+        return c;
+    }
+
+    internal override bool ShapeEquals(SqlNode other, Stack<(SqlNode, SqlNode)> pending)
+    {
+        var o = (AnalyzeStatement)other;
+        return Target == o.Target
+            && PairList(Name, o.Name, pending)
+            && Pair(Partition, o.Partition, pending)
+            && Action == o.Action
+            && SystemStatistics == o.SystemStatistics
+            && Pair(Sample, o.Sample, pending)
+            && SamplePercent == o.SamplePercent
+            && Cascade == o.Cascade
+            && Online == o.Online
+            && PairList(IntoTable, o.IntoTable, pending)
+            && PairList(OtherClauses, o.OtherClauses, pending)
+            && SameStrings(Labels, o.Labels);
+    }
+}
+
 public partial class Argument
 {
     /// <inheritdoc/>

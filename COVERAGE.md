@@ -33,7 +33,8 @@ clauses as a nested token tree (`WordItem`/`LiteralItem`/`SymbolItem`/`GroupItem
 | CREATE PROCEDURE/FUNCTION/PACKAGE [BODY]/TRIGGER/TYPE [BODY]/LIBRARY/JAVA | `CreateProgramStatement` … | typed | PlsqlShape, DdlShape |
 | CREATE of any other object (USER, ROLE, PROFILE, TABLESPACE, DATABASE LINK, DIRECTORY, CLUSTER, CONTEXT, DIMENSION, DOMAIN, EDITION, OPERATOR, INDEXTYPE, OUTLINE, PROPERTY GRAPH, JSON DUALITY VIEW, MV LOG, ZONEMAP, ANALYTIC VIEW, ...) | `CreateObjectStatement` | header+tree |
 | ALTER of any object other than TABLE/SESSION/INDEX/SEQUENCE/MATERIALIZED VIEW and the typed compiled-unit forms ( TRIGGER, PROCEDURE, USER, SYSTEM, DATABASE, ...) | `AlterObjectStatement` | header+tree |
-| ANALYZE, AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE | `AdminStatement` | header+tree |
+| ANALYZE TABLE/INDEX/CLUSTER (COMPUTE/ESTIMATE/DELETE STATISTICS, VALIDATE STRUCTURE, LIST CHAINED ROWS; FOR clauses and other forms in a token tree) | `AnalyzeStatement` | typed (trailing clauses: `OtherClauses` token tree) | DmlAndSessionShape, SmokeCorpus |
+| AUDIT, NOAUDIT, ASSOCIATE/DISASSOCIATE STATISTICS, ADMINISTER KEY MANAGEMENT, FLASHBACK DATABASE | `AdminStatement` | header+tree |
 
 ## PL/SQL
 
